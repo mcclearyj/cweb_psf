@@ -196,7 +196,7 @@ class PSFMaker:
     Possible improvements: make more general?
     """
 
-    def __init__(self,psf_file=None,psf_type='epsfex',noisefree=False):
+    def __init__(self, psf_file=None, psf_type='piff', pixscale=0.033, noisefree=False):
         """
         psf_obj is the file name of psf,
         or alternatively an instance of it
@@ -211,11 +211,11 @@ class PSFMaker:
         self.psf = psf_file
         self.psf_type = psf_type
         self.noisefree = noisefree
-        self.psf_size = 19
+        self.psf_size = 30
         self.stamps = []
         self.resids = []
 
-        self.pixel_scale = 0.144
+        self.pixel_scale = pix_scale
         self.sky_level = 0.0
         self.sky_std = 0.0
 

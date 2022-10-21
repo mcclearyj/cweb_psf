@@ -17,7 +17,7 @@ class StarMaker():
      - This object will store all star vignets
     """
 
-    def __init__(self,cat_stars=None,bg_obj=None,pixel_scale=0.144):
+    def __init__(self,cat_stars=None,bg_obj=None,pixscale=0.033):
 
         """
         cat_stars is either SExtractor catalog,
@@ -25,8 +25,8 @@ class StarMaker():
         """
 
         self.cat_stars = cat_stars
-        self.pixel_scale = 0.144
-        self.vsize = 19
+        self.pixel_scale = 0.033
+        self.vsize = 30
         self.sky_level = 0.0
         self.sky_std = 0.0
 
