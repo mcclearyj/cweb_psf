@@ -196,7 +196,7 @@ class PSFMaker:
     Possible improvements: make more general?
     """
 
-    def __init__(self, psf_file=None, psf_type='piff', pixscale=0.033, noisefree=False):
+    def __init__(self, psf_file=None, psf_type='piff', pix_scale=0.033, noisefree=False):
         """
         psf_obj is the file name of psf,
         or alternatively an instance of it

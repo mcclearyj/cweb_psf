@@ -1,7 +1,6 @@
 ###
 ### This is a quick and dirty script to get PSF models
-### for CEERS data. Eventually, this should be a module within master,
-### specifically medsmaker
+### for JWST data in "i2d" format.
 ###
 import numpy as np
 import os, re
@@ -197,7 +196,7 @@ def run_piffy(im_file, star_cat_file, configdir, outdir):
     cmd = ' '.join([
              'piffify', run_piff_config, image_arg, psfcat_arg, output_arg
              ])
-             
+
     print('piff cmd is ' + cmd)
     os.system(cmd)
 

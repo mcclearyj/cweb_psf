@@ -17,7 +17,7 @@ class StarMaker():
      - This object will store all star vignets
     """
 
-    def __init__(self,cat_stars=None,bg_obj=None,pixscale=0.033):
+    def __init__(self,cat_stars=None,bg_obj=None,pix_scale=0.033):
 
         """
         cat_stars is either SExtractor catalog,
@@ -26,7 +26,7 @@ class StarMaker():
 
         self.cat_stars = cat_stars
         self.pixel_scale = 0.033
-        self.vsize = 30
+        self.vsize = 31
         self.sky_level = 0.0
         self.sky_std = 0.0
 
@@ -77,7 +77,6 @@ class StarMaker():
     def _get_star_vignets(self):
 
         n = int(np.floor(0.5*(np.shape(self.cat_stars['VIGNET'])[1]-self.vsize)))
-
         for i in range(len(self.cat_stars)):
             this_vign = self.cat_stars[i]['VIGNET']
             x_pos = self.cat_stars[i]['X_IMAGE']; y_pos = self.cat_stars[i]['Y_IMAGE']
@@ -103,7 +102,6 @@ class StarMaker():
             try:
                 gs_star = galsim.Image(stamp, wcs=galsim.PixelScale(self.pixel_scale))
                 star_fit=gs_star.FindAdaptiveMom()
-
                 self.hsm_sig.append(star_fit.moments_sigma)
                 self.hsm_g1.append(star_fit.observed_shape.g1)
                 self.hsm_g2.append(star_fit.observed_shape.g2)
@@ -113,7 +111,12 @@ class StarMaker():
                 self.hsm_sig.append(-9999)
                 self.hsm_g1.append(-9999)
                 self.hsm_g2.append(-9999)
+
+            try:
                 self.fwhm.append(gs_star.calculateFWHM())
+            except:
+                print("FWHM fit for stamp #%d failed, skipping" % i)
+                self.fwhm.append(-9999)
 
         self.hsm_sig = np.array(self.hsm_sig)
         self.hsm_g1  = np.array(self.hsm_g1)

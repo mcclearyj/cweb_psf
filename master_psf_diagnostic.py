@@ -21,10 +21,18 @@ parser.add_argument('imdir',type=str,
                     help='Directory containing star catalogs & images')
 parser.add_argument('star_cat',type=str,
                     help='Star catalog to use for PSF diagnostic')
-parser.add_argument('--min_snr',type=float, default=None,
+parser.add_argument('-min_snr',type=float, default=None,
                     help='Optional S/N cut for star catalog [default=None]')
-parser.add_argument('--outdir',type=str, default=None,
+parser.add_argument('-pix_scale',type=float, default=None,
+                    help='Image/PSF pixel scale [default=0.03]')
+parser.add_argument('-outdir',type=str, default=None,
                     help='Output directory for diagnostics [default=./psf_diagnostics]')
+parser.add_argument('-psfex_name',type=str, default=None,
+                    help='PSFEx model filename')
+parser.add_argument('-im_name',type=str, default=None,
+                    help='FITS image filename for GalSim PSFEx diagnostic')
+parser.add_argument('-piff_name',type=str, default=None,
+                    help='PIFF psf model filename')
 # Select which diagnostics to run
 parser.add_argument('--epsfex',action='store_true', default=False,
                     help='Run esheldon psfex diagnostic')
@@ -32,13 +40,6 @@ parser.add_argument('--gpsfex',action='store_true', default=False,
                     help='Run galsim.des_psfex diagnostic')
 parser.add_argument('--piff',action='store_true', default=False,
                     help='Run PIFF diagnostic')
-# Files for the different PSF diagnostics
-parser.add_argument('--psfex_name',type=str, default=None,
-                    help='PSFEx model filename')
-parser.add_argument('--im_name',type=str, default=None,
-                    help='FITS image filename used with PSFEx model')
-parser.add_argument('--piff_name',type=str, default=None,
-                    help='PIFF psf model filename')
 parser.add_argument('--noisefree',action='store_true',default=False,
                     help='Disable adding noise to PSF stamps')
 parser.add_argument('--verbose','-v',action='store_true', default=False,
@@ -59,18 +60,11 @@ def main():
     noisefree = args.noisefree
     vb = args.verbose
 
-    """
-    if len(args.args)<3:
-        print("Master PSF diagnostic. Sample invocation:")
-        print("python master_psf_diagnostic.py ./rho_stats/cl5_gaussPSF_0.35FWHM/ mock_truth_stars.fits\
-                --min_snr 10 --pixscale 0.033 --piff --piff_name piff_output/test.piff \
-                --epsfex --psfex_name psfex_test.psf --gpsfex --im_name mock_obs.fits -v")
-        sys.exit()
-    """
     if args.outdir is None:
         outdir = './master_psf_diagnostics'
-    if args.pixscale is None:
-        pixscale = 0.033
+    if args.pix_scale is None:
+        pix_scale = 0.03
+        print('Using default image/PSF pixel scale {pix_scale}')
     if args.min_snr is not None:
         min_snr = args.min_snr
     if args.im_name is not None:
@@ -99,7 +93,7 @@ def main():
     sky_bg,sky_std = cs.calc_star_bkg(vb=True)
 
     # Do star HSM fits
-    sm = StarMaker(star_cat, pixscale=pixscale)
+    sm = StarMaker(star_cat, pix_scale=pix_scale)
     sm.run(bg_obj=cs,vb=True)
 
     # Render PSFs, do HSM fits, save diagnostics to file
@@ -111,7 +105,7 @@ def main():
                     os.path.join(imdir,psf_name)
                     )
         psf_pex = PSFMaker(psf_file=pex,psf_type='epsfex',
-                        pixscale=pixscale, noisefree=noisefree)
+                        pix_scale=pix_scale, noisefree=noisefree)
         psf_pex.run_all(stars=sm,vb=vb,outdir=outdir)
         makers.append(psf_pex); prefix.append('pex')
 
@@ -120,23 +114,23 @@ def main():
                     os.path.join(imdir,psf_name), os.path.join(imdir,im_name)
                     )
         psf_des = PSFMaker(psf_file=psfex_des, psf_type='gpsfex',
-                        pixscale=pixscale, noisefree=noisefree)
+                        pix_scale=pix_scale, noisefree=noisefree)
         psf_des.run_all(stars=sm,vb=vb,outdir=outdir)
         makers.append(psf_des); prefix.append('gpsf')
 
     if run_piff==True:
         piff_psf = piff.read(os.path.join(imdir,piff_name))
         psf_piff = PSFMaker(psf_file=piff_psf,psf_type='piff',
-                        pixscale=pixscale, noisefree=noisefree
+                        pix_scale=pix_scale, noisefree=noisefree
                         )
         psf_piff.run_all(stars=sm,vb=vb,outdir=outdir)
         makers.append(psf_piff); prefix.append('piff')
 
     # Write star & psf HSM fits to file
-    outfile=os.path.join(outdir,'star+psf_HSM_shapes.fits')
+    outfile=os.path.join(outdir,'star+psf_HSMfit.fits')
     make_output_table(makers,prefix,outfile=outfile)
 
-    make_rho_rhatios(file_path=outdir)
+    make_rho_ratios(file_path=outdir)
 
 if __name__ == "__main__":
     import pdb, traceback, sys
