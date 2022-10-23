@@ -1,5 +1,5 @@
 import psfex
-import galsim,galsim.des
+import galsim, galsim.des
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import colors
 import matplotlib.pyplot as plt
@@ -10,23 +10,22 @@ from astropy.table import Table
 import pdb
 
 class StarMaker():
-    """
+    '''
     Class to store catalog stars and fit information.
      - Read in star entry from some catalog
      - Trim as needed, make a GS object. Get HSM fit.
      - This object will store all star vignets
-    """
+    '''
 
-    def __init__(self,cat_stars=None,bg_obj=None,pix_scale=0.033):
-
-        """
+    def __init__(self,cat_stars=None, bg_obj=None, pix_scale=0.03):
+        '''
         cat_stars is either SExtractor catalog,
         catalog file path, or simply list of np.ndarrays
-        """
+        '''
 
         self.cat_stars = cat_stars
-        self.pixel_scale = 0.033
-        self.vsize = 31
+        self.pixel_scale = pix_scale
+        self.vignet_size = 21
         self.sky_level = 0.0
         self.sky_std = 0.0
 
@@ -42,24 +41,24 @@ class StarMaker():
 
 
     def _read_cat(self,vb=False):
-        """
-        # This could be expanded to do all the star catalog reading,
-        # but keep it simple for now & give it a pre-read star catalog
-        """
+        '''
+        This could be expanded to do all the star catalog reading,
+        but keep it simple for now & give it a pre-read star catalog
+        '''
 
         #self.cat_stars = cat_stars
 
         if vb==True:
-            print("fitting to %d stars" %len(self.cat_stars))
+            print("fitting to %d stars"  % len(self.cat_stars))
 
         return
 
 
     def _set_background(self,bg_obj=None,vb=False):
-        """
+        '''
         bkg_obj is expected to be an instance of the
         StampBackground class
-        """
+        '''
         if bg_obj is not None:
             self.sky_level = bg_obj.sky_level
             self.sky_std = bg_obj.sky_std
@@ -75,8 +74,13 @@ class StarMaker():
 
 
     def _get_star_vignets(self):
+        '''
+        Make star stamps from SExtractor catalog vignets
+        '''
 
-        n = int(np.floor(0.5*(np.shape(self.cat_stars['VIGNET'])[1]-self.vsize)))
+        n = np.floor(0.5*(np.shape(self.cat_stars['VIGNET'])[1]-self.vignet_size))
+        n = int(n)
+
         for i in range(len(self.cat_stars)):
             this_vign = self.cat_stars[i]['VIGNET']
             x_pos = self.cat_stars[i]['X_IMAGE']; y_pos = self.cat_stars[i]['Y_IMAGE']
@@ -111,22 +115,12 @@ class StarMaker():
                 self.hsm_sig.append(-9999)
                 self.hsm_g1.append(-9999)
                 self.hsm_g2.append(-9999)
-
-            try:
                 self.fwhm.append(gs_star.calculateFWHM())
-            except:
-                print("FWHM fit for stamp #%d failed, skipping" % i)
-                self.fwhm.append(-9999)
 
         self.hsm_sig = np.array(self.hsm_sig)
         self.hsm_g1  = np.array(self.hsm_g1)
         self.hsm_g2  = np.array(self.hsm_g2)
         self.fwhm    = np.array(self.fwhm)
-
-        return
-
-    def _write_to_file(self,outname='star_hsm_fits.ldac',vb=False):
-        pass
 
         return
 
@@ -145,15 +139,11 @@ class StarMaker():
         # Create GS Object & record fit
         self._do_hsm_fits()
 
-        # Write to file (currently empty method)
-        # outname = 'star_hsm_fits.ldac'
-        # self._write_to_file(outname,vb=vb)
-
         return
 
 
 class BaseHSMFitter:
-    """
+    '''
     For a specific image cutout (either np.array or GSObject),
     create a galsim.Image() object with it and perform HSM fits
 
@@ -167,13 +157,9 @@ class BaseHSMFitter:
            g1 : HSM g1
            g2 : HSM g2
 
-    """
+    '''
 
     def __init__(self,stamp=None,wcs=None,pix_scl=None):
-
-        import galsim
-        import numpy as np
-
         self.hsm_sigma = 0.0
         self.hsm_g1 = 0.0
         self.hsm_g2 = 0.0
@@ -189,8 +175,7 @@ class BaseHSMFitter:
 
 
 class StampBackground():
-
-    """
+    '''
     Determining and storing star cutout backgrounds for shape fitting purposes
     Maybe not efficient, but run the first time on stars. If not needed, don't
 
@@ -199,7 +184,7 @@ class StampBackground():
     : cat       : filepath, astropy.Table() instance or list of arrays
     : vclip     : side of sub-stamp to sample from later stamp in self.cat
 
-    """
+    '''
 
     def __init__(self,cat=None,sky_level=None,sky_std=None):
 
@@ -222,20 +207,19 @@ class StampBackground():
         return
 
 
-    def calc_star_bkg(self,vb=False,min_snr=10):
-
-        """
+    def calc_star_bkg(self, vb=False):
+        '''
         Reading in file if needed, compute sky background of either
         SEXtractor VIGNETS or just arrays
 
-
         Is there better way to write this than a series of if statements?
-        Logger would be better than print statements
-        """
+        '''
 
         if self.cat is None:
-            print("Catalog can't be 'None' if calculating sky background!\nPlease supply `cat` parameter")
+            print("Catalog can't be 'None' if calculating sky background!")
+            print("Please supply `cat` parameter")
             sys.exit()
+
         if type(self.cat) == 'str':
             obj_cat = Table.read(self.cat)
             cutouts = obj_cat['VIGNET']
@@ -250,16 +234,19 @@ class StampBackground():
         self.sky_level, self.sky_std = self._calc_stamp_bkg(cutouts)
 
         if vb==True:
-            print('star bkg = %.3f +/- %.3f' % (self.sky_level,self.sky_std))
+            print('star bkg = %.3f +/- %.3f' % (self.sky_level, self.sky_std))
         return self.sky_level, self.sky_std
 
 
     def _calc_stamp_bkg(self,cutouts):
+        '''
+        Input:
+            cutouts : a list of np.ndarrays representing star images
+        Output:
+            sky_level : the median sky level in the star cutouts
+            sky_std : standard deviation of sky level in star cutouts
 
-        """
-        :Objects: a list of np.ndarrays
-
-        """
+        '''
 
         j = self.vclip
 
@@ -271,4 +258,4 @@ class StampBackground():
         sky_level = np.nanmedian(self.substamps)
         sky_std = np.nanstd(self.substamps)
 
-        return sky_level,sky_std
+        return sky_level, sky_std
