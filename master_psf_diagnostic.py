@@ -132,7 +132,7 @@ def main(args):
     make_output_table(makers, prefix, outfile=outfile)
 
     # Plot ratios of rho statistics for each type of PSF model fit
-    make_rho_ratios(file_path=outdir)
+    make_rho_ratios(pixel_scale=pix_scale, file_path=outdir)
 
     return 0
 

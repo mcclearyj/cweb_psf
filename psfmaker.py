@@ -58,6 +58,26 @@ def make_quiverplot(psf=None, stars=None, outname='quiverplot.png'):
     Filter out failed fits first!
     '''
 
+    plt.rcParams.update({'figure.facecolor':'w'})
+
+    rcParams['axes.linewidth'] = 1.3
+    rcParams['xtick.labelsize'] = 16
+    rcParams['ytick.labelsize'] = 16
+    rcParams['xtick.major.size'] = 8
+    rcParams['xtick.major.width'] = 1.3
+    rcParams['xtick.minor.visible'] = True
+    rcParams['xtick.minor.width'] = 1.
+    rcParams['xtick.minor.size'] = 6
+    rcParams['xtick.direction'] = 'out'
+    rcParams['ytick.major.width'] = 1.3
+    rcParams['ytick.major.size'] = 8
+    rcParams['ytick.minor.visible'] = True
+    rcParams['ytick.minor.width'] = 1.
+    rcParams['ytick.minor.size'] = 6
+    rcParams['ytick.direction'] = 'out'
+    fontsize = 16
+
+
     fscl = 2.355*psf.pixel_scale # convert sigma in pixels --> FWHM in arcsec
 
     if (psf==None) or (stars==None):
@@ -101,7 +121,7 @@ def make_quiverplot(psf=None, stars=None, outname='quiverplot.png'):
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(q_star, cax=cax)
     ax1.set_title('avg star HSM ellip = %.5f fwhm = %.3f' %
-                    (mean_star_g, mean_star_sig), fontsize=10)
+                    (mean_star_g, mean_star_sig), fontsize=14)
 
     q_res = ax2.quiver(y, x, psf_g1,
                     psf_g2, psf_sig, cmap='cool',
@@ -112,7 +132,7 @@ def make_quiverplot(psf=None, stars=None, outname='quiverplot.png'):
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(q_res, cax=cax)
     ax2.set_title('avg psf ellip = %.5f fwhm = %.3f' %
-                    (mean_psf_g,mean_psf_sig), fontsize=10)
+                    (mean_psf_g,mean_psf_sig), fontsize=14)
 
     q_diff = ax3.quiver(y, x, gdiff1, gdiff2,
                     sig_diff, units='xy', angles='uv',
@@ -123,7 +143,7 @@ def make_quiverplot(psf=None, stars=None, outname='quiverplot.png'):
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(q_diff, cax=cax)
     ax3.set_title('avg psf g_hsm resid = %.5f avg psf sig_hsm diff = %.3f' %
-                    (np.median(gdiff), np.median(sig_diff)), fontsize=10)
+                    (np.median(gdiff), np.median(sig_diff)), fontsize=14)
 
     plt.savefig(outname)
 
@@ -159,7 +179,7 @@ def make_resid_plot(psf, stars, outname='star_psf_resid.png', vb=False):
     f1 = axs[0].imshow(avg_stars, norm=colors.TwoSlopeNorm(0),
                         cmap=plt.cm.seismic_r)
     axs[0].set_title('avg star HSM sigma = %.5f\ngs.calculateFWHM() = %.5f'
-                        % (star_sigma,star_fwhm))
+                        % (star_sigma,star_fwhm), fontsize=14)
     axs[0].axvline((avg_stars.shape[0]-1)*0.5,color='black')
     axs[0].axhline((avg_stars.shape[1]-1)*0.5,color='black')
     divider = make_axes_locatable(axs[0])
@@ -169,7 +189,7 @@ def make_resid_plot(psf, stars, outname='star_psf_resid.png', vb=False):
     f2 = axs[1].imshow(avg_psfim,norm=colors.TwoSlopeNorm(0),
                         cmap=plt.cm.seismic_r)
     axs[1].set_title('avg PSF HSM sigma = %.5f\ngs.calculateFWHM() = %.5f'
-                        % (psf_sigma,psf_fwhm))
+                        % (psf_sigma,psf_fwhm), fontsize=14)
     axs[1].axvline((avg_stars.shape[0]-1)*0.5,color='black')
     axs[1].axhline((avg_stars.shape[1]-1)*0.5,color='black')
 
@@ -178,9 +198,9 @@ def make_resid_plot(psf, stars, outname='star_psf_resid.png', vb=False):
     plt.colorbar(f2, cax=cax)
 
     f3 = axs[2].imshow(avg_resid,norm=colors.TwoSlopeNorm(0), cmap=plt.cm.seismic_r)
-    axs[2].set_title('avg star resid sum=%.4f\nmean=%.4e std=%.4e' %
+    axs[2].set_title('sum(mean resid)= %.3f\nmean=%.3e std=%.3e' %
                         (np.nansum(avg_resid), np.nanmean(avg_resid),
-                            np.nanstd(avg_resid)), fontsize=12)
+                            np.nanstd(avg_resid)), fontsize=14)
     axs[2].axvline((avg_stars.shape[0]-1)*0.5,color='black')
     axs[2].axhline((avg_stars.shape[1]-1)*0.5,color='black')
     divider = make_axes_locatable(axs[2])
@@ -522,11 +542,11 @@ class PSFMaker:
         sig = np.sqrt(rho1.varxip)
 
         lab1 = r'$\rho_1(\theta)$'
-        lp1 = axes[0].plot(r, xip, color='tab:blue',marker='.',ls='-',lw=1,label=lab1)
-        axes[0].plot(r, -xip, color='tab:blue', marker='.',ls=':',lw=1)
-        axes[0].errorbar(r[xip>0], xip[xip>0], yerr=sig[xip>0], color='tab:blue', lw=0.3, ls='')
-        axes[0].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], color='tab:blue', lw=0.3, ls='')
-        axes[0].errorbar(-r, xip, yerr=sig, color='tab:blue')
+        lp1 = axes[0].plot(r, xip, color='tab:blue',marker='o',ls='-',label=lab1)
+        axes[0].plot(r, -xip, color='tab:blue', marker='o',ls=':')
+        axes[0].errorbar(r[xip>0], xip[xip>0], yerr=sig[xip>0], color='tab:blue', ls='', capsize=5)
+        axes[0].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], color='tab:blue', ls='', capsize=5)
+        axes[0].errorbar(-r, xip, yerr=sig, color='tab:blue', capsize=5)
 
         #axes[0].set_xlabel(r'$\theta$ (arcmin)', fontsize=fontsize)
         axes[0].set_ylabel(r'$\xi_+(\theta)$', fontsize=fontsize)
@@ -541,11 +561,11 @@ class PSFMaker:
         sig = np.sqrt(rho3.varxip)
 
         lab3 = r'$\rho_3(\theta)$'
-        lp3 = axes[0].plot(r, xip, color='tab:orange',marker='.',ls='-',lw=1,label=lab3)
-        axes[0].plot(r, -xip, color='tab:orange', marker='.',ls=':',lw=1)
-        axes[0].errorbar(r[xip>0], xip[xip>0], yerr=sig[xip>0], color='tab:orange', lw=0.3, ls='')
-        axes[0].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], color='tab:orange', lw=0.3, ls='')
-        axes[0].errorbar(-r, xip, yerr=sig, color='tab:orange')
+        lp3 = axes[0].plot(r, xip, color='tab:orange',marker='o',ls='-',label=lab3)
+        axes[0].plot(r, -xip, color='tab:orange', marker='o',ls=':')
+        axes[0].errorbar(r[xip>0], xip[xip>0], yerr=sig[xip>0], color='tab:orange', ls='', capsize=5)
+        axes[0].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], color='tab:orange', ls='', capsize=5)
+        axes[0].errorbar(-r, xip, yerr=sig, color='tab:orange', capsize=5)
 
         ##
         ## rho4 correlation: dg x dg
@@ -555,11 +575,11 @@ class PSFMaker:
         sig = np.sqrt(rho4.varxip)
 
         lab4 = r'$\rho_4(\theta)$'
-        lp4 = axes[0].plot(r, xip, color='tab:green',marker='.',ls='-',lw=1,label=lab4)
-        axes[0].plot(r, -xip, color='tab:green', marker='.',ls=':',lw=1)
-        axes[0].errorbar(r[xip>0], xip[xip>0], yerr=sig[xip>0], color='tab:green', lw=0.3, ls='')
-        axes[0].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], color='tab:green', lw=0.3, ls='')
-        axes[0].errorbar(-r, xip, yerr=sig, color='tab:green')
+        lp4 = axes[0].plot(r, xip, color='tab:green',marker='o',ls='-',label=lab4)
+        axes[0].plot(r, -xip, color='tab:green', marker='o',ls=':')
+        axes[0].errorbar(r[xip>0], xip[xip>0], yerr=sig[xip>0], color='tab:green', ls='', capsize=5)
+        axes[0].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], color='tab:green', ls='', capsize=5)
+        axes[0].errorbar(-r, xip, yerr=sig, color='tab:green', capsize=5)
 
         axes[0].legend([lp1, lp3, lp4], fontsize=14)
         axes[0].legend(fontsize=14)
@@ -571,11 +591,11 @@ class PSFMaker:
         xip = np.abs(rho2.xip)
         sig = np.sqrt(rho2.varxip)
 
-        lp2 = axes[1].plot(r, xip, color='magenta',marker='.',ls='-',lw=1,label=r'$\rho_2(\theta)$')
-        axes[1].plot(r, -xip, color='magenta', marker='.',ls=':',lw=1)
-        axes[1].errorbar(r[xip>0], xip[xip>0], yerr=sig[xip>0], color='magenta', lw=0.3, ls='')
-        axes[1].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], color='magenta', lw=0.3, ls='')
-        axes[1].errorbar(-r, xip, yerr=sig, color='magenta')
+        lp2 = axes[1].plot(r, xip, color='magenta',marker='o', ls='-', label=r'$\rho_2(\theta)$')
+        axes[1].plot(r, -xip, color='magenta', marker='o', ls=':')
+        axes[1].errorbar(r[xip>0], xip[xip>0], yerr=sig[xip>0], color='magenta', ls='', capsize=5)
+        axes[1].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], color='magenta', ls='', capsize=5)
+        axes[1].errorbar(-r, xip, yerr=sig, color='magenta', capsize=5)
 
         axes[1].set_xlabel(r'$\theta$ (arcmin)', fontsize=fontsize)
         axes[1].set_ylabel(r'$\xi_+(\theta)$', fontsize=fontsize)
@@ -589,11 +609,11 @@ class PSFMaker:
         xip = rho5.xip
         sig = np.sqrt(rho5.varxip)
 
-        lp5 = axes[1].plot(r, xip, color='darkblue',marker='.',ls='-',lw=1.,label=r'$\rho_5(\theta)$')
-        axes[1].plot(r, -xip, color='darkblue', marker='.',ls=':',lw=1.)
-        axes[1].errorbar(r[xip>0], xip[xip>0], yerr=sig[xip>0], color='darkblue', lw=0.3, ls='')
-        axes[1].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], color='darkblue', lw=0.3, ls='')
-        axes[1].errorbar(-r, xip, yerr=sig, color='darkblue')
+        lp5 = axes[1].plot(r, xip, color='darkblue',marker='o', ls='-', label=r'$\rho_5(\theta)$')
+        axes[1].plot(r, -xip, color='darkblue', marker='o', ls=':',)
+        axes[1].errorbar(r[xip>0], xip[xip>0], yerr=sig[xip>0], color='darkblue', ls='', capsize=5)
+        axes[1].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], color='darkblue', ls='', capsize=5)
+        axes[1].errorbar(-r, xip, yerr=sig, color='darkblue', capsize=5)
 
         axes[1].legend([lp2,lp5], fontsize=14)
         #axes[1].set_ylim([2e-7,5e-3])
@@ -661,26 +681,37 @@ class PSFMaker:
         print("finished running PSFMaker()")
         return
 
-def make_rho_ratios(file_path='./',rho_files=None):
+def make_rho_ratios(pixel_scale=0.03, file_path='./', rho_files=None):
     '''
     Make rho ratio plots for different PSF types.
     Note that the master_psf_diagnostics.py file nomenclature is assumed:
     [psf_type]_rho_[1-5].txt with psf_type={'epsfex', 'gpsfex', 'piff'}
     '''
+    plt.rcParams.update({'figure.facecolor':'w'})
+
+    rcParams['axes.linewidth'] = 1.3
+    rcParams['xtick.labelsize'] = 16
+    rcParams['ytick.labelsize'] = 16
+    rcParams['xtick.major.size'] = 8
+    rcParams['xtick.major.width'] = 1.3
+    rcParams['xtick.minor.visible'] = True
+    rcParams['xtick.minor.width'] = 1.
+    rcParams['xtick.minor.size'] = 6
+    rcParams['xtick.direction'] = 'out'
+    rcParams['ytick.major.width'] = 1.3
+    rcParams['ytick.major.size'] = 8
+    rcParams['ytick.minor.visible'] = True
+    rcParams['ytick.minor.width'] = 1.
+    rcParams['ytick.minor.size'] = 6
+    rcParams['ytick.direction'] = 'out'
+    fontsize = 16
 
     for i in range(1,6):
-        '''
-        if rho_files is not None:
-            rho_files = list(rho_files)
-        else:
 
-            "lmao there has to be a better way to do this"
-            file_root = ''.join(['*_rho_',str(i),'.txt'])
-            rho_files = glob.glob(file_root)
+        #if rho_files is not None:
+        #    rho_files = list(rho_files)
+        #else:
 
-        for rho in rho_files:
-        This should be some sort of os.path.exists thing
-        '''
         try:
             pexn=os.path.join(file_path,''.join(['epsfex_rho_',str(i),'.txt']))
             pex=Table.read(pexn,format='ascii',header_start=1)
@@ -702,48 +733,57 @@ def make_rho_ratios(file_path='./',rho_files=None):
         fig,ax=plt.subplots(nrows=1,ncols=1,figsize=[12,6])
         ax.set_xscale('log')
         ax.set_yscale('log', nonpositive='clip')
-        ax.set_ylabel(r'$\rho_{}(\theta)$'.format(i))
-        plt.xlabel(r'$\theta$ (arcsec)')
+        ax.set_ylabel(r'$\rho_{}(\theta)$'.format(i), fontsize=fontsize)
+        plt.xlabel(r'$\theta$ (arcsec)', fontsize=fontsize)
 
         if pex is not None:
 
-            r = pex['meanr'] * .144 / 60 # from pixels --> arcminutes
+            r = pex['meanr'] * pixel_scale / 60 # from pixels --> arcminutes
             pex_xip = np.abs(pex['xip'])
             pex_sig = pex['sigma_xip']
 
-            plt.plot(r, pex_xip, color='blue',marker='.',ls='-',label=r'pex')
-            plt.plot(r, -pex_xip, color='blue',  marker='.',ls=':',lw=1)
-            plt.errorbar(r[pex_xip>0], pex_xip[pex_xip>0], yerr=pex_sig[pex_xip>0], color='blue', lw=0.3, ls='')
-            plt.errorbar(r[pex_xip<0], -pex_xip[pex_xip<0], yerr=pex_sig[pex_xip<0], color='blue', lw=0.3, ls='')
-            lp = plt.errorbar(-r, pex_xip, yerr=pex_sig, color='blue')
+            plt.plot(r, pex_xip, color='blue',marker='o',ls='-', label=r'pex')
+            plt.plot(r, -pex_xip, color='blue',  marker='o',ls=':')
+            plt.errorbar(r[pex_xip>0], pex_xip[pex_xip>0],
+                            yerr=pex_sig[pex_xip>0], capsize=5, color='blue', ls='')
+            plt.errorbar(r[pex_xip<0], -pex_xip[pex_xip<0],
+                            yerr=pex_sig[pex_xip<0], capsize=5, color='blue', ls='')
+            lp = plt.errorbar(-r, pex_xip, yerr=pex_sig,
+                                capsize=5, color='blue')
 
         if gpsf is not None:
 
             ### GPSF, rho3
-            r = gpsf['meanr'] * .144 / 60 # from pixels --> arcminutes
+            r = gpsf['meanr'] * pixel_scale / 60 # from pixels --> arcminutes
             gpsf_xip = np.abs(gpsf['xip'])
             gpsf_sig = gpsf['sigma_xip']
 
-            plt.plot(r, gpsf_xip, color='rebeccapurple',marker='.',ls='-',label=r'gpsf')
-            plt.plot(r, -gpsf_xip, color='rebeccapurple',  marker='.',ls=':',lw=1)
-            plt.errorbar(r[gpsf_xip>0], gpsf_xip[gpsf_xip>0], yerr=gpsf_sig[gpsf_xip>0], color='rebeccapurple', lw=0.3, ls='')
-            plt.errorbar(r[gpsf_xip<0], -gpsf_xip[gpsf_xip<0], yerr=gpsf_sig[gpsf_xip<0], color='rebeccapurple', lw=0.3, ls='')
-            lp2 = plt.errorbar(-r, gpsf_xip, yerr=gpsf_sig, color='rebeccapurple')
+            plt.plot(r, gpsf_xip, color='rebeccapurple',marker='o',ls='-',label=r'gpsf')
+            plt.plot(r, -gpsf_xip, color='rebeccapurple',  marker='o',ls=':')
+            plt.errorbar(r[gpsf_xip>0], gpsf_xip[gpsf_xip>0], yerr=gpsf_sig[gpsf_xip>0],
+                            capsize=5, color='rebeccapurple', ls='')
+            plt.errorbar(r[gpsf_xip<0], -gpsf_xip[gpsf_xip<0], yerr=gpsf_sig[gpsf_xip<0],
+                            capsize=5, color='rebeccapurple', ls='')
+            lp2 = plt.errorbar(-r, gpsf_xip, yerr=gpsf_sig,
+                                capsize=5, color='rebeccapurple')
 
         if piff is not None:
             ### PIFF
 
-            r = piff['meanr'] * .144 / 60 # from pixels --> arcminutes
+            r = piff['meanr'] * pixel_scale / 60 # from pixels --> arcminutes
             piff_xip = np.abs(piff['xip'])
             piff_sig = piff['sigma_xip']
 
-            plt.plot(r, piff_xip, color='salmon',marker='.',ls='-',label=r'piff')
-            plt.plot(r, -piff_xip, color='salmon',  marker='.',ls=':',lw=1)
-            plt.errorbar(r[piff_xip>0], piff_xip[piff_xip>0], yerr=piff_sig[piff_xip>0], color='salmon', lw=0.3, ls='')
-            plt.errorbar(r[piff_xip<0], -piff_xip[piff_xip<0], yerr=piff_sig[piff_xip<0], color='salmon', lw=0.3, ls='')
-            lp3 = plt.errorbar(-r, piff_xip, yerr=piff_sig, color='salmon')
+            plt.plot(r, piff_xip, color='salmon',marker='o',ls='-',label=r'piff')
+            plt.plot(r, -piff_xip, color='salmon',  marker='o',ls=':')
+            plt.errorbar(r[piff_xip>0], piff_xip[piff_xip>0],
+                            yerr=piff_sig[piff_xip>0], capsize=5, color='salmon', ls='')
+            plt.errorbar(r[piff_xip<0], -piff_xip[piff_xip<0],
+                            yerr=piff_sig[piff_xip<0], capsize=5, color='salmon', ls='')
+            lp3 = plt.errorbar(-r, piff_xip, yerr=piff_sig,
+                                capsize=5, color='salmon')
 
-        plt.legend()
+        plt.legend(fontsize = (fontsize-2))
         plt.savefig(savename)
         plt.close(fig)
 
