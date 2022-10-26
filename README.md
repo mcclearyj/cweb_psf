@@ -25,7 +25,7 @@ numpy, re, os, astropy, matplotlib, pdb, glob, argparse
 ### master_psf_diagnostic.py ###
 
 Makes number of diagnostic figures and tables for input PSFEx and/or PIFF PSF models.
-Calls `psfmaker.py` and `starmaker.py`.
+Imports classes from `psfmaker.py` and `starmaker.py` in `diagnostics`
 
 Options include:
 - Test a PSFEx model using esheldon `psfex` package: [`--epsfex`]

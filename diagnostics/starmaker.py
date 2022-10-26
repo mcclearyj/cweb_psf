@@ -9,6 +9,8 @@ import sys
 from astropy.table import Table
 import pdb
 
+from diagnostics.hsm_fitter import do_hsm_fit
+
 class StarMaker():
     '''
     Class to store catalog stars and fit information.
@@ -31,7 +33,7 @@ class StarMaker():
 
         self.x = []
         self.y = []
-        self.star_stamps = []
+        self.stamps = []
         self.star_flux = []
 
         self.hsm_sig = []
@@ -92,35 +94,10 @@ class StarMaker():
 
             self.x.append(x_pos); self.y.append(y_pos)
             self.star_flux.append(star_flux)
-            self.star_stamps.append(vign_cutout)
+            self.stamps.append(vign_cutout)
 
         self.x=np.array(self.x)
         self.y=np.array(self.y)
-
-        return
-
-
-    def _do_hsm_fits(self):
-
-        for i,stamp in enumerate(self.star_stamps):
-            try:
-                gs_star = galsim.Image(stamp, wcs=galsim.PixelScale(self.pixel_scale))
-                star_fit=gs_star.FindAdaptiveMom()
-                self.hsm_sig.append(star_fit.moments_sigma)
-                self.hsm_g1.append(star_fit.observed_shape.g1)
-                self.hsm_g2.append(star_fit.observed_shape.g2)
-                self.fwhm.append(gs_star.calculateFWHM())
-            except:
-                print("HSM fit for stamp #%d failed, skipping" % i)
-                self.hsm_sig.append(-9999)
-                self.hsm_g1.append(-9999)
-                self.hsm_g2.append(-9999)
-                self.fwhm.append(gs_star.calculateFWHM())
-
-        self.hsm_sig = np.array(self.hsm_sig)
-        self.hsm_g1  = np.array(self.hsm_g1)
-        self.hsm_g2  = np.array(self.hsm_g2)
-        self.fwhm    = np.array(self.fwhm)
 
         return
 
@@ -137,41 +114,9 @@ class StarMaker():
         self._get_star_vignets()
 
         # Create GS Object & record fit
-        self._do_hsm_fits()
+        do_hsm_fit(self)
 
         return
-
-
-class BaseHSMFitter:
-    '''
-    For a specific image cutout (either np.array or GSObject),
-    create a galsim.Image() object with it and perform HSM fits
-
-    Parameters:
-        stamp : object for which to perform HSM fits
-          wcs : optional galsim WCS instance
-       pix_scl : optional pixel scale
-
-    Attributes:
-        sigma : HSM sigma
-           g1 : HSM g1
-           g2 : HSM g2
-
-    '''
-
-    def __init__(self,stamp=None,wcs=None,pix_scl=None):
-        self.hsm_sigma = 0.0
-        self.hsm_g1 = 0.0
-        self.hsm_g2 = 0.0
-        self.wcs = 0
-
-        if stamp is not None:
-            if type(stamp) is np.ndarray:
-                self.stamp = stamp
-            elif type(stamp) is galsim.image.Image:
-                self.stamp = stamp.array
-        else:
-            stamp = None
 
 
 class StampBackground():

@@ -10,8 +10,8 @@ from astropy.table import Table
 import pdb
 from argparse import ArgumentParser
 
-from starmaker import StarMaker, StampBackground
-from psfmaker import PSFMaker, make_output_table, make_rho_ratios
+from diagnostics.starmaker import StarMaker, StampBackground
+from diagnostics.psfmaker import PSFMaker, make_output_table, make_rho_ratios
 
 def parse_args():
 
@@ -67,7 +67,7 @@ def main(args):
 
     #
     if outdir is None:
-        outdir = './master_psf_diagnostics'
+        outdir = './psf_diagnostics_plots'
 
     if not os.path.isdir(outdir):
         cmd = 'mkdir -p %s' % outdir
