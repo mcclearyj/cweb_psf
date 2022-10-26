@@ -3,7 +3,7 @@
 PSF characterization code repository for COSMOS-Web lensing working group.
 
 `environment.yml` is @mcclearyj's Conda environment for this project; it may
-serve as an example for other users.
+serve as an example for other users -- TO BE UPDATED
 
 ### get_jwst_psf.py ###
 
