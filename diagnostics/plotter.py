@@ -10,6 +10,7 @@ rc('text', usetex=True)
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import colors
 import matplotlib.pyplot as plt
+import os, re
 
 
 def set_rc_params():
@@ -35,6 +36,49 @@ def set_rc_params():
     plt.rcParams.update({'ytick.direction':'out'})
 
     return
+
+def size_mag_plot(im_cat, star_cat, outdir, filter_name):
+    '''
+    Save to file a size-magnitude plot with the stellar locus highlighted
+    Inputs:
+        im_cat: exposure catalog, either file name or Table() object
+        star_cat : star catalog passed to PIFF, either file name or Table() object
+        outdir : directory in which to save plot_file_name
+        plot_file_name : plot file name
+    '''
+
+    set_rc_params()
+
+    plot_file_name = os.path.join(outdir, f'{filter_name}_sizemag.png')
+
+    if type(im_cat) == str:
+        image_catalog = Table.read(im_cat)
+    else:
+        image_catalog = im_cat
+
+    if type(im_cat) == str:
+        star_catalog = Table.read(star_cat)
+    else:
+        star_catalog = star_cat
+
+    fig, ax = plt.subplots(1,1, tight_layout=True, figsize=(10,8))
+
+    ax.plot(image_catalog['MAG_AUTO'], image_catalog['FWHM_WORLD']*3600, '.', \
+            label='all objects',markersize=2)
+    ax.plot(star_catalog['MAG_AUTO'], star_catalog['FWHM_WORLD']*3600, '*', \
+            label='selected stars',markersize=2)
+
+    ax.set_xlabel('MAG_AUTO (zpt=30.0)', fontsize=14)
+    ax.set_ylabel('FWHM_WORLD (arcsec)', fontsize=14)
+    ax.set_ylim(-0.05, 0.8)
+    ax.set_xlim(16,35)
+
+    ax.set_title(f'{str(filter_name)} SExtractor catalog', fontsize=14)
+    ax.legend(markerscale=5, fontsize=14)
+    fig.savefig(plot_file_name)
+
+    return
+
 
 def make_resid_plot(psf, stars, outname='star_psf_resid.png', vb=False):
     '''
