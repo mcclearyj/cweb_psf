@@ -12,7 +12,10 @@ import matplotlib.pyplot as plt
 import pdb
 from astropy.table import Table, vstack, hstack
 import glob
+from esutil import htm
 from argparse import ArgumentParser
+
+from diagnostics.plotter import size_mag_plot
 
 def parse_args():
 
@@ -24,10 +27,12 @@ def parse_args():
                         help = 'Where to save files')
     parser.add_argument('-configdir', default=None,
                         help = 'Location of SEx/PIFF config files')
-    parser.add_argument('-star_fwhm_tab', default=None,
-                        help = 'Lookup table with stellar FWHMs for each filter')
+    parser.add_argument('-truthstars', default=None,
+                        help = 'Star catalog to use for PSF fits')
     parser.add_argument('--overwrite', action='store_true', default=False,
                         help = 'Overwrite sci/weight files')
+    parser.add_argument('--vb', action='store_true', default=True,
+                        help = 'Print detailed messages [does nothing for now]')
 
     return parser.parse_args()
 
@@ -126,47 +131,72 @@ def run_sextractor(image_file, weight_file,
 
     return
 
-def get_starcat(image_file, outdir, star_fwhms=None, thresh=0.92):
+def get_starcat(image_file, outdir,
+                truthstars=None, star_fwhms=None, thresh=0.92):
     '''
     Create a star catalog from the SExtractor image catalog using cuts on
     the SExtractor CLASS_STAR parameter and the supplied table of star properties.
+    Alternatively, can match against a reference star catalog (truthstars).
+    Also plot size-magnitude diagram for image and star catalogs.
 
     Inputs:
         image_file : image file
-        out_dir : where to save star catalog
+        out_dir : where to save star catalog (also assumed to be location of image catalog)
+        truthstars : reference star catalog
+        star_fwhms : table with stellar locus parameters
         thresh : CLASS_STAR threshold for accepting as star
 
     Outputs:
         star_cat_file: name of the star catalog (saved to file)
     '''
 
-    cat_name = image_file.replace('sci.fits','cat.fits')
-    star_cat_name = image_file.replace('sci.fits','starcat.fits')
-    cat_file = os.path.join(outdir, cat_name)
-    star_cat_file = os.path.join(outdir, star_cat_name)
+    # Make sure that one of either truthstars or star_fwhms is supplied
+    if (truthstars is None) and (star_fwhms is None):
+        print('Reference star catalog and star param table both NoneType, exiting')
 
-    if star_fwhms is not None:
+    imcat_name = image_file.replace('sci.fits','cat.fits')
+    star_cat_name = image_file.replace('sci.fits','starcat.fits')
+    imcat_file = os.path.join(outdir, imcat_name)
+    star_cat_file = os.path.join(outdir, star_cat_name)
+    filter_name = re.search(r"f(\d){3}w", imcat_name).group()
+
+    if not os.path.exists(imcat_file):
+        print(f'could not find image im_cat file {cat_file}')
+
+    else:
+        im_cat = Table.read(imcat_file)
+
+    if truthstars is not None:
+        truth_star_tab = Table.read(truthstars, format='ascii')
+        truthmatch = htm.Matcher(16, ra=truth_star_tab['x_or_RA'],
+                                    dec=truth_star_tab['y_or_Dec'])
+
+        cat_ind, truth_ind, dist = truthmatch.match(
+                                    ra=im_cat['ALPHAWIN_J2000'],
+                                    dec=im_cat['DELTAWIN_J2000'],
+                                    maxmatch=1, radius = 0.5/3600)
+        star_cat = im_cat[cat_ind]
+
+    else:
         filter_name = re.search(r"f(\d){3}w", image_file).group()
         wg = np.isin(star_fwhms['filter_name'], filter_name)
         min_fwhm_im = star_fwhms[wg]['min_fwhm_im']
         min_fwhm_im = np.float64(min_fwhm_im)
         max_fwhm_im = star_fwhms[wg]['max_fwhm_im']
         max_fwhm_im = np.float64(max_fwhm_im)
-    else:
-        max_fwhm_im = -9999.
-        max_fwhm_im = 9999.
 
-    if os.path.exists(cat_file):
-        catalog = Table.read(cat_file)
-        star_selec = (catalog['CLASS_STAR'] >= thresh) \
-                        & (catalog['MAG_AUTO'] < 35) \
-                        & (catalog['FWHM_IMAGE'] > min_fwhm_im) \
-                        & (catalog['FWHM_IMAGE'] < max_fwhm_im)
-        catalog[star_selec].write(star_cat_file, format='fits', overwrite=True)
+        star_selec = (im_cat['CLASS_STAR'] >= thresh) \
+                        & (im_cat['MAG_AUTO'] < 35) \
+                        & (im_cat['FWHM_IMAGE'] > min_fwhm_im) \
+                        & (im_cat['FWHM_IMAGE'] < max_fwhm_im)
 
-    else:
-        print(f'could not find image catalog file {cat_file}')
-        pdb.set_trace()
+        star_cat = im_cat[star_selec]
+
+    # Save star catalog to file
+    star_cat.write(star_cat_file, format='fits', overwrite=True)
+
+    # Make size-mag plot
+    size_mag_plot(im_cat, star_cat, outdir, filter_name)
 
     return star_cat_file
 
@@ -207,7 +237,9 @@ def main(args):
     basedir = args.basedir
     outdir = args.outdir
     configdir = args.configdir
+    truthstars = args.truthstars
     overwrite = args.overwrite
+    vb = args.vb
 
     # Set default parameter values if none provided
     if basedir is None:
@@ -215,7 +247,7 @@ def main(args):
     if outdir is None:
         outdir = os.path.join(basedir,'working')
     if configdir is None:
-        configdir = '/Users/j.mccleary/Research/jwst_cosmos/astro_config/'
+        configdir = '/Users/j.mccleary/Research/jwst_cosmos/cweb_psf/astro_config/'
 
     # Make output directory
     if not os.path.isdir(outdir):
@@ -229,18 +261,20 @@ def main(args):
     i2d_path = os.path.join(basedir,'*_i2d.fits')
     all_i2ds = glob.glob(i2d_path)
     all_i2ds.sort()
-    print(f'Found {all_i2ds}')
 
-    # Make reference stellar FWHM table
+    # Placeholder: table of stellar locus parameters, though probably
+    # not necessary long-term
+
     star_fwhms = make_fwhm_tab()
 
     # Process exposures
-    for i2d in all_i2ds[1:2]:
+    for i2d in all_i2ds:
         print(f'Working on file {i2d}...\n\n')
         image_file, weight_file = extract_sci_wht(i2d, overwrite=overwrite)
         run_sextractor(image_file, weight_file, configdir, outdir, star_fwhms)
-        starcat_file = get_starcat(image_file, outdir, star_fwhms)
-        plotter(image_file, starcat_file, outdir)
+        starcat_file = get_starcat(image_file, outdir,
+                                    truthstars=truthstars,
+                                    star_fwhms=star_fwhms)
         run_piffy(image_file, starcat_file, configdir=configdir, outdir=outdir)
 
     return 0
