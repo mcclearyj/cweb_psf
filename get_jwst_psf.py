@@ -4,7 +4,6 @@
 ###
 import numpy as np
 import os, re
-from os import path
 from astropy.io import fits
 import pdb
 from astropy.table import Table, vstack, hstack
@@ -18,8 +17,8 @@ def parse_args():
 
     parser = ArgumentParser()
 
-    parser.add_argument('-basedir', default=None,
-                        help = 'Location of simulated images')
+    parser.add_argument('images', nargs='+',
+                        help = 'Images to process (wildcards OK)')
     parser.add_argument('-outdir', default=None,
                         help = 'Where to save files')
     parser.add_argument('-configdir', default=None,
@@ -62,9 +61,9 @@ def extract_sci_wht(i2d, outdir, overwrite=False):
         overwrite : if true, overwrite any SCI/WHT files saved to disk
     '''
 
-    i2d_name = path.basename(i2d)
-    sci_name = path.join(outdir, i2d_name.replace('i2d', 'sci'))
-    weight_name = path.join(outdir, i2d_name.replace('i2d', 'weight'))
+    i2d_name = os.path.basename(i2d)
+    sci_name = os.path.join(outdir, i2d_name.replace('i2d', 'sci'))
+    weight_name = os.path.join(outdir, i2d_name.replace('i2d', 'weight'))
 
     f = fits.open(i2d)
     sci_im = f['SCI']
@@ -94,13 +93,13 @@ def run_sextractor(image_file, weight_file,
         configdir : directory of SEx configuration files
     '''
 
-    cat_name = path.join(
+    cat_name = os.path.join(
                 outdir, image_file.replace('sci.fits','cat.fits')
                 )
-    aperture_name = path.join(
+    aperture_name = os.path.join(
                     outdir, image_file.replace('sci.fits','apertures.fits')
                     )
-    sgm_name = path.join(
+    sgm_name = os.path.join(
                 outdir, image_file.replace('sci.fits','sgm.fits')
                 )
 
@@ -114,10 +113,10 @@ def run_sextractor(image_file, weight_file,
     weight_arg = f'-WEIGHT_IMAGE {weight_file} -WEIGHT_TYPE MAP_WEIGHT'
     name_arg   = f'-CATALOG_NAME {cat_name}'
     check_arg  = f'-CHECKIMAGE_NAME  {aperture_name},{sgm_name}'
-    param_arg  = '-PARAMETERS_NAME ' + path.join(configdir, 'sextractor.param')
-    nnw_arg    = '-STARNNW_NAME ' + path.join(configdir,'default.nnw')
-    filter_arg = '-FILTER_NAME ' +  path.join(configdir,'default.conv')
-    config_arg = '-c ' + path.join(configdir, 'sextractor.mock.config')
+    param_arg  = '-PARAMETERS_NAME ' + os.path.join(configdir, 'sextractor.param')
+    nnw_arg    = '-STARNNW_NAME ' + os.path.join(configdir,'default.nnw')
+    filter_arg = '-FILTER_NAME ' +  os.path.join(configdir,'default.conv')
+    config_arg = '-c ' + os.path.join(configdir, 'sextractor.mock.config')
 
     cmd = ' '.join([
         'sex', image_file, weight_arg, name_arg,  check_arg,\
@@ -154,11 +153,11 @@ def make_starcat(image_file, outdir,
 
     imcat_name = image_file.replace('sci.fits','cat.fits')
     star_cat_name = image_file.replace('sci.fits','starcat.fits')
-    imcat_file = path.join(outdir, imcat_name)
-    star_cat_file = path.join(outdir, star_cat_name)
+    imcat_file = os.path.join(outdir, imcat_name)
+    star_cat_file = os.path.join(outdir, star_cat_name)
     filter_name = re.search(r"f(\d){3}w", imcat_name).group()
 
-    if not path.exists(imcat_file):
+    if not os.path.exists(imcat_file):
         print(f'could not find image im_cat file {cat_file}')
 
     else:
@@ -210,19 +209,20 @@ def run_piffy(im_file, star_cat_file, configdir, outdir):
         outdir : where to save PIFF results
     '''
 
+    # Get the image filename root (no extension or path) to name outputs
+    im_basename = os.path.basename(im_file).split('.')[0]
+    output_name = im_basename + '.piff'
+    piff_outdir = os.path.join(outdir, 'piff-output', im_basename)
+
     # Load PIFF configuration file
-    run_piff_config = path.join(configdir, 'piff.config')
-    outdir = path.join(outdir,'piff-output')
+    run_piff_config = os.path.join(configdir, 'piff.config')
 
     # Now run PIFF on that image and accompanying catalog
     image_arg   = f'input.image_file_name={im_file}'
     psfcat_arg  = f'input.cat_file_name={star_cat_file}'
-    output_name = im_file.split('/')[-1].replace('.fits', '.piff')
-    full_output_name = path.join(outdir, output_name)
-    output_arg  = f'output.file_name={output_name} output.dir={outdir}'
-
+    output_arg  = f'output.file_name={output_name} output.dir={piff_outdir}'
     cmd = ' '.join([
-             'piffify', run_piff_config, image_arg, psfcat_arg, output_arg
+             'piffify', run_piff_config, image_arg, psfcat_arg, output_arg,
              ])
 
     print('piff cmd is ' + cmd)
@@ -232,40 +232,36 @@ def run_piffy(im_file, star_cat_file, configdir, outdir):
 
 def main(args):
 
-    basedir = args.basedir
+    i2d_images = args.images
     outdir = args.outdir
     configdir = args.configdir
     truthstars = args.truthstars
     overwrite = args.overwrite
     vb = args.vb
 
-    # Set default parameter values if none provided
-    if basedir is None:
-        basedir = '/Users/j.mccleary/Research/jwst_cosmos/mock_data/DEC2022/mosaics'
-    if outdir is None:
-        outdir = path.join(basedir,'working')
+    # Set default output directory values if none provided
     if configdir is None:
         configdir = '/Users/j.mccleary/Research/jwst_cosmos/cweb_psf/astro_config/'
 
+    if outdir is None:
+        basedir = os.path.commonpath(images)
+        outdir = os.path.join(basedir,'working')
+
     # Make output directory
-    if not path.isdir(outdir):
+    if not os.path.isdir(outdir):
         cmd = 'mkdir -p {outdir}'.format(outdir=outdir)
         os.system(cmd)
         print('Made output directory {outdir}').format(outdir=outdir)
     else:
         print(f'Output directory {outdir} exists, continuing...')
 
-    # Load in images
-    i2d_path = path.join(basedir,'*_i2d.fits')
-    all_i2ds = glob.glob(i2d_path)
-    all_i2ds.sort()
 
     # Placeholder: table of stellar locus parameters, though probably
     # not necessary long-term
     star_fwhms = make_fwhm_tab()
 
     # Process exposures
-    for i2d in all_i2ds:
+    for i2d in i2d_images:
 
         print(f'Working on file {i2d}...\n\n')
 
