@@ -230,6 +230,37 @@ def run_piffy(im_file, star_cat_file, configdir, outdir):
 
     return
 
+def run_psfex():
+
+    pass
+
+    psfcat_name = im_cat
+
+    # Now run PSFEx on that image and accompanying catalog
+
+    psfex_config_arg = '-c '+config_path+'psfex.mock.config'
+    outcat_name = im_cat.replace('.fits','.psfex.star')
+    cmd = ' '.join(
+            ['psfex', psfcat_name,psfex_config_arg,'-OUTCAT_NAME', outcat_name]
+            )
+    self.logprint("psfex cmd is " + cmd)
+    os.system(cmd)
+
+
+    cleanup_cmd = ' '.join(
+                    ['mv chi* resi* samp* snap* proto* *.xml', psfex_plotdir]
+                    )
+    cleanup_cmd2 = ' '.join(
+                    ['mv count*pdf ellipticity*pdf fwhm*pdf', psfex_plotdir]
+                    )
+    os.system(cleanup_cmd)
+    os.system(cleanup_cmd2)
+# utils.run_command(cmd, logprint=self.logprint)
+
+
+    return
+
+
 def main(args):
 
     i2d_images = args.images
