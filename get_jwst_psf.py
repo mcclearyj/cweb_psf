@@ -10,7 +10,7 @@ from astropy.table import Table, vstack, hstack
 import glob
 from esutil import htm
 from argparse import ArgumentParser
-
+import ipdb
 from diagnostics.plotter import size_mag_plot
 
 def parse_args():
@@ -42,7 +42,7 @@ def make_fwhm_tab():
 
     filter_names = ['f115w','f150w','f277w', 'f444w']
     fwhms = [0.058, 0.0628, 0.146, 0.175]
-    min_fwhm_im = [1.5, 1.6, 1.6, 2.26]
+    min_fwhm_im = [0.9, 1.6, 1.6, 2.26]
     max_fwhm_im = [2.4, 2.8, 2.8, 3.5]
     star_fwhms = Table([filter_names, fwhms, min_fwhm_im, max_fwhm_im],
         names=['filter_name', 'star_fwhm', 'min_fwhm_im', 'max_fwhm_im'])
@@ -93,14 +93,15 @@ def run_sextractor(image_file, weight_file,
         configdir : directory of SEx configuration files
     '''
 
+    img_basename = os.path.basename(image_file)
     cat_name = os.path.join(
-                outdir, image_file.replace('sci.fits','cat.fits')
+                outdir, img_basename.replace('sci.fits','cat.fits')
                 )
     aperture_name = os.path.join(
-                    outdir, image_file.replace('sci.fits','apertures.fits')
+                    outdir, img_basename.replace('sci.fits','apertures.fits')
                     )
     sgm_name = os.path.join(
-                outdir, image_file.replace('sci.fits','sgm.fits')
+                outdir, img_basename.replace('sci.fits','sgm.fits')
                 )
 
     # Assuming that the JWST filter name appears in the image file name
@@ -151,8 +152,10 @@ def make_starcat(image_file, outdir,
     if (truthstars is None) and (star_fwhms is None):
         print('Reference star catalog and star param table both NoneType, exiting')
 
-    imcat_name = image_file.replace('sci.fits','cat.fits')
-    star_cat_name = image_file.replace('sci.fits','starcat.fits')
+    img_basename = os.path.basename(image_file)
+
+    imcat_name = img_basename.replace('sci.fits','cat.fits')
+    star_cat_name = img_basename.replace('sci.fits','starcat.fits')
     imcat_file = os.path.join(outdir, imcat_name)
     star_cat_file = os.path.join(outdir, star_cat_name)
     filter_name = re.search(r"f(\d){3}w", imcat_name).group()
@@ -282,7 +285,7 @@ def main(args):
     if not os.path.isdir(outdir):
         cmd = 'mkdir -p {outdir}'.format(outdir=outdir)
         os.system(cmd)
-        print('Made output directory {outdir}').format(outdir=outdir)
+        print(f'Made output directory {outdir}')
     else:
         print(f'Output directory {outdir} exists, continuing...')
 
@@ -296,8 +299,11 @@ def main(args):
 
         print(f'Working on file {i2d}...\n\n')
 
-        image_file, weight_file = extract_sci_wht(i2d, outdir,
-                                                    overwrite=overwrite)
+        #image_file, weight_file = extract_sci_wht(i2d, outdir,
+        #                                            overwrite=overwrite)
+
+        image_file = i2d
+        weight_file = i2d.replace('sci.fits', 'wht.fits')
 
         run_sextractor(image_file, weight_file,
                                 configdir, outdir, star_fwhms)
