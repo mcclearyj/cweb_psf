@@ -17,9 +17,22 @@ export CONFIGDIR='/your/path/name/cweb_psf/astro_config'
 export DATADIR='/your/path/name/mock_data/DEC2022_v.0.0.1'
 export OUTDIR='/your/path/name/mock_data/DEC2022_v.0.0.1/DEC2022_v.0.0.1/working'
 
-python get_jwst_psf.py -basedir $DATADIR -outdir $OUTDIR -configdir $CONFIGDIR
+get_jwst_psf.py images [images ...] [-outdir OUTDIR] [-configdir CONFIGDIR]
+    [-truthstars TRUTHSTARS] [--overwrite] [--help] [--vb]
+
+positional arguments:
+  images                Images to process (wildcards OK)
+
+options:
+  -h, --help            show this help message and exit
+  -outdir OUTDIR        Where to save files
+  -configdir CONFIGDIR  Location of SEx/PIFF config files
+  -truthstars TRUTHSTARS
+                        Star catalog to use for PSF fits
+  --overwrite           Overwrite sci/weight files
+  --vb                  Print detailed messages [does nothing for now]
 ```
-Dependencies: 
+Dependencies:
 numpy, re, os, astropy, matplotlib, pdb, glob, argparse
 
 ### master_psf_diagnostic.py ###
@@ -35,10 +48,30 @@ Options include:
 Can call `master_psf_diagnostic.py` with
 
 ```
-  master_psf_diagnostic.py [-h] [-min_snr MIN_SNR] [-outdir OUTDIR]
-      [-psfex_name PSFEX_NAME] [-im_name IM_NAME] [-piff_name PIFF_NAME]
-      [--gpsfex] [--epsfex] [--piff]
-      [--noisefree] [--verbose] imdir star_cat
+master_psf_diagnostic.py basedir star_cat [-h] [-min_snr MIN_SNR]
+    [-pix_scale PIX_SCALE] [-outdir OUTDIR] [-psfex_name PSFEX_NAME]
+    [-im_name IM_NAME] [-piff_name PIFF_NAME] [--epsfex]
+    [--gpsfex] [--piff] [--noisefree] [--verbose]
+
+positional arguments:
+  basedir               Directory containing star catalogs & images
+  star_cat              Star catalog to use for PSF diagnostic
+
+options:
+  -h, --help            show this help message and exit
+  -min_snr MIN_SNR      Optional S/N cut for star catalog [default=None]
+  -pix_scale PIX_SCALE  Image/PSF pixel scale [default=0.03]
+  -outdir OUTDIR        Output directory for diagnostics [default=./psf_diagnostics]
+  -psfex_name PSFEX_NAME
+                        PSFEx model filename
+  -im_name IM_NAME      FITS image filename for GalSim PSFEx diagnostic
+  -piff_name PIFF_NAME  PIFF psf model filename
+  --epsfex              Run esheldon psfex diagnostic
+  --gpsfex              Run galsim.des_psfex diagnostic
+  --piff                Run PIFF diagnostic
+  --noisefree           Disable adding noise to PSF stamps
+  --verbose, -v         Verbosity
+
 ```
 Dependencies:
   numpy, re, os, astropy, matplotlib, pdb, argparse, galsim, galsim.des, piff, glob, treecorr, psfex
