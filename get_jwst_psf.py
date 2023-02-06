@@ -41,11 +41,12 @@ def make_fwhm_tab():
     '''
 
     filter_names = ['f115w','f150w','f277w', 'f444w']
-    fwhms = [0.058, 0.0628, 0.146, 0.175]
-    min_fwhm_im = [0.9, 1.6, 1.6, 2.26]
-    max_fwhm_im = [2.4, 2.8, 2.8, 3.5]
-    star_fwhms = Table([filter_names, fwhms, min_fwhm_im, max_fwhm_im],
-        names=['filter_name', 'star_fwhm', 'min_fwhm_im', 'max_fwhm_im'])
+    fwhms = [0.058, 0.0628, 0.125, 0.165]
+    min_fwhm = [0.04, 0.04, 0.10, 0.15]
+    max_fwhm = [0.085, 0.085, 0.14, 0.18]
+
+    star_fwhms = Table([filter_names, fwhms, min_fwhm, max_fwhm],
+        names=['filter_name', 'star_fwhm', 'min_fwhm', 'max_fwhm'])
 
     return star_fwhms
 
@@ -53,7 +54,7 @@ def make_fwhm_tab():
 def extract_sci_wht(i2d, outdir, overwrite=False):
     '''
     Extract and save to file the "SCI" and "WHT" extensions from the input
-    i2d-format imagebecause SExtractor can't SExtract a weight in a MEF, apparently.
+    i2d-format image because SExtractor can't use a weight in a MEF, apparently?
     Return the science image and weight file names to be passed to SExtractor.
 
     Inputs:
@@ -79,6 +80,16 @@ def extract_sci_wht(i2d, outdir, overwrite=False):
 
     return sci_name, weight_name
 
+def crop(image_file, weight_file, wg):
+
+    im = fits.read(image_file)
+    wt = fits.read(weight_file)
+
+    pass
+    #im_trimed = im.data[]
+
+    return image_file, weight_file
+
 
 def run_sextractor(image_file, weight_file,
                     configdir, outdir, star_fwhms):
@@ -86,26 +97,26 @@ def run_sextractor(image_file, weight_file,
     Run Source Extractor, including the appropriate star FWHM for
     preliminary star identification.
 
-    Inputs:
-        star_fwhms : table with appx. size of stars in image
-        image_file : image for SExtractor
-        weight_file : weight file for SExtractor
-        configdir : directory of SEx configuration files
+    Inputs
+        image_file: image for SExtractor
+        weight_file: weight file for SExtractor
+        configdir: directory of SEx configuration files
+        outdir: directory for outputs
+        star_fwhms: table with appx. size of stars in image
     '''
 
     img_basename = os.path.basename(image_file)
     cat_name = os.path.join(
                 outdir, img_basename.replace('sci.fits','cat.fits')
                 )
-    aperture_name = os.path.join(
-                    outdir, img_basename.replace('sci.fits','apertures.fits')
+    bkg_sub  = os.path.join(
+                    outdir, img_basename.replace('sci.fits','sub.fits')
                     )
     sgm_name = os.path.join(
                 outdir, img_basename.replace('sci.fits','sgm.fits')
                 )
+    filter_name = re.search(r"f(\d){3}w", img_basename).group()
 
-    # Assuming that the JWST filter name appears in the image file name
-    filter_name = re.search(r"f(\d){3}w", image_file).group()
     wg = np.isin(star_fwhms['filter_name'], filter_name)
     star_fwhm = star_fwhms[wg]['star_fwhm']
     star_fwhm = np.float64(star_fwhm)
@@ -113,24 +124,23 @@ def run_sextractor(image_file, weight_file,
     seeing_arg = f'-SEEING_FWHM {star_fwhm}'
     weight_arg = f'-WEIGHT_IMAGE {weight_file} -WEIGHT_TYPE MAP_WEIGHT'
     name_arg   = f'-CATALOG_NAME {cat_name}'
-    check_arg  = f'-CHECKIMAGE_NAME  {aperture_name},{sgm_name}'
+    check_arg  = f'-CHECKIMAGE_NAME  {bkg_sub},{sgm_name}'
     param_arg  = '-PARAMETERS_NAME ' + os.path.join(configdir, 'sextractor.param')
     nnw_arg    = '-STARNNW_NAME ' + os.path.join(configdir,'default.nnw')
     filter_arg = '-FILTER_NAME ' +  os.path.join(configdir,'default.conv')
     config_arg = '-c ' + os.path.join(configdir, 'sextractor.mock.config')
 
     cmd = ' '.join([
-        'sex', image_file, weight_arg, name_arg,  check_arg,\
-        param_arg, nnw_arg, filter_arg, seeing_arg, config_arg\
-        ])
-
+            'sex', image_file, weight_arg, name_arg, check_arg,param_arg, nnw_arg,
+            filter_arg, seeing_arg, config_arg
+            ])
     print("sex cmd is " + cmd)
     os.system(cmd)
 
     return
 
 def make_starcat(image_file, outdir,
-                truthstars=None, star_fwhms=None, thresh=0.92):
+                truthstars=None, star_fwhms=None, thresh=0.75):
     '''
     Create a star catalog from the SExtractor image catalog using cuts on
     the SExtractor CLASS_STAR parameter and the supplied table of star properties.
@@ -153,18 +163,24 @@ def make_starcat(image_file, outdir,
         print('Reference star catalog and star param table both NoneType, exiting')
 
     img_basename = os.path.basename(image_file)
+    filter_name = re.search(r"f(\d){3}w", image_file).group() \
+                    +'_'+ re.search(r"(\d){2}mas",image_file).group()
 
-    imcat_name = img_basename.replace('sci.fits','cat.fits')
-    star_cat_name = img_basename.replace('sci.fits','starcat.fits')
-    imcat_file = os.path.join(outdir, imcat_name)
-    star_cat_file = os.path.join(outdir, star_cat_name)
-    filter_name = re.search(r"f(\d){3}w", imcat_name).group()
+    imcat_name = os.path.join(
+                outdir, img_basename.replace('sci.fits','cat.fits')
+                )
+    starcat_name = os.path.join(
+                outdir, img_basename.replace('sci.fits','starcat.fits')
+                )
+    plot_name = os.path.join(
+                outdir, img_basename.replace('sci.fits','sizemag.png')
+                )
 
-    if not os.path.exists(imcat_file):
-        print(f'could not find image im_cat file {cat_file}')
+    if not os.path.exists(imcat_name):
+        print(f'could not find image im_cat file {cat_name}')
 
     else:
-        im_cat = Table.read(imcat_file)
+        im_cat = Table.read(imcat_name)
 
     if truthstars is not None:
         truth_star_tab = Table.read(truthstars, format='ascii')
@@ -175,30 +191,31 @@ def make_starcat(image_file, outdir,
                                     ra=im_cat['ALPHAWIN_J2000'],
                                     dec=im_cat['DELTAWIN_J2000'],
                                     maxmatch=1, radius = 0.5/3600)
-        star_cat = im_cat[cat_ind]
+        star_cat = cat_name[cat_ind]
 
     else:
         filter_name = re.search(r"f(\d){3}w", image_file).group()
         wg = np.isin(star_fwhms['filter_name'], filter_name)
-        min_fwhm_im = star_fwhms[wg]['min_fwhm_im']
-        min_fwhm_im = np.float64(min_fwhm_im)
-        max_fwhm_im = star_fwhms[wg]['max_fwhm_im']
-        max_fwhm_im = np.float64(max_fwhm_im)
+        min_fwhm = star_fwhms[wg]['min_fwhm']
+        min_fwhm = np.float64(min_fwhm)
+        max_fwhm = star_fwhms[wg]['max_fwhm']
+        max_fwhm = np.float64(max_fwhm)
 
         star_selec = (im_cat['CLASS_STAR'] >= thresh) \
-                        & (im_cat['MAG_AUTO'] < 35) \
-                        & (im_cat['FWHM_IMAGE'] > min_fwhm_im) \
-                        & (im_cat['FWHM_IMAGE'] < max_fwhm_im)
+                        & (im_cat['MAG_AUTO'] < 30) \
+                        & (im_cat['FWHM_WORLD']*3600 > min_fwhm) \
+                        & (im_cat['FWHM_WORLD']*3600 < max_fwhm) \
+                        & (im_cat['SNR_WIN'] > 15)
 
         star_cat = im_cat[star_selec]
 
     # Save star catalog to file
-    star_cat.write(star_cat_file, format='fits', overwrite=True)
+    star_cat.write(starcat_name, format='fits', overwrite=True)
 
     # Make size-mag plot
-    size_mag_plot(im_cat, star_cat, outdir, filter_name)
+    size_mag_plot(im_cat, star_cat, plot_name, filter_name)
 
-    return star_cat_file
+    return starcat_name
 
 
 def run_piffy(im_file, star_cat_file, configdir, outdir):
@@ -212,21 +229,29 @@ def run_piffy(im_file, star_cat_file, configdir, outdir):
         outdir : where to save PIFF results
     '''
 
-    # Get the image filename root (no extension or path) to name outputs
-    im_basename = os.path.basename(im_file).split('.')[0]
-    output_name = im_basename + '.piff'
-    piff_outdir = os.path.join(outdir, 'piff-output', im_basename)
+    # Get the image filename root to name outputs
+    base_name   = os.path.basename(im_file)
+    output_name = base_name.replace('.fits','.piff')
+    piff_outdir = os.path.join(outdir, \
+                    'piff-output', base_name.split('.')[0])
+    bkg_sub = os.path.join(outdir,
+                base_name.replace('sci.fits', 'sub.fits'))
+
+    ra = fits.getval(im_file, 'CRVAL1')/15.0 # PIFF wants it in hours
+    dec = fits.getval(im_file, 'CRVAL2')
 
     # Load PIFF configuration file
     run_piff_config = os.path.join(configdir, 'piff.config')
 
     # Now run PIFF on that image and accompanying catalog
-    image_arg   = f'input.image_file_name={im_file}'
+    image_arg   = f'input.image_file_name={bkg_sub}'
+    coord_arg   = f'input.ra={ra} input.dec={dec}'
     psfcat_arg  = f'input.cat_file_name={star_cat_file}'
     output_arg  = f'output.file_name={output_name} output.dir={piff_outdir}'
     cmd = ' '.join([
-             'piffify', run_piff_config, image_arg, psfcat_arg, output_arg,
-             ])
+             'piffify', run_piff_config, image_arg, coord_arg, \
+                psfcat_arg, output_arg
+                ])
 
     print('piff cmd is ' + cmd)
     os.system(cmd)
@@ -272,6 +297,7 @@ def main(args):
     truthstars = args.truthstars
     overwrite = args.overwrite
     vb = args.vb
+    crop = False
 
     # Set default output directory values if none provided
     if configdir is None:
@@ -304,6 +330,9 @@ def main(args):
 
         image_file = i2d
         weight_file = i2d.replace('sci.fits', 'wht.fits')
+
+        if crop == True:
+            image_file, weight_file = crop(image_file, weight_file)
 
         run_sextractor(image_file, weight_file,
                                 configdir, outdir, star_fwhms)
