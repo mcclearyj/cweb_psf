@@ -106,6 +106,7 @@ def run_sextractor(image_file, weight_file,
     '''
 
     img_basename = os.path.basename(image_file)
+
     cat_name = os.path.join(
                 outdir, img_basename.replace('sci.fits','cat.fits')
                 )
@@ -325,11 +326,8 @@ def main(args):
 
         print(f'Working on file {i2d}...\n\n')
 
-        #image_file, weight_file = extract_sci_wht(i2d, outdir,
-        #                                            overwrite=overwrite)
-
-        image_file = i2d
-        weight_file = i2d.replace('sci.fits', 'wht.fits')
+        image_file, weight_file = extract_sci_wht(i2d, outdir,
+                                                    overwrite=overwrite)
 
         if crop == True:
             image_file, weight_file = crop(image_file, weight_file)
