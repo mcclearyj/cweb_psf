@@ -13,46 +13,15 @@ import numpy as np
 import os
 import sys
 from astropy.table import Table
-import pdb
+import pdb, ipdb
 import treecorr
 import glob
 
 from diagnostics.starmaker import StarMaker, StampBackground
 from diagnostics.hsm_fitter import do_hsm_fit
-from diagnostics.plotter import make_resid_plot, make_quiverplot, plot_rho_stats
-
-
-def make_output_table(makers=None, prefix=None,
-                        outfile='hsm_fit_result.fits'):
-    '''
-    Concatenate arbitrary number of Maker() objects with HSM fits
-    into an output FITS table & save to file
-
-    : data :   list of Maker() instances
-    : prefix : list of prefixes for column names
-    '''
-
-    # Bit of sanity checking
-    assert type(makers) == list
-    assert type(prefix) == list
-    assert type(makers[0]) in [PSFMaker,StarMaker]
-
-    mtab = {}
-    mtab['x'] = makers[0].x
-    mtab['y'] = makers[1].y
-
-    # First, go through and make sub_tables:
-    for i,maker in enumerate(makers):
-        mtab['_'.join([prefix[i],'hsm_sig'])] = maker.hsm_sig
-        mtab['_'.join([prefix[i],'hsm_g1'])] = maker.hsm_g1
-        mtab['_'.join([prefix[i],'hsm_g2'])] = maker.hsm_g2
-        mtab['_'.join([prefix[i],'fwhm'])] = maker.fwhm
-
-    t = Table(mtab)
-    t.write(outfile,format='fits',overwrite=True)
-
-    return t
-
+from diagnostics.plotter import make_resid_plot, plot_rho_stats
+from diagnostics.quiverplot import QuiverPlot
+from diagnostics.residplots import ResidPlots
 
 class PSFMaker:
     '''
@@ -64,7 +33,8 @@ class PSFMaker:
     Possible improvements: make more general?
     '''
 
-    def __init__(self, psf_file=None, psf_type='piff', pix_scale=0.033, noisefree=False):
+    def __init__(self, psf_file, pix_scale, vignet_size=None,
+                        psf_type='piff', noisefree=False, rho_params=None):
         '''
         psf_obj is the file name of psf,
         or alternatively an instance of it
@@ -79,11 +49,13 @@ class PSFMaker:
         self.psf = psf_file
         self.psf_type = psf_type
         self.noisefree = noisefree
-        self.vignet_size = 21
+        self.vignet_size = vignet_size
+        self.pixel_scale = pix_scale
+        self.rho_params = rho_params
+
         self.stamps = []
         self.resids = []
 
-        self.pixel_scale = pix_scale
         self.sky_level = 0.0
         self.sky_std = 0.0
 
@@ -145,10 +117,18 @@ class PSFMaker:
             if vb==True: print("using flux=%.2f" % flux)
 
         this_pexim = self.psf.get_rec(y_pos,x_pos)
+
+        # You had better hope this is even
+        if this_pexim.shape[0] != self.vignet_size:
+            n = int((this_pexim.shape[0]-self.vignet_size)/2)
+            this_pexim = this_pexim[n:-n,n:-n]
+
         pexim_rs = (this_pexim)/np.sum(this_pexim)*flux
 
-        if self.noisefree==False:
-            noise = np.random.normal(loc=self.sky_level,scale=self.sky_std,size=this_pexim.shape)
+        if self.noisefree == False:
+            noise = np.random.normal(loc=self.sky_level,
+                        scale=self.sky_std,size=this_pexim.shape
+                        )
             pexim_rs+=noise
 
         return pexim_rs
@@ -175,12 +155,14 @@ class PSFMaker:
         this_psf_des = psfex_des.getPSF(this_pos)
         gpsf_im = this_psf_des.drawImage(method='no_pixel',
                     nx=self.vignet_size, ny=self.vignet_size,
-                    scale=pix_scale, use_true_center=True).array
+                    scale=pix_scale).array
 
         gpsf_im_rs = (gpsf_im)/np.sum(gpsf_im)*flux
 
         if self.noisefree==False:
-            noise = np.random.normal(loc=self.sky_level,scale=self.sky_std,size=gpsf_im_rs.shape)
+            noise = np.random.normal(loc=self.sky_level,
+                        scale=self.sky_std, size=gpsf_im_rs.shape
+                        )
             gpsf_im_rs+=noise
 
         return gpsf_im_rs
@@ -201,7 +183,7 @@ class PSFMaker:
             star_flux = 1
         else:
             star_flux=flux
-            if vb==True:print("using flux=%.2f" % flux)
+            if vb == True: print("using flux=%.2f" % flux)
 
         piff_psf = self.psf
         piff_im = piff_psf.draw(x=x_pos,y=y_pos,
@@ -209,24 +191,26 @@ class PSFMaker:
 
         piff_im_rs = piff_im/np.sum(piff_im)*flux
 
-        if self.noisefree==False:
-            noise = np.random.normal(loc=self.sky_level,scale=self.sky_std,size=piff_im_rs.shape)
+        if self.noisefree == False:
+            noise = np.random.normal(loc=self.sky_level,
+                        scale=self.sky_std, size=piff_im_rs.shape
+                        )
             piff_im_rs+=noise
 
         return piff_im_rs
 
 
-    def run_rho_stats(self,stars=None,rparams=None,vb=False,outdir='./'):
+    def run_rho_stats(self, stars, rho_params, vb=False, outdir='./'):
         '''
         Method to obtain rho-statistics for current PSF fit & save plots
         Requires StarMaker to be provided through 'stars' parameter
 
-        default rparams={'min_sep':100,'max_sep':3000,'nbins':60}
+        default rho_params={'min_sep':100,'max_sep':3000,'nbins':60}
         '''
 
         # First do calculations
-        rho1,rho2,rho3,rho4,rho5 = self._run_rho_stats(stars,rparams=rparams,
-            vb=vb,outdir=outdir)
+        rho1,rho2,rho3,rho4,rho5 = self._run_rho_stats(stars,
+            rho_params=rho_params, vb=vb, outdir=outdir)
 
         # Then make plots
         outname=os.path.join(outdir,'_'.join([str(self.psf_type),'rho_stats']))
@@ -240,13 +224,11 @@ class PSFMaker:
         return
 
 
-    def _run_rho_stats(self, stars=None, rparams=None, outdir=None, vb=False):
+    def _run_rho_stats(self, stars, rho_params, outdir=None, vb=False):
 
-        if rparams==None:
-            rparams = {'min_sep':150,'max_sep':4000,'nbins':15}
-        min_sep = rparams['min_sep']
-        max_sep = rparams['max_sep']
-        nbins = rparams['nbins']
+        min_sep = rho_params['min_sep']
+        max_sep = rho_params['max_sep']
+        nbins = rho_params['nbins']
 
         # Define quantities to be used
         wg = (self.hsm_g1 > -9999) & (stars.hsm_g1 > -9999)
@@ -258,8 +240,8 @@ class PSFMaker:
         dg1 = star_g1 - psf_g1
         dg2 = star_g2 - psf_g2
 
-        T  = (2*(self.hsm_sig[wg]))**2
-        Tpsf = (2*(stars.hsm_sig[wg]))**2
+        T  = 2.0*(self.hsm_sig[wg]**2)
+        Tpsf = 2.0*(stars.hsm_sig[wg]**2)
         dT = T-Tpsf; dTT = dT/T
 
         # Stars & size-residual-scaled stars
@@ -278,7 +260,7 @@ class PSFMaker:
         rho1.process(psf_resid_cat)
         rho1.write(os.path.join(outdir,'_'.join([str(self.psf_type),'rho_1.txt'])))
         if vb==True:
-            print('bin_size = %.6f'%rho1.bin_size)
+            print('bin_size = %.6f' % rho1.bin_size)
             print('mean rho1 = %.4e median = %.4e std = %.4e' %
                 (np.mean(rho1.xip),np.median(rho1.xip),
                 np.std(rho1.xip)))
@@ -321,15 +303,14 @@ class PSFMaker:
         return rho1, rho2, rho3, rho4, rho5
 
 
-
-    def run_all(self,stars=None,vb=False,outdir='./psf_diagnostics'):
+    def run_all(self, stars, vb=False, outdir='./psf_diagnostics'):
         '''
-        starmaker is expected to be an instance of the StarMaker class
+        stars is expected to be an instance of the StarMaker class
         Possible improvements: allow user to supply just X,Y?
         Allow a freestanding bg value?
         '''
 
-        if stars == None:
+        if type(stars) is not StarMaker:
             print("StarMaker() instance not supplied, exiting")
             sys.exit()
 
@@ -337,6 +318,10 @@ class PSFMaker:
         self.sky_std = stars.sky_std
         self.x = stars.x
         self.y = stars.y
+
+        if self.vignet_size == None:
+            self.vignet_size = stars.vignet_size
+            print(f'PSFmaker vignet size is {self.vignet_size}')
 
         # Render PSF, take residual against stars
         for i in range(len(stars.x)):
@@ -352,128 +337,22 @@ class PSFMaker:
         do_hsm_fit(maker=self, verbose=vb)
 
         # Make output quiverplot
-        outname = os.path.join(outdir,'_'.join([self.psf_type,'quiverplot.png']))
-        make_quiverplot(psf=self,stars=stars,outname=outname)
+        quiv_name = os.path.join(outdir, '_'.join([self.psf_type,'quiverplot.png']))
+        quiverplot = QuiverPlot(starmaker=stars, psfmaker=self)
+        quiverplot.run(scale=1, outname=quiv_name)
 
         # Make output star-psf residuals plot
-        outname = os.path.join(outdir,'_'.join([self.psf_type,'star_psf_resid.png']))
-        make_resid_plot(psf=self,stars=stars,outname=outname,vb=vb)
+        resid_name = os.path.join(outdir,'_'.join([self.psf_type,'flux_resid.png']))
+        chi2_name = os.path.join(outdir,'_'.join([self.psf_type,'chi2.png']))
+        resid_plot = ResidPlots(starmaker=stars, psfmaker=self)
+        resid_plot.run(resid_name=resid_name, chi2_name=chi2_name)
 
         # Compute & make output rho-statistics figures
-        rparams={'min_sep':200,'max_sep':5000,'nbins':20}
-        self.run_rho_stats(stars=stars,rparams=rparams,vb=vb,outdir=outdir)
+        rho_params = self.rho_params
+        if rho_params == None:
+            rho_params={'min_sep':200,'max_sep':5000,'nbins':10}
 
-        #self._write_to_file(outdir=outdir,vb=vb)
+        self.run_rho_stats(stars=stars,rho_params=rho_params,vb=vb,outdir=outdir)
 
         print("finished running PSFMaker()")
         return
-
-def make_rho_ratios(pixel_scale=0.03, file_path='./', rho_files=None):
-    '''
-    Make rho ratio plots for different PSF types.
-    Note that the master_psf_diagnostics.py file nomenclature is assumed:
-    [psf_type]_rho_[1-5].txt with psf_type={'epsfex', 'gpsfex', 'piff'}
-    '''
-    plt.rcParams.update({'figure.facecolor':'w'})
-
-    rcParams['axes.linewidth'] = 1.3
-    rcParams['xtick.labelsize'] = 16
-    rcParams['ytick.labelsize'] = 16
-    rcParams['xtick.major.size'] = 8
-    rcParams['xtick.major.width'] = 1.3
-    rcParams['xtick.minor.visible'] = True
-    rcParams['xtick.minor.width'] = 1.
-    rcParams['xtick.minor.size'] = 6
-    rcParams['xtick.direction'] = 'out'
-    rcParams['ytick.major.width'] = 1.3
-    rcParams['ytick.major.size'] = 8
-    rcParams['ytick.minor.visible'] = True
-    rcParams['ytick.minor.width'] = 1.
-    rcParams['ytick.minor.size'] = 6
-    rcParams['ytick.direction'] = 'out'
-    fontsize = 16
-
-    for i in range(1,6):
-
-        #if rho_files is not None:
-        #    rho_files = list(rho_files)
-        #else:
-
-        try:
-            pexn=os.path.join(file_path,''.join(['epsfex_rho_',str(i),'.txt']))
-            pex=Table.read(pexn,format='ascii',header_start=1)
-        except:
-            pex=None
-        try:
-            gpsfn = os.path.join(file_path,''.join(['gpsfex_rho_',str(i),'.txt']))
-            gpsf=Table.read(gpsfn,format='ascii',header_start=1)
-        except:
-            gpsf=None
-        try:
-            piffn = os.path.join(file_path,''.join(['piff_rho_',str(i),'.txt']))
-            piff=Table.read(piffn,format='ascii',header_start=1)
-        except:
-            piff=None
-
-        savename = os.path.join(file_path,'rho_{}_comparisons.png'.format(i))
-
-        fig,ax=plt.subplots(nrows=1,ncols=1,figsize=[12,6])
-        ax.set_xscale('log')
-        ax.set_yscale('log', nonpositive='clip')
-        ax.set_ylabel(r'$\rho_{}(\theta)$'.format(i), fontsize=fontsize)
-        plt.xlabel(r'$\theta$ (arcsec)', fontsize=fontsize)
-
-        if pex is not None:
-
-            r = pex['meanr'] * pixel_scale / 60 # from pixels --> arcminutes
-            pex_xip = np.abs(pex['xip'])
-            pex_sig = pex['sigma_xip']
-
-            plt.plot(r, pex_xip, color='blue',marker='o',ls='-', label=r'pex')
-            plt.plot(r, -pex_xip, color='blue',  marker='o',ls=':')
-            plt.errorbar(r[pex_xip>0], pex_xip[pex_xip>0],
-                            yerr=pex_sig[pex_xip>0], capsize=5, color='blue', ls='')
-            plt.errorbar(r[pex_xip<0], -pex_xip[pex_xip<0],
-                            yerr=pex_sig[pex_xip<0], capsize=5, color='blue', ls='')
-            lp = plt.errorbar(-r, pex_xip, yerr=pex_sig,
-                                capsize=5, color='blue')
-
-        if gpsf is not None:
-
-            ### GPSF, rho3
-            r = gpsf['meanr'] * pixel_scale / 60 # from pixels --> arcminutes
-            gpsf_xip = np.abs(gpsf['xip'])
-            gpsf_sig = gpsf['sigma_xip']
-
-            plt.plot(r, gpsf_xip, color='rebeccapurple',marker='o',ls='-',label=r'gpsf')
-            plt.plot(r, -gpsf_xip, color='rebeccapurple',  marker='o',ls=':')
-            plt.errorbar(r[gpsf_xip>0], gpsf_xip[gpsf_xip>0], yerr=gpsf_sig[gpsf_xip>0],
-                            capsize=5, color='rebeccapurple', ls='')
-            plt.errorbar(r[gpsf_xip<0], -gpsf_xip[gpsf_xip<0], yerr=gpsf_sig[gpsf_xip<0],
-                            capsize=5, color='rebeccapurple', ls='')
-            lp2 = plt.errorbar(-r, gpsf_xip, yerr=gpsf_sig,
-                                capsize=5, color='rebeccapurple')
-
-        if piff is not None:
-            ### PIFF
-
-            r = piff['meanr'] * pixel_scale / 60 # from pixels --> arcminutes
-            piff_xip = np.abs(piff['xip'])
-            piff_sig = piff['sigma_xip']
-
-            plt.plot(r, piff_xip, color='salmon',marker='o',ls='-',label=r'piff')
-            plt.plot(r, -piff_xip, color='salmon',  marker='o',ls=':')
-            plt.errorbar(r[piff_xip>0], piff_xip[piff_xip>0],
-                            yerr=piff_sig[piff_xip>0], capsize=5, color='salmon', ls='')
-            plt.errorbar(r[piff_xip<0], -piff_xip[piff_xip<0],
-                            yerr=piff_sig[piff_xip<0], capsize=5, color='salmon', ls='')
-            lp3 = plt.errorbar(-r, piff_xip, yerr=piff_sig,
-                                capsize=5, color='salmon')
-
-        plt.legend(fontsize = (fontsize-2))
-        plt.savefig(savename)
-        plt.close(fig)
-
-    print("plots done")
-
-    return

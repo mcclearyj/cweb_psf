@@ -53,13 +53,13 @@ def make_fwhm_tab():
 
 def extract_sci_wht(i2d, outdir, overwrite=False):
     '''
-    Extract and save to file the "SCI" and "WHT" extensions from the input
+    Extract and save to file the "sci" and "WHT" extensions from the input
     i2d-format image because SExtractor can't use a weight in a MEF, apparently?
     Return the science image and weight file names to be passed to SExtractor.
 
     Inputs:
         data_dir : directory containing images
-        overwrite : if true, overwrite any SCI/WHT files saved to disk
+        overwrite : if true, overwrite any sci/WHT files saved to disk
     '''
 
     i2d_name = os.path.basename(i2d)
@@ -105,6 +105,7 @@ def run_sextractor(image_file, weight_file,
         star_fwhms: table with appx. size of stars in image
     '''
 
+
     img_basename = os.path.basename(image_file)
 
     cat_name = os.path.join(
@@ -132,9 +133,9 @@ def run_sextractor(image_file, weight_file,
     config_arg = '-c ' + os.path.join(configdir, 'sextractor.mock.config')
 
     cmd = ' '.join([
-            'sex', image_file, weight_arg, name_arg, check_arg,param_arg, nnw_arg,
-            filter_arg, seeing_arg, config_arg
-            ])
+            'sex', image_file, weight_arg, name_arg, check_arg, param_arg,
+                nnw_arg, filter_arg, seeing_arg, config_arg
+                ])
     print("sex cmd is " + cmd)
     os.system(cmd)
 
@@ -157,6 +158,10 @@ def make_starcat(image_file, outdir,
 
     Outputs:
         star_cat_file: name of the star catalog (saved to file)
+
+    TO DO:
+        - make make_starcat robust to input catalogs that are not LDACs
+        - make starparams a config file. Alternatively, improve auto-star selection
     '''
 
     # Make sure that one of either truthstars or star_fwhms is supplied
@@ -164,8 +169,11 @@ def make_starcat(image_file, outdir,
         print('Reference star catalog and star param table both NoneType, exiting')
 
     img_basename = os.path.basename(image_file)
-    filter_name = re.search(r"f(\d){3}w", image_file).group() \
-                    +'_'+ re.search(r"(\d){2}mas",image_file).group()
+    try:
+        filter_name = re.search(r"f(\d){3}w", image_file).group() \
+                        +'_'+ re.search(r"(\d){2}mas",image_file).group()
+    except AttributeError:
+        filter_name = re.search(r"f(\d){3}w", image_file).group()
 
     imcat_name = os.path.join(
                 outdir, img_basename.replace('sci.fits','cat.fits')
@@ -179,11 +187,12 @@ def make_starcat(image_file, outdir,
 
     if not os.path.exists(imcat_name):
         print(f'could not find image im_cat file {cat_name}')
-
     else:
-        im_cat = Table.read(imcat_name)
+        im_cat_fits = fits.open(imcat_name)
+        im_cat = im_cat_fits['LDAC_OBJECTS'].data
 
     if truthstars is not None:
+
         truth_star_tab = Table.read(truthstars, format='ascii')
         truthmatch = htm.Matcher(16, ra=truth_star_tab['x_or_RA'],
                                     dec=truth_star_tab['y_or_Dec'])
@@ -192,9 +201,9 @@ def make_starcat(image_file, outdir,
                                     ra=im_cat['ALPHAWIN_J2000'],
                                     dec=im_cat['DELTAWIN_J2000'],
                                     maxmatch=1, radius = 0.5/3600)
-        star_cat = cat_name[cat_ind]
 
     else:
+
         filter_name = re.search(r"f(\d){3}w", image_file).group()
         wg = np.isin(star_fwhms['filter_name'], filter_name)
         min_fwhm = star_fwhms[wg]['min_fwhm']
@@ -208,10 +217,11 @@ def make_starcat(image_file, outdir,
                         & (im_cat['FWHM_WORLD']*3600 < max_fwhm) \
                         & (im_cat['SNR_WIN'] > 15)
 
-        star_cat = im_cat[star_selec]
+        cat_ind = np.arange(len(star_selec))[star_selec]
 
-    # Save star catalog to file
-    star_cat.write(starcat_name, format='fits', overwrite=True)
+    star_cat = im_cat[cat_ind]
+    im_cat_fits['LDAC_OBJECTS'].data = star_cat
+    im_cat_fits.writeto(starcat_name, overwrite=True)
 
     # Make size-mag plot
     size_mag_plot(im_cat, star_cat, plot_name, filter_name)
@@ -232,60 +242,67 @@ def run_piffy(im_file, star_cat_file, configdir, outdir):
 
     # Get the image filename root to name outputs
     base_name   = os.path.basename(im_file)
+
     output_name = base_name.replace('.fits','.piff')
+
     piff_outdir = os.path.join(outdir, \
                     'piff-output', base_name.split('.')[0])
+
     bkg_sub = os.path.join(outdir,
                 base_name.replace('sci.fits', 'sub.fits'))
 
-    ra = fits.getval(im_file, 'CRVAL1')/15.0 # PIFF wants it in hours
+    # PIFF wants RA in hours, not degrees
+    ra = fits.getval(im_file, 'CRVAL1')/15.0
     dec = fits.getval(im_file, 'CRVAL2')
 
     # Load PIFF configuration file
-    run_piff_config = os.path.join(configdir, 'piff.config')
+    piff_config_arg = os.path.join(configdir, 'piff.config')
 
     # Now run PIFF on that image and accompanying catalog
     image_arg   = f'input.image_file_name={bkg_sub}'
     coord_arg   = f'input.ra={ra} input.dec={dec}'
     psfcat_arg  = f'input.cat_file_name={star_cat_file}'
     output_arg  = f'output.file_name={output_name} output.dir={piff_outdir}'
+
     cmd = ' '.join([
-             'piffify', run_piff_config, image_arg, coord_arg, \
+             'piffify', run_piff_config_arg, image_arg, coord_arg, \
                 psfcat_arg, output_arg
                 ])
-
     print('piff cmd is ' + cmd)
     os.system(cmd)
 
     return
 
-def run_psfex():
+def run_psfex(image_file, configdir, outdir):
 
-    pass
+    psfex_config_arg = '-c ' + os.path.join(configdir,'psfex.mock.config')
 
-    psfcat_name = im_cat
+    img_basename = os.path.basename(image_file)
+    cat_name = os.path.join(
+                outdir, img_basename.replace('sci.fits','cat.fits')
+                )
+    starcat_name = cat_name.replace('cat.fits', 'starcat.fits')
+    outcat_name  = cat_name.replace('cat.fits', 'psfex_cat.fits')
+    outcat_arg   = f'-OUTCAT_NAME {outcat_name}'
+    psfex_outdir = outdir
 
-    # Now run PSFEx on that image and accompanying catalog
+    psfcat_name = starcat_name #cat_name
 
-    psfex_config_arg = '-c '+config_path+'psfex.mock.config'
-    outcat_name = im_cat.replace('.fits','.psfex.star')
     cmd = ' '.join(
-            ['psfex', psfcat_name,psfex_config_arg,'-OUTCAT_NAME', outcat_name]
+            ['psfex', psfcat_name, psfex_config_arg, outcat_arg]
             )
-    self.logprint("psfex cmd is " + cmd)
+
+    print(f'psfex cmd is {cmd}')
     os.system(cmd)
 
-
     cleanup_cmd = ' '.join(
-                    ['mv chi* resi* samp* snap* proto* *.xml', psfex_plotdir]
+                    ['mv chi* resi* samp* snap* proto* *.xml', psfex_outdir]
                     )
     cleanup_cmd2 = ' '.join(
-                    ['mv count*pdf ellipticity*pdf fwhm*pdf', psfex_plotdir]
+                    ['mv count*pdf ellipticity*pdf fwhm*pdf', psfex_outdir]
                     )
     os.system(cleanup_cmd)
     os.system(cleanup_cmd2)
-# utils.run_command(cmd, logprint=self.logprint)
-
 
     return
 
@@ -313,34 +330,39 @@ def main(args):
         cmd = 'mkdir -p {outdir}'.format(outdir=outdir)
         os.system(cmd)
         print(f'Made output directory {outdir}')
+
     else:
         print(f'Output directory {outdir} exists, continuing...')
 
 
     # Placeholder: table of stellar locus parameters, though probably
-    # not necessary long-term
+    # not necessary long-term -- need to develop better auto-starselect
     star_fwhms = make_fwhm_tab()
 
     # Process exposures
-    for i2d in i2d_images:
+    for i2d in i2d_images[0:2]:
 
         print(f'Working on file {i2d}...\n\n')
 
-        image_file, weight_file = extract_sci_wht(i2d, outdir,
-                                                    overwrite=overwrite)
+        #image_file, weight_file = extract_sci_wht(i2d, outdir,
+        #                                            overwrite=overwrite)
 
-        if crop == True:
-            image_file, weight_file = crop(image_file, weight_file)
+        image_file = i2d
+        weight_file = i2d.replace('sci', 'wht')
+
 
         run_sextractor(image_file, weight_file,
                                 configdir, outdir, star_fwhms)
 
-        starcat_file = make_starcat(image_file, outdir,
+        starcat_name = make_starcat(image_file, outdir,
                                         truthstars=truthstars,
                                         star_fwhms=star_fwhms)
 
-        run_piffy(image_file, starcat_file,
+        run_piffy(image_file, starcat_name,
                     configdir=configdir, outdir=outdir)
+
+
+        run_psfex(image_file, configdir, outdir)
 
     return 0
 

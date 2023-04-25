@@ -5,37 +5,15 @@ import piff
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import rc,rcParams
-rc('font',**{'family':'serif'})
-rc('text', usetex=True)
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import colors
 import matplotlib.pyplot as plt
 import os, re
+import pdb, ipdb
+from astropy.table import Table
+import fitsio
 
-
-def set_rc_params():
-    '''
-    Set figure parameters
-    This should be a config one day
-    '''
-    plt.rcParams.update({'figure.facecolor':'w'})
-    plt.rcParams.update({'axes.linewidth': 1.3})
-    plt.rcParams.update({'xtick.labelsize': 16})
-    plt.rcParams.update({'ytick.labelsize': 16})
-    plt.rcParams.update({'xtick.major.size': 8})
-    plt.rcParams.update({'xtick.major.width': 1.3})
-    plt.rcParams.update({'xtick.minor.visible': True})
-    plt.rcParams.update({'xtick.minor.width': 1.})
-    plt.rcParams.update({'xtick.minor.size': 6})
-    plt.rcParams.update({'xtick.direction': 'out'})
-    plt.rcParams.update({'ytick.major.width': 1.3})
-    plt.rcParams.update({'ytick.major.size': 8})
-    plt.rcParams.update({'ytick.minor.visible': True})
-    plt.rcParams.update({'ytick.minor.width': 1.})
-    plt.rcParams.update({'ytick.minor.size':6})
-    plt.rcParams.update({'ytick.direction':'out'})
-
-    return
+from .utils import set_rc_params
 
 def size_mag_plot(im_cat, star_cat, plot_name, filter_name):
     '''
@@ -62,17 +40,17 @@ def size_mag_plot(im_cat, star_cat, plot_name, filter_name):
     fig, ax = plt.subplots(1,1, tight_layout=True, figsize=(10,8))
 
     ax.plot(image_catalog['MAG_AUTO'], image_catalog['FWHM_WORLD']*3600, '.', \
-            label='all objects', markersize=2)
-    ax.plot(star_catalog['MAG_AUTO'], star_catalog['FWHM_WORLD']*3600, '*', \
-            label='selected stars', markersize=2)
+            label='all objects', markersize=3)
+    ax.plot(star_catalog['MAG_AUTO'], star_catalog['FWHM_WORLD']*3600, '.', \
+            label='selected stars', markersize=3)
 
-    ax.set_xlabel('MAG_AUTO (zpt=30.0)', fontsize=14)
-    ax.set_ylabel('FWHM_WORLD (arcsec)', fontsize=14)
-    ax.set_ylim(-0.05, 0.5)
-    ax.set_xlim(16, 35)
+    ax.set_xlabel(r'\texttt{MAG_AUTO}', fontsize=16)
+    ax.set_ylabel(r'\texttt{FWHM_WORLD} (arcsec)', fontsize=16)
+    ax.set_ylim(-0.5, 3)
+    ax.set_xlim(15, 35)
 
-    ax.set_title(f'{str(filter_name)} SExtractor catalog', fontsize=14)
-    ax.legend(markerscale=5, fontsize=14)
+    ax.legend(markerscale=3, fontsize=14, loc='upper left')
+
     fig.savefig(plot_name)
 
     return
@@ -88,7 +66,9 @@ def make_resid_plot(psf, stars, outname='star_psf_resid.png', vb=False):
     '''
 
     set_rc_params()
-    fontsize=16
+    fontsize = 16
+    vmin = 0.0001
+    vmax = 75
 
     avg_stars = np.nanmean(stars.stamps,axis=0)
     avg_psfim = np.nanmean(psf.stamps,axis=0)
@@ -105,23 +85,22 @@ def make_resid_plot(psf, stars, outname='star_psf_resid.png', vb=False):
     star_fwhm = np.nanmean(stars.fwhm[wg])
     star_sigma = np.nanmean(stars.hsm_sig[wg])
 
-    fig,axs = plt.subplots(nrows=1, ncols=3, figsize=(21,7))
+    fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(15,7), tight_layout=True)
 
-    norm = colors.TwoSlopeNorm(0)
-    f1 = axs[0].imshow(avg_stars, norm=colors.TwoSlopeNorm(0),
-                        cmap=plt.cm.seismic_r)
-    axs[0].set_title('avg star HSM sigma = %.5f\ngs.calculateFWHM() = %.5f'
-                        % (star_sigma,star_fwhm), fontsize=14)
+    f1 = axs[0].imshow(avg_stars, cmap=plt.cm.bwr_r,
+                        norm=colors.LogNorm(vmin=vmin, vmax=vmax))
+    axs[0].set_title('avg star HSM sigma = %.4f\ngs.calculateFWHM() = %.4f'
+                        % (star_sigma,star_fwhm), fontsize=16)
     axs[0].axvline((avg_stars.shape[0]-1)*0.5,color='black')
     axs[0].axhline((avg_stars.shape[1]-1)*0.5,color='black')
     divider = make_axes_locatable(axs[0])
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(f1, cax=cax)
 
-    f2 = axs[1].imshow(avg_psfim,norm=colors.TwoSlopeNorm(0),
-                        cmap=plt.cm.seismic_r)
-    axs[1].set_title('avg PSF HSM sigma = %.5f\ngs.calculateFWHM() = %.5f'
-                        % (psf_sigma,psf_fwhm), fontsize=14)
+    f2 = axs[1].imshow(avg_psfim, cmap=plt.cm.bwr_r,
+                        norm=colors.LogNorm(vmin=vmin, vmax=vmax))
+    axs[1].set_title('avg PSF HSM sigma = %.4f\ngs.calculateFWHM() = %.4f'
+                        % (psf_sigma,psf_fwhm), fontsize=16)
     axs[1].axvline((avg_stars.shape[0]-1)*0.5,color='black')
     axs[1].axhline((avg_stars.shape[1]-1)*0.5,color='black')
 
@@ -129,112 +108,58 @@ def make_resid_plot(psf, stars, outname='star_psf_resid.png', vb=False):
     cax = divider.append_axes("right",size="5%", pad=0.05)
     plt.colorbar(f2, cax=cax)
 
-    f3 = axs[2].imshow(avg_resid,norm=colors.TwoSlopeNorm(0), cmap=plt.cm.seismic_r)
-    axs[2].set_title('sum(mean resid)= %.3f\nmean=%.3e std=%.3e' %
+    resid_norm = colors.TwoSlopeNorm(0, vmin=0.9*np.min(avg_resid),
+                                        vmax=0.9*np.max(avg_resid)
+                                        )
+    f3 = axs[2].imshow(avg_resid,norm=resid_norm, cmap=plt.cm.seismic_r)
+    axs[2].set_title('sum(mean resid)= %.3f\nmean=%.2e std=%.2e' %
                         (np.nansum(avg_resid), np.nanmean(avg_resid),
-                            np.nanstd(avg_resid)), fontsize=14)
+                            np.nanstd(avg_resid)), fontsize=16)
     axs[2].axvline((avg_stars.shape[0]-1)*0.5,color='black')
     axs[2].axhline((avg_stars.shape[1]-1)*0.5,color='black')
     divider = make_axes_locatable(axs[2])
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(f3, cax=cax)
 
-    fig.suptitle(outname.split('.')[0])
-    plt.tight_layout()
     plt.savefig(outname)
+
+    # Write fits files out to file too
+    outdir = os.path.dirname(outname)
+    fout = fitsio.FITS(
+            os.path.join(outdir, 'mean_star_model_resid_ims.fits'), 'rw')
+    fout.write([avg_stars, avg_psfim, avg_resid],
+                names=['STARS', 'MODELS', 'RESIDS']
+                )
 
     return 0
 
-
-def make_quiverplot(psf=None, stars=None, outname='quiverplot.png'):
+def make_chi2_resids(psf, stars, outname='star_psf_chi2.png', vb=False):
     '''
-    Take a table or whatever, make quiverplot with it
-    Filter out failed fits first!
+    Make a chi2 residual plot, kinda like the flux residuals plots also made.
     '''
-
-    set_rc_params()
-    fontsize=16
-
-    fscl = 2.355*psf.pixel_scale # convert sigma in pixels --> FWHM in arcsec
-
-    if (psf==None) or (stars==None):
-        print("Can't make quiverplot without both star and PSF HSM fits")
-        sys.exit()
-
-    wg = (psf.hsm_g1 > -9999) & (stars.hsm_g1 > -9999)
-
-    x = stars.x[wg]; y = stars.y[wg]
-    star_g1 = stars.hsm_g1[wg]
-    star_g2 = stars.hsm_g2[wg]
-    psf_g1  = psf.hsm_g1[wg]
-    psf_g2  = psf.hsm_g2[wg]
-    psf_sig = psf.hsm_sig[wg] * fscl
-    star_sig = stars.hsm_sig[wg] * fscl
-
-    mean_star_g = np.median(np.sqrt(star_g1**2+star_g2**2))
-    mean_psf_g  = np.median(np.sqrt(psf_g1**2+psf_g2**2))
-
-    mean_star_sig = np.median(star_sig)
-    mean_psf_sig  = np.median(psf_sig)
-
-    gdiff1 = star_g1 - psf_g1
-    gdiff2 = star_g2 - psf_g2
-    gdiff = np.sqrt(gdiff1**2+gdiff2**2)
-    sig_diff = star_sig - psf_sig
-
-    norm = colors.TwoSlopeNorm(np.median(star_sig))
-    div_norm = colors.TwoSlopeNorm(np.median(sig_diff))
-
-    fig,[ax1,ax2,ax3] = plt.subplots(
-                                nrows=1, ncols=3, sharey=True,
-                                figsize=[21,6], tight_layout=True)
-
-    q_star = ax1.quiver(y, x, star_g1,
-                    star_g2, star_sig, cmap='cool',
-                    units='xy', angles='uv', pivot='mid',
-                    headaxislength=0, headwidth=0, headlength=0,
-                    norm=norm)
-    divider = make_axes_locatable(ax1)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    plt.colorbar(q_star, cax=cax)
-    ax1.set_title('avg star HSM ellip = %.5f fwhm = %.3f' %
-                    (mean_star_g, mean_star_sig), fontsize=14)
-
-    q_res = ax2.quiver(y, x, psf_g1,
-                    psf_g2, psf_sig, cmap='cool',
-                    units='xy', angles='uv', pivot='mid',
-                    headaxislength=0, headwidth=0, headlength=0,
-                    scale=q_star.scale, norm=norm)
-    divider = make_axes_locatable(ax2)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    plt.colorbar(q_res, cax=cax)
-    ax2.set_title('avg psf ellip = %.5f fwhm = %.3f' %
-                    (mean_psf_g,mean_psf_sig), fontsize=14)
-
-    q_diff = ax3.quiver(y, x, gdiff1, gdiff2,
-                    sig_diff, units='xy', angles='uv',
-                    pivot='mid', headaxislength=0, headwidth=0,
-                    headlength=0, cmap='cool', scale=q_star.scale,
-                    norm=div_norm)
-    divider = make_axes_locatable(ax3)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    plt.colorbar(q_diff, cax=cax)
-    ax3.set_title('avg psf g_hsm resid = %.5f avg psf sig_hsm diff = %.3f' %
-                    (np.median(gdiff), np.median(sig_diff)), fontsize=14)
-
-    plt.savefig(outname)
 
     return
+
+
+def make_quiverplot():
+    '''
+    At some point, plotter should be its own class that makes instance of
+    the QuiverPlot class for quiver plotting
+    '''
+
+    pass
+
 
 def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     ##
     ## rho1 correlation: dg x dg
     ##
 
-    set_rc_params()
     fontsize = 16
+    set_rc_params(fontsize)
 
-    fig,axes=plt.subplots(nrows=2,ncols=1,figsize=[12,8], sharex=True, tight_layout=True)
+
+    fig,axes=plt.subplots(nrows=2,ncols=1,figsize=[10,7], sharex=True, tight_layout=True)
 
     r = np.exp(rho1.meanlogr) * pixel_scale / 60
     xip = np.abs(rho1.xip)
@@ -281,7 +206,7 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     axes[0].errorbar(-r, xip, yerr=sig, color='tab:green', capsize=5)
 
     axes[0].legend([lp1, lp3, lp4], fontsize=14)
-    axes[0].legend(fontsize=14)
+    axes[0].legend(fontsize=14, loc='upper right')
 
     ##
     ## rho 2 correlation: g x dg
@@ -290,11 +215,11 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     xip = np.abs(rho2.xip)
     sig = np.sqrt(rho2.varxip)
 
-    lp2 = axes[1].plot(r, xip, color='magenta',marker='o', ls='-', label=r'$\rho_2(\theta)$')
-    axes[1].plot(r, -xip, color='magenta', marker='o', ls=':')
-    axes[1].errorbar(r[xip>0], xip[xip>0], yerr=sig[xip>0], color='magenta', ls='', capsize=5)
-    axes[1].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], color='magenta', ls='', capsize=5)
-    axes[1].errorbar(-r, xip, yerr=sig, color='magenta', capsize=5)
+    lp2 = axes[1].plot(r, xip, color='tab:cyan',marker='o', ls='-', label=r'$\rho_2(\theta)$')
+    axes[1].plot(r, -xip, color='tab:cyan', marker='o', ls=':')
+    axes[1].errorbar(r[xip>0], xip[xip>0], yerr=sig[xip>0], color='tab:cyan', ls='', capsize=5)
+    axes[1].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], color='tab:cyan', ls='', capsize=5)
+    axes[1].errorbar(-r, xip, yerr=sig, color='tab:cyan', capsize=5)
 
     axes[1].set_xlabel(r'$\theta$ (arcmin)', fontsize=fontsize)
     axes[1].set_ylabel(r'$\xi_+(\theta)$', fontsize=fontsize)
@@ -308,17 +233,116 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     xip = rho5.xip
     sig = np.sqrt(rho5.varxip)
 
-    lp5 = axes[1].plot(r, xip, color='darkblue',marker='o', ls='-', label=r'$\rho_5(\theta)$')
-    axes[1].plot(r, -xip, color='darkblue', marker='o', ls=':',)
-    axes[1].errorbar(r[xip>0], xip[xip>0], yerr=sig[xip>0], color='darkblue', ls='', capsize=5)
-    axes[1].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], color='darkblue', ls='', capsize=5)
-    axes[1].errorbar(-r, xip, yerr=sig, color='darkblue', capsize=5)
+    lp5 = axes[1].plot(r, xip, color='tab:purple',marker='o', ls='-', label=r'$\rho_5(\theta)$')
+    axes[1].plot(r, -xip, color='tab:purple', marker='o', ls=':',)
+    axes[1].errorbar(r[xip>0], xip[xip>0], yerr=sig[xip>0], color='tab:purple', ls='', capsize=5)
+    axes[1].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], color='tab:purple', ls='', capsize=5)
+    axes[1].errorbar(-r, xip, yerr=sig, color='tab:purple', capsize=5)
 
-    axes[1].legend([lp2,lp5], fontsize=14)
-    #axes[1].set_ylim([2e-7,5e-3])
-    plt.legend(fontsize=14)
+    axes[1].legend([lp2,lp5])
+    plt.legend(loc='upper right')
 
     fig.savefig(outname)
 
+    return
+
+def compare_rho_stats(prefix, pixel_scale, file_path='./', rho_files=None):
+    '''
+    Make rho ratio plots for different PSF types.
+    Note that the master_psf_diagnostics.py file nomenclature is assumed:
+    [psf_type]_rho_[1-5].txt with psf_type={'epsfex', 'gpsfex', 'piff'}
+    '''
+
+    set_rc_params(fontsize=15)
+    plt.style.use('dark_background')
+    plt.rcParams.update({'figure.facecolor':'w'})
+
+    print(f'Looking for rho-stat files in {file_path}')
+
+    for i in range(1,6):
+
+        try:
+            pexn=os.path.join(file_path,''.join(['epsfex_rho_',str(i),'.txt']))
+            pex=Table.read(pexn,format='ascii',header_start=1)
+        except:
+            print('no pex found')
+            pex=None
+        try:
+            gpsfn = os.path.join(file_path,''.join(['gpsfex_rho_',str(i),'.txt']))
+            gpsf=Table.read(gpsfn,format='ascii',header_start=1)
+        except:
+            print('no gpsf found')
+            gpsf=None
+        try:
+            piffn = os.path.join(file_path,''.join(['piff_rho_',str(i),'.txt']))
+            piff=Table.read(piffn,format='ascii',header_start=1)
+        except:
+            print('no piff found')
+            piff=None
+
+        savename = os.path.join(file_path,'rho_{}_comparisons.png'.format(i))
+
+        fig,ax=plt.subplots(nrows=1,ncols=1,figsize=[10,6])
+        ax.set_xscale('log')
+        ax.set_yscale('log', nonpositive='clip')
+        ax.set_ylabel(r'$\rho_{}(\theta)$'.format(i))
+        ax.set_xlabel(r'$\theta$ (arcsec)')
+        legends = []
+
+        if pex is not None:
+
+            r = pex['meanr'] * pixel_scale / 60 # from pixels --> arcminutes
+            pex_xip = np.abs(pex['xip'])
+            pex_sig = pex['sigma_xip']
+
+            lp = ax.plot(r, pex_xip, color='C3', marker='o', ls='-', lw=2,
+                            label='pex')
+            ax.plot(r, -pex_xip, color='C3',  marker='o',ls=':')
+            ax.errorbar(r[pex_xip>0], pex_xip[pex_xip>0], color='C3',
+                            yerr=pex_sig[pex_xip>0], capsize=5, ls='')
+            ax.errorbar(r[pex_xip<0], -pex_xip[pex_xip<0], color='C3',
+                            yerr=pex_sig[pex_xip<0], capsize=5, ls='')
+            ax.errorbar(-r, pex_xip, yerr=pex_sig, capsize=5, color='C3')
+
+            legends.append(lp)
+
+        if gpsf is not None:
+
+            r = gpsf['meanr'] * pixel_scale / 60 # from pixels --> arcminutes
+            gpsf_xip = np.abs(gpsf['xip'])
+            gpsf_sig = gpsf['sigma_xip']
+
+            lp2 = ax.plot(r, gpsf_xip, color='C4', marker='o', lw=2,
+                            ls='-', label='gpsf')
+            ax.plot(r, -gpsf_xip, color='C4', lw=2, marker='o',ls=':')
+            ax.errorbar(r[gpsf_xip>0], gpsf_xip[gpsf_xip>0], yerr=gpsf_sig[gpsf_xip>0],
+                            capsize=5, color='C4', ls='')
+            ax.errorbar(r[gpsf_xip<0], -gpsf_xip[gpsf_xip<0], yerr=gpsf_sig[gpsf_xip<0],
+                            capsize=5, color='C4', ls='')
+            ax.errorbar(-r, gpsf_xip, yerr=gpsf_sig, capsize=5, color='C4')
+
+            legends.append(lp2)
+
+        if piff is not None:
+
+            r = piff['meanr'] * pixel_scale / 60 # from pixels --> arcminutes
+            piff_xip = np.abs(piff['xip'])
+            piff_sig = piff['sigma_xip']
+
+            lp3 = ax.plot(r, piff_xip, color='C5', marker='o',lw=2,
+                            ls='-', label='piff')
+            ax.plot(r, -piff_xip, color='C5',  marker='o', lw=2, ls=':')
+            ax.errorbar(r[piff_xip>0], piff_xip[piff_xip>0], color='C5',
+                            yerr=piff_sig[piff_xip>0], capsize=5, ls='')
+            ax.errorbar(r[piff_xip<0], -piff_xip[piff_xip<0], color='C5',
+                            yerr=piff_sig[piff_xip<0], capsize=5,  ls='')
+            ax.errorbar(-r, piff_xip, yerr=piff_sig, capsize=5, color='C5')
+
+            legends.append(lp3)
+
+        plt.legend()
+        fig.savefig(savename)
+
+    print("rho comparison plots done")
 
     return

@@ -7,9 +7,10 @@ import numpy as np
 import os
 import sys
 from astropy.table import Table
-import pdb
+import ipdb
 
 from diagnostics.hsm_fitter import do_hsm_fit
+
 
 class StarMaker():
     '''
@@ -19,17 +20,18 @@ class StarMaker():
      - This object will store all star vignets
     '''
 
-    def __init__(self,cat_stars=None, bg_obj=None, pix_scale=0.03):
+    def __init__(self, star_cat, pix_scale, vb=False, vignet_size=None):
         '''
-        cat_stars is either SExtractor catalog,
+        star_cat is either SExtractor catalog,
         catalog file path, or simply list of np.ndarrays
         '''
 
-        self.cat_stars = cat_stars
+        self.star_cat = star_cat
         self.pixel_scale = pix_scale
-        self.vignet_size = 21
+        self.vignet_size = vignet_size
         self.sky_level = 0.0
         self.sky_std = 0.0
+        self.vb = vb
 
         self.x = []
         self.y = []
@@ -48,10 +50,10 @@ class StarMaker():
         but keep it simple for now & give it a pre-read star catalog
         '''
 
-        #self.cat_stars = cat_stars
+        #self.star_cat = star_cat
 
         if vb==True:
-            print("fitting to %d stars"  % len(self.cat_stars))
+            print("fitting to %d stars"  % len(self.star_cat))
 
         return
 
@@ -75,22 +77,26 @@ class StarMaker():
         return
 
 
-    def _get_star_vignets(self):
+    def _get_star_vignets(self, vb):
         '''
         Make star stamps from SExtractor catalog vignets
         '''
+        #ipdb.set_trace()
+        #n = np.floor(0.5*(np.shape(self.star_cat['VIGNET'])[1]-self.vignet_size))
+        #n = int(n)
 
-        n = np.floor(0.5*(np.shape(self.cat_stars['VIGNET'])[1]-self.vignet_size))
-        n = int(n)
-
-        for i in range(len(self.cat_stars)):
-            this_vign = self.cat_stars[i]['VIGNET']
-            x_pos = self.cat_stars[i]['X_IMAGE']; y_pos = self.cat_stars[i]['Y_IMAGE']
+        for i in range(len(self.star_cat)):
+            this_vign = self.star_cat[i]['VIGNET']
+            x_pos = self.star_cat[i]['X_IMAGE']; y_pos = self.star_cat[i]['Y_IMAGE']
 
             this_vign[this_vign <= -999] = np.nan
             this_vign[np.isnan(this_vign)] = self.sky_level
-            vign_cutout = this_vign[n:-n,n:-n]
+            #vign_cutout = this_vign[n:-n,n:-n]
+            vign_cutout = this_vign
             star_flux = np.nansum(vign_cutout) - np.size(vign_cutout)*self.sky_level
+
+            if vb is True:
+                print(f'Star {i} has flux {star_flux:.3f}')
 
             self.x.append(x_pos); self.y.append(y_pos)
             self.star_flux.append(star_flux)
@@ -99,6 +105,10 @@ class StarMaker():
         self.x=np.array(self.x)
         self.y=np.array(self.y)
 
+        # If a vignet_size wasn't supplied, set it to be the star VIGNET size
+        if self.vignet_size == None:
+            self.vignet_size = np.shape(this_vign)[1]
+            print(f'Setting vignet size to {self.vignet_size}')
         return
 
 
@@ -111,7 +121,7 @@ class StarMaker():
         self._set_background(bg_obj=bg_obj,vb=vb)
 
         # Create star vignets
-        self._get_star_vignets()
+        self._get_star_vignets(vb=vb)
 
         # Create GS Object & record fit
         do_hsm_fit(self)
@@ -122,7 +132,7 @@ class StarMaker():
 class StampBackground():
     '''
     Determining and storing star cutout backgrounds for shape fitting purposes
-    Maybe not efficient, but run the first time on stars. If not needed, don't
+    Maybe not efficient, but runs the first time on stars.
 
     : sky_level : median background of star stamp
     : sky_std   : standard deviation of star stamp
