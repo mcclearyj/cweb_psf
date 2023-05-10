@@ -118,7 +118,7 @@ class PSFMaker:
 
         this_pexim = self.psf.get_rec(y_pos,x_pos)
 
-        # You had better hope this is even
+        # You had better hope this is odd
         if this_pexim.shape[0] != self.vignet_size:
             n = int((this_pexim.shape[0]-self.vignet_size)/2)
             this_pexim = this_pexim[n:-n,n:-n]

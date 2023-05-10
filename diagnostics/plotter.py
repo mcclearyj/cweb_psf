@@ -15,7 +15,7 @@ import fitsio
 
 from .utils import set_rc_params
 
-def size_mag_plot(im_cat, star_cat, plot_name, filter_name):
+def size_mag_plots(im_cat, star_cat, plot_name, filter_name):
     '''
     Save to file a size-magnitude plot with the stellar locus highlighted
     Inputs:
@@ -37,19 +37,34 @@ def size_mag_plot(im_cat, star_cat, plot_name, filter_name):
     else:
         star_catalog = star_cat
 
-    fig, ax = plt.subplots(1,1, tight_layout=True, figsize=(10,8))
+    fig, axs = plt.subplots(1,2, tight_layout=True, figsize=(14,5))
 
-    ax.plot(image_catalog['MAG_AUTO'], image_catalog['FWHM_WORLD']*3600, '.', \
+    # First, do FWHM
+    axs[0].plot(image_catalog['MAG_AUTO'], image_catalog['FWHM_WORLD']*3600, '.', \
             label='all objects', markersize=3)
-    ax.plot(star_catalog['MAG_AUTO'], star_catalog['FWHM_WORLD']*3600, '.', \
+    axs[0].plot(star_catalog['MAG_AUTO'], star_catalog['FWHM_WORLD']*3600, '.', \
             label='selected stars', markersize=3)
 
-    ax.set_xlabel(r'\texttt{MAG_AUTO}', fontsize=16)
-    ax.set_ylabel(r'\texttt{FWHM_WORLD} (arcsec)', fontsize=16)
-    ax.set_ylim(-0.5, 3)
-    ax.set_xlim(15, 35)
+    axs[0].set_xlabel(r'\texttt{MAG_AUTO}', fontsize=16)
+    axs[0].set_ylabel(r'\texttt{FWHM_WORLD} (arcsec)', fontsize=16)
+    axs[0].set_ylim(-0.1, 2)
+    axs[0].set_xlim(15, 32)
+    axs[0].grid(True)
+    axs[0].legend(markerscale=3, fontsize=14, loc='upper left')
 
-    ax.legend(markerscale=3, fontsize=14, loc='upper left')
+
+    # Then, flux_radius
+    axs[1].plot(image_catalog['MAG_AUTO'], image_catalog['FLUX_RADIUS']*2, '.', \
+            label='all objects', markersize=3)
+    axs[1].plot(star_catalog['MAG_AUTO'], star_catalog['FLUX_RADIUS']*2, '.', \
+            label='selected stars', markersize=3)
+
+    axs[1].set_xlabel(r'\texttt{MAG_AUTO}', fontsize=16)
+    axs[1].set_ylabel(r'2*\texttt{FLUX_RADIUS} (pix)', fontsize=16)
+    axs[1].set_ylim(-0.05, 15)
+    axs[1].set_xlim(15, 32)
+    axs[1].grid(True)
+    axs[1].legend(markerscale=3, fontsize=14, loc='upper left')
 
     fig.savefig(plot_name)
 

@@ -244,10 +244,12 @@ class ResidPlots:
 
         mpl_dicts=[]
         for i, dct in enumerate(dicts):
+            star_norm = colors.LogNorm(vmin=np.min(self.star_dict.avg_im),
+                                vmax=np.max(self.star_dict.avg_im))
             if i==2:
                 mpl_dict = dict(norm=colors.LogNorm(), cmap=plt.cm.gist_ncar)
             else:
-                mpl_dict = dict(norm=colors.LogNorm(), cmap=plt.cm.turbo)
+                mpl_dict = dict(norm=star_norm, cmap=plt.cm.turbo)
             mpl_dicts.append(mpl_dict)
 
         # Make actual plot
