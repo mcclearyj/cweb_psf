@@ -1,0 +1,27 @@
+global input path: ./
+input catalog:
+  filename: filename.fits
+  file extension: 1
+  ra tag: 'ALPHAWIN_J2000'
+  dec tag: 'DELTAWIN_J2000'
+  boxsize tag: 35
+
+input catalog file extension: 2
+global output path: working
+output filename: output.fits
+
+images:
+  filename_1:
+    imageext: 0
+    imagefile: ''
+    maskext: 0
+    maskfile: ''
+    weightext: 0
+    weightfile: ''
+  file_name2:
+    imageext: 0
+    imagefile: ''
+    maskext: 0
+    maskfile: ''
+    weightext: 0
+    weightfile: ''

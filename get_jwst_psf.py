@@ -11,7 +11,7 @@ import glob
 from esutil import htm
 from argparse import ArgumentParser
 import ipdb
-from diagnostics.plotter import size_mag_plot
+from diagnostics.plotter import size_mag_plots
 
 def parse_args():
 
@@ -33,22 +33,30 @@ def parse_args():
     return parser.parse_args()
 
 
-def make_fwhm_tab():
+def get_star_params(config=None):
     '''
     Return a look-up table containing approximate stellar
     FWHMs for each of the filters based on DEC2022 COSMOS-Web simulations
     This is horrendous coding and should be fixed ASAP -- try a yaml?
+
+    Here, selecting on FLUX_RADIUS parameter in pixels. The longer wavelength
+    images have a flux_rad vs. flux_auto
     '''
 
     filter_names = ['f115w','f150w','f277w', 'f444w']
     fwhms = [0.058, 0.0628, 0.125, 0.165]
-    min_fwhm = [0.04, 0.04, 0.10, 0.15]
-    max_fwhm = [0.085, 0.085, 0.14, 0.18]
+    min_size = [0.88, 1, 1.83, 2.33]
+    max_size = [1.7, 1.5, 2.75, 3.2]
+    max_mag = [27.4, 28, 27, 27.1]
+    min_mag = [19, 19, 19, 19]
 
-    star_fwhms = Table([filter_names, fwhms, min_fwhm, max_fwhm],
-        names=['filter_name', 'star_fwhm', 'min_fwhm', 'max_fwhm'])
+    star_params = Table([filter_names, fwhms, min_size,\
+                        max_size, max_mag, min_mag],
+                        names=['filter_name', 'star_fwhm', 'min_size',\
+                        'max_size', 'max_mag', 'min_mag']
+                        )
 
-    return star_fwhms
+    return star_params
 
 
 def extract_sci_wht(i2d, outdir, overwrite=False):
@@ -92,7 +100,7 @@ def crop(image_file, weight_file, wg):
 
 
 def run_sextractor(image_file, weight_file,
-                    configdir, outdir, star_fwhms):
+                    configdir, outdir, star_params):
     '''
     Run Source Extractor, including the appropriate star FWHM for
     preliminary star identification.
@@ -102,7 +110,7 @@ def run_sextractor(image_file, weight_file,
         weight_file: weight file for SExtractor
         configdir: directory of SEx configuration files
         outdir: directory for outputs
-        star_fwhms: table with appx. size of stars in image
+        star_params: table with appx. size of stars in image
     '''
 
 
@@ -119,8 +127,8 @@ def run_sextractor(image_file, weight_file,
                 )
     filter_name = re.search(r"f(\d){3}w", img_basename).group()
 
-    wg = np.isin(star_fwhms['filter_name'], filter_name)
-    star_fwhm = star_fwhms[wg]['star_fwhm']
+    wg = np.isin(star_params['filter_name'], filter_name)
+    star_fwhm = star_params[wg]['star_fwhm']
     star_fwhm = np.float64(star_fwhm)
 
     seeing_arg = f'-SEEING_FWHM {star_fwhm}'
@@ -141,8 +149,8 @@ def run_sextractor(image_file, weight_file,
 
     return
 
-def make_starcat(image_file, outdir,
-                truthstars=None, star_fwhms=None, thresh=0.75):
+def make_starcat(image_file, err_file, outdir,
+                truthstars=None, star_params=None, thresh=0.92):
     '''
     Create a star catalog from the SExtractor image catalog using cuts on
     the SExtractor CLASS_STAR parameter and the supplied table of star properties.
@@ -153,7 +161,7 @@ def make_starcat(image_file, outdir,
         image_file : image file
         out_dir : where to save star catalog (also assumed to be location of image catalog)
         truthstars : reference star catalog
-        star_fwhms : table with stellar locus parameters
+        star_params : table with stellar locus parameters
         thresh : CLASS_STAR threshold for accepting as star
 
     Outputs:
@@ -164,11 +172,12 @@ def make_starcat(image_file, outdir,
         - make starparams a config file. Alternatively, improve auto-star selection
     '''
 
-    # Make sure that one of either truthstars or star_fwhms is supplied
-    if (truthstars is None) and (star_fwhms is None):
+    # Make sure that one of either truthstars or star_params is supplied
+    if (truthstars is None) and (star_params is None):
         print('Reference star catalog and star param table both NoneType, exiting')
 
     img_basename = os.path.basename(image_file)
+
     try:
         filter_name = re.search(r"f(\d){3}w", image_file).group() \
                         +'_'+ re.search(r"(\d){2}mas",image_file).group()
@@ -182,11 +191,11 @@ def make_starcat(image_file, outdir,
                 outdir, img_basename.replace('sci.fits','starcat.fits')
                 )
     plot_name = os.path.join(
-                outdir, img_basename.replace('sci.fits','sizemag.png')
+                outdir, img_basename.replace('sci.fits','sizemag.pdf')
                 )
 
     if not os.path.exists(imcat_name):
-        print(f'could not find image im_cat file {cat_name}')
+        print(f'could not find image im_cat file {imcat_name}')
     else:
         im_cat_fits = fits.open(imcat_name)
         im_cat = im_cat_fits['LDAC_OBJECTS'].data
@@ -196,7 +205,6 @@ def make_starcat(image_file, outdir,
         truth_star_tab = Table.read(truthstars, format='ascii')
         truthmatch = htm.Matcher(16, ra=truth_star_tab['x_or_RA'],
                                     dec=truth_star_tab['y_or_Dec'])
-
         cat_ind, truth_ind, dist = truthmatch.match(
                                     ra=im_cat['ALPHAWIN_J2000'],
                                     dec=im_cat['DELTAWIN_J2000'],
@@ -205,28 +213,39 @@ def make_starcat(image_file, outdir,
     else:
 
         filter_name = re.search(r"f(\d){3}w", image_file).group()
-        wg = np.isin(star_fwhms['filter_name'], filter_name)
-        min_fwhm = star_fwhms[wg]['min_fwhm']
-        min_fwhm = np.float64(min_fwhm)
-        max_fwhm = star_fwhms[wg]['max_fwhm']
-        max_fwhm = np.float64(max_fwhm)
+        wg = np.isin(star_params['filter_name'], filter_name)
+        min_size = star_params[wg]['min_size']
+        min_size = np.float64(min_size)
+        max_size = star_params[wg]['max_size']
+        max_size = np.float64(max_size)
+        max_mag = star_params[wg]['max_mag']
+        max_mag = np.float64(max_mag)
+        min_mag = star_params[wg]['min_mag']
+        min_mag = np.float64(min_mag)
 
-        star_selec = (im_cat['CLASS_STAR'] >= thresh) \
-                        & (im_cat['MAG_AUTO'] < 30) \
-                        & (im_cat['FWHM_WORLD']*3600 > min_fwhm) \
-                        & (im_cat['FWHM_WORLD']*3600 < max_fwhm) \
-                        & (im_cat['SNR_WIN'] > 15)
+        star_selec = (im_cat['CLASS_STAR'] > thresh) \
+                        & (im_cat['MAG_AUTO'] < max_mag) \
+                        & (im_cat['MAG_AUTO'] > min_mag) \
+                        & (im_cat['FLUX_RADIUS'] > min_size) \
+                        & (im_cat['FLUX_RADIUS'] < max_size)
 
         cat_ind = np.arange(len(star_selec))[star_selec]
 
     star_cat = im_cat[cat_ind]
+
     im_cat_fits['LDAC_OBJECTS'].data = star_cat
     im_cat_fits.writeto(starcat_name, overwrite=True)
 
     # Make size-mag plot
-    size_mag_plot(im_cat, star_cat, plot_name, filter_name)
+    size_mag_plots(im_cat, star_cat, plot_name, filter_name)
 
     return starcat_name
+
+
+def cookie_cutter(filename, catalog):
+    '''
+    Make sure that
+    '''
 
 
 def run_piffy(im_file, star_cat_file, configdir, outdir):
@@ -265,7 +284,7 @@ def run_piffy(im_file, star_cat_file, configdir, outdir):
     output_arg  = f'output.file_name={output_name} output.dir={piff_outdir}'
 
     cmd = ' '.join([
-             'piffify', run_piff_config_arg, image_arg, coord_arg, \
+             'piffify', piff_config_arg, image_arg, coord_arg, \
                 psfcat_arg, output_arg
                 ])
     print('piff cmd is ' + cmd)
@@ -284,6 +303,7 @@ def run_psfex(image_file, configdir, outdir):
     starcat_name = cat_name.replace('cat.fits', 'starcat.fits')
     outcat_name  = cat_name.replace('cat.fits', 'psfex_cat.fits')
     outcat_arg   = f'-OUTCAT_NAME {outcat_name}'
+
     psfex_outdir = outdir
 
     psfcat_name = starcat_name #cat_name
@@ -337,10 +357,10 @@ def main(args):
 
     # Placeholder: table of stellar locus parameters, though probably
     # not necessary long-term -- need to develop better auto-starselect
-    star_fwhms = make_fwhm_tab()
+    star_params = get_star_params()
 
     # Process exposures
-    for i2d in i2d_images[0:2]:
+    for i2d in i2d_images:
 
         print(f'Working on file {i2d}...\n\n')
 
@@ -349,14 +369,15 @@ def main(args):
 
         image_file = i2d
         weight_file = i2d.replace('sci', 'wht')
-
+        err_file = i2d.replace('sci', 'err')
 
         run_sextractor(image_file, weight_file,
-                                configdir, outdir, star_fwhms)
+                                configdir, outdir, star_params)
 
-        starcat_name = make_starcat(image_file, outdir,
+        starcat_name = make_starcat(image_file, err_file, outdir,
                                         truthstars=truthstars,
-                                        star_fwhms=star_fwhms)
+                                        star_params=star_params
+                                        )
 
         run_piffy(image_file, starcat_name,
                     configdir=configdir, outdir=outdir)
