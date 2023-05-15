@@ -11,9 +11,9 @@ import pdb,ipdb
 from argparse import ArgumentParser
 import yaml
 
-from diagnostics.starmaker import StarMaker, StampBackground
-from diagnostics.psfmaker import PSFMaker
-from diagnostics.plotter import compare_rho_stats
+from src.starmaker import StarMaker, StampBackground
+from src.psfmaker import PSFMaker
+from src.plotter import compare_rho_stats
 
 def parse_args():
 
@@ -128,8 +128,8 @@ def main(args):
         pix_scale = 0.03
         print(f'Using default image/PSF pixel scale {pix_scale}')
 
-    #star_cat = Table.read(os.path.join(basedir, star_cat), hdu='LDAC_OBJECTS')
-    star_cat = Table.read(os.path.join(basedir, star_cat))
+    star_cat = Table.read(os.path.join(basedir, star_cat), hdu='LDAC_OBJECTS')
+    #star_cat = Table.read(os.path.join(basedir, star_cat))
 
     if min_snr is not None:
         print(f"selecting S/N > {min_snr:.1f} stars")

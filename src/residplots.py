@@ -11,7 +11,6 @@ import ipdb,pdb
 from astropy.io import fits
 from scipy.stats import chi2
 
-
 from .utils import AttrDict, set_rc_params
 
 class ResidPlots:
@@ -26,14 +25,14 @@ class ResidPlots:
             stars:  instance of StarMaker
             psf:  instance of PSFMaker
             scale:  scaling for quiverplots
-        '''
-        test.assertIsInstance(self, starmaker, diagnostics.starmaker.StarMaker,
+
+        test.assertIsInstance(self, starmaker, src.starmaker.StarMaker,
                         msg='starmaker must be instance of StarMaker class'
                         )
-        test.assertIsInstance(self, psfmaker, diagnostics.psfmaker.PSFMaker,
+        test.assertIsInstance(self, psfmaker, src.psfmaker.PSFMaker,
                          msg='psfmaker must be instance of PSFMaker class'
                          )
-
+        '''
         self.stars = starmaker
         self.psfs  = psfmaker
 
@@ -94,14 +93,16 @@ class ResidPlots:
 
         chi2_maps = []
         for i, resid in enumerate(psf.resids):
-            noise_map = np.full(resid.shape, np.std(star.stamps[i]))
+            #noise_map = np.full(resid.shape, np.std(star.stamps[i]))
+            noise_map = star.err_stamps[i]
             chi2_map = np.square(np.divide(resid, noise_map))
             chi2_maps.append(chi2_map)
 
-        # Total chi2: should it be chip by chip or computed on avg?
-        avg_chi2_im = np.nanmean(chi2_maps, axis=0)
-        chi_square = np.sum(avg_chi2_im)
+        masked_chi2 = np.ma.masked_where(np.isinf(chi2_maps), chi2_maps)
 
+        # Total chi2: should it be chip by chip or computed on avg?
+        avg_chi2_im = np.ma.mean(masked_chi2, axis=0).data
+        chi_square = np.sum(avg_chi2_im)
 
         # Calculate degrees of freedom
         # Q: are there 2 b/c of X, Y or is it 3: X, Y, flux?
@@ -123,6 +124,7 @@ class ResidPlots:
 
         # Save the chi-squared image to a fits file, too
         im = fits.PrimaryHDU(avg_chi2_im)
+
         for key in list(chi2_dict.keys())[1:]:
             im.header.set(key, chi2_dict[key])
         im.writeto(outname.replace('.png', '.fits'), overwrite=True)
@@ -240,11 +242,13 @@ class ResidPlots:
 
         dicts = [self.star_dict, self.psf_dict, self.chi2_dict]
 
-        #pdb.set_trace()
-
         mpl_dicts=[]
         for i, dct in enumerate(dicts):
-            star_norm = colors.LogNorm(vmin=np.min(self.star_dict.avg_im),
+            if (np.min(self.star_dict.avg_im) <=0):
+                vmin = 0.001
+            else:
+                vmin = np.min(self.star_dict.avg_im)
+            star_norm = colors.LogNorm(vmin=vmin,
                                 vmax=np.max(self.star_dict.avg_im))
             if i==2:
                 mpl_dict = dict(norm=colors.LogNorm(), cmap=plt.cm.gist_ncar)

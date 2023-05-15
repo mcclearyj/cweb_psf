@@ -9,7 +9,7 @@ import sys
 from astropy.table import Table
 import ipdb
 
-from diagnostics.hsm_fitter import do_hsm_fit
+from .hsm_fitter import do_hsm_fit
 
 
 class StarMaker():
@@ -37,6 +37,7 @@ class StarMaker():
         self.y = []
         self.stamps = []
         self.star_flux = []
+        self.err_stamps = []
 
         self.hsm_sig = []
         self.hsm_g1 = []
@@ -79,14 +80,16 @@ class StarMaker():
 
     def _get_star_vignets(self, vb):
         '''
-        Make star stamps from SExtractor catalog vignets
+        Make star stamps from SExtractor catalog vignets. Also populate
+        ERR stamps, which should have been added to star catalog.
+
+        TO DO: add try/except to catch cases where the star catalog doesn't have
+        an ERR column
         '''
-        #ipdb.set_trace()
-        #n = np.floor(0.5*(np.shape(self.star_cat['VIGNET'])[1]-self.vignet_size))
-        #n = int(n)
 
         for i in range(len(self.star_cat)):
             this_vign = self.star_cat[i]['VIGNET']
+            this_err_vign = self.star_cat[i]['ERR_VIGNET']
             x_pos = self.star_cat[i]['X_IMAGE']; y_pos = self.star_cat[i]['Y_IMAGE']
 
             this_vign[this_vign <= -999] = np.nan
@@ -101,6 +104,7 @@ class StarMaker():
             self.x.append(x_pos); self.y.append(y_pos)
             self.star_flux.append(star_flux)
             self.stamps.append(vign_cutout)
+            self.err_stamps.append(this_err_vign)
 
         self.x=np.array(self.x)
         self.y=np.array(self.y)

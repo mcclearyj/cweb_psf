@@ -17,11 +17,11 @@ import pdb, ipdb
 import treecorr
 import glob
 
-from diagnostics.starmaker import StarMaker, StampBackground
-from diagnostics.hsm_fitter import do_hsm_fit
-from diagnostics.plotter import make_resid_plot, plot_rho_stats
-from diagnostics.quiverplot import QuiverPlot
-from diagnostics.residplots import ResidPlots
+from .starmaker import StarMaker, StampBackground
+from .hsm_fitter import do_hsm_fit
+from .plotter import make_resid_plot, plot_rho_stats
+from .quiverplot import QuiverPlot
+from .residplots import ResidPlots
 
 class PSFMaker:
     '''
@@ -328,7 +328,6 @@ class PSFMaker:
             xpos = stars.x[i]; ypos = stars.y[i]
             flux = stars.star_flux[i]
             star_stamp=stars.stamps[i]
-
             pim = self.render_psf(x=xpos,y=ypos,flux=flux)
             self.stamps.append(pim)
             self.resids.append(pim-star_stamp)

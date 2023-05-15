@@ -23,12 +23,6 @@ class QuiverPlot:
             psf:  instance of PSFMaker
             scale:  scaling for quiverplots
         '''
-        test.assertIsInstance(self, starmaker, diagnostics.starmaker.StarMaker,
-                        msg='starmaker must be instance of StarMaker class'
-                        )
-        test.assertIsInstance(self, psfmaker, diagnostics.psfmaker.PSFMaker,
-                         msg='psfmaker must be instance of PSFMaker class'
-                         )
 
         self.stars = starmaker
         self.psfs  = psfmaker
