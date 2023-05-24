@@ -23,7 +23,7 @@ class BoxCutter:
         self.config = read_yaml(self.config_file)
 
         # We refer to box size a lot so read it in, w/e
-        self.box_size = self.config['box_size']
+        self.box_size = np.int(self.config['box_size'])
 
 
     def _grab_wcs_box(self, obj):
@@ -59,15 +59,20 @@ class BoxCutter:
             WHAT'S IN THE BAAAAHX
         '''
 
+        bs = np.int(self.box_size)
         bb = self.box_size/2
         im = self.image
         j1 = int(np.floor(x-bb))
         j2 = int(np.floor(x+bb))
         k1 = int(np.floor(y-bb))
         k2 = int(np.floor(y+bb))
-        # print(j1, j2, k1, k2)
-        #this_box = im[k1:k2, j1:j2]
-        return im[k1:k2, j1:j2]
+
+        box = im[k1:k2, j1:j2]
+
+        if np.shape(box) != (bs, bs):
+            box = np.zeros([bs, bs])
+
+        return box
 
 
     def grab_boxes(self, image_file, cat_file):

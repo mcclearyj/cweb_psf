@@ -25,7 +25,7 @@ def size_mag_plots(im_cat, star_cat, plot_name, filter_name):
         filter_name : filter name (no support for 30mas/60mas rn)
     '''
 
-    set_rc_params()
+    set_rc_params(fontsize=14)
 
     if type(im_cat) == str:
         image_catalog = Table.read(im_cat)
@@ -37,7 +37,7 @@ def size_mag_plots(im_cat, star_cat, plot_name, filter_name):
     else:
         star_catalog = star_cat
 
-    fig, axs = plt.subplots(1,2, tight_layout=True, figsize=(14,5))
+    fig, axs = plt.subplots(1,2, tight_layout=True, figsize=(11,7))
 
     # First, do FWHM
     axs[0].plot(image_catalog['MAG_AUTO'], image_catalog['FWHM_WORLD']*3600, '.', \
@@ -45,10 +45,10 @@ def size_mag_plots(im_cat, star_cat, plot_name, filter_name):
     axs[0].plot(star_catalog['MAG_AUTO'], star_catalog['FWHM_WORLD']*3600, '.', \
             label='selected stars', markersize=3)
 
-    axs[0].set_xlabel(r'\texttt{MAG_AUTO}', fontsize=16)
+    #axs[0].set_xlabel(r'\texttt{MAG_AUTO}', fontsize=16)
     axs[0].set_ylabel(r'\texttt{FWHM_WORLD} (arcsec)', fontsize=16)
-    axs[0].set_ylim(-0.1, 2)
-    axs[0].set_xlim(15, 32)
+    axs[0].set_ylim(-0.08, 0.9)
+    axs[0].set_xlim(18, 30)
     axs[0].grid(True)
     axs[0].legend(markerscale=3, fontsize=14, loc='upper left')
 
@@ -59,10 +59,10 @@ def size_mag_plots(im_cat, star_cat, plot_name, filter_name):
     axs[1].plot(star_catalog['MAG_AUTO'], star_catalog['FLUX_RADIUS']*2, '.', \
             label='selected stars', markersize=3)
 
-    axs[1].set_xlabel(r'\texttt{MAG_AUTO}', fontsize=16)
-    axs[1].set_ylabel(r'2*\texttt{FLUX_RADIUS} (pix)', fontsize=16)
-    axs[1].set_ylim(-0.05, 15)
-    axs[1].set_xlim(15, 32)
+    axs[1].set_xlabel(r'\texttt{MAG_AUTO}', fontsize=14)
+    axs[1].set_ylabel(r'2*\texttt{FLUX_RADIUS} (pix)', fontsize=14)
+    axs[1].set_ylim(-0.05, 10)
+    axs[1].set_xlim(18, 30)
     axs[1].grid(True)
     axs[1].legend(markerscale=3, fontsize=14, loc='upper left')
 

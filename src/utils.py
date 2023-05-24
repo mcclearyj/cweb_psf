@@ -51,7 +51,7 @@ def set_rc_params(fontsize=None):
 
     return
 
-def match_coords(self, cat1, cat2):
+def match_coords(cat1, cat2):
     '''
     Utility function to match cat1 to cat 2 using celestial coordinates
     '''

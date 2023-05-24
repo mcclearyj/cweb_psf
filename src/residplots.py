@@ -6,7 +6,6 @@ from matplotlib import rc,rcParams
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import colors
 import matplotlib.pyplot as plt
-import diagnostics
 import ipdb,pdb
 from astropy.io import fits
 from scipy.stats import chi2

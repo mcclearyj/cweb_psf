@@ -6,7 +6,6 @@ from matplotlib import rc,rcParams
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import colors
 import matplotlib.pyplot as plt
-import diagnostics
 import ipdb
 
 from .utils import AttrDict, set_rc_params
