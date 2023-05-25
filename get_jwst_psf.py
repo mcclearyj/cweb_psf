@@ -48,9 +48,9 @@ def get_star_params(config=None):
     filter_names = ['f115w','f150w','f277w', 'f444w']
     fwhms = [0.058, 0.0628, 0.125, 0.165]
     min_size = [0.88, 1, 1.83, 2.33]
-    max_size = [1.7, 1.5, 2.75, 3.2]
-    max_mag = [26.2, 28, 27, 27.1]
-    min_mag = [19, 19, 19, 19]
+    max_size = [1.7, 1.5, 2.5, 3.2]
+    max_mag = [26.2, 26.5, 27, 27.1]
+    min_mag = [19.5, 19.5, 19, 19]
 
     star_params = Table([filter_names, fwhms, min_size,\
                         max_size, max_mag, min_mag],
@@ -229,10 +229,7 @@ def add_err_cutout(boxcut, image_file, starcat_file):
     errs = boxcut.grab_boxes(image_file=image_file, cat_file=starcat)
     data = np.zeros(len(errs), dtype=[('ERR_VIGNET', 'f4', (box_size, box_size))])
     for i, err in enumerate(errs):
-        try:
-            data['ERR_VIGNET'][i] = err
-        except:
-            pdb.set_trace()
+        data['ERR_VIGNET'][i] = err
     sc_fits[cat_hdu].insert_column('ERR_VIGNET', data['ERR_VIGNET'])
     sc_fits.close()
 
@@ -281,7 +278,7 @@ def run_piffy(image_file, starcat_file, config):
                 psfcat_arg, output_arg
                 ])
     print('piff cmd is ' + cmd)
-    os.system(cmd)
+    #os.system(cmd)
 
     return
 
@@ -330,7 +327,6 @@ def main(args):
     config = read_yaml(args.config)
     configdir = config['configdir']
     outdir = config['outdir']
-
     # Set default output directory values if none provided
     if configdir is None:
         config['configdir'] = \
@@ -376,7 +372,7 @@ def main(args):
 
         run_psfex(image_file, starcat_file=starcat_file, config=config)
 
-        #run_piffy(image_file, starcat_file=starcat_file, config=config)
+        run_piffy(image_file, starcat_file=starcat_file, config=config)
 
 
 
