@@ -53,9 +53,9 @@ class ResidPlots:
                             plus some summary stats, cast to a class
         '''
 
-        fwhm = np.nanmean(maker.fwhm[wg])
-        sigma = np.nanmean(maker.hsm_sig[wg])
-        avg_im = np.nanmean(stamps, axis=0)
+        fwhm = np.nanmedian(maker.fwhm[wg])
+        sigma = np.nanmedian(maker.hsm_sig[wg])
+        avg_im = np.nanmedian(stamps, axis=0)
 
         im_dict = dict(avg_im = avg_im,
                         fwhm  = fwhm,
@@ -81,7 +81,7 @@ class ResidPlots:
         return
 
 
-    def make_chi2(self, nparams=3, outname='chi2_residuals.png'):
+    def make_chi2(self, nparams=2, outname='chi2_residuals.png'):
         '''
         Compute the chi-squared for each image. Loop over residuals to get
         chi-squared for each stamp, then create a mean (or maybe median)
@@ -90,24 +90,27 @@ class ResidPlots:
         star = self.stars
         observed = self.star_dict.avg_im # for DOF
 
+
         chi2_maps = []
         for i, resid in enumerate(psf.resids):
             #noise_map = np.full(resid.shape, np.std(star.stamps[i]))
             noise_map = star.err_stamps[i]
             chi2_map = np.square(np.divide(resid, noise_map))
-            chi2_maps.append(chi2_map)
+            reduced_chi2_map = chi2_map/(star.vignet_size**2)
+            chi2_maps.append(reduced_chi2_map)
 
         masked_chi2 = np.ma.masked_where(np.isinf(chi2_maps), chi2_maps)
 
         # Total chi2: should it be chip by chip or computed on avg?
-        avg_chi2_im = np.ma.mean(masked_chi2, axis=0).data
+        avg_chi2_im = np.ma.median(masked_chi2, axis=0).data
         chi_square = np.sum(avg_chi2_im)
 
         # Calculate degrees of freedom
-        # Q: are there 2 b/c of X, Y or is it 3: X, Y, flux?
-        dof = observed.size - nparams
+
 
         # Calculate reduced chi2
+        #dof = len(star.stamps)
+        dof = 1
         reduced_chi_square = chi_square / dof
 
         # Calculate p-value
@@ -115,7 +118,6 @@ class ResidPlots:
 
         # get a dict with all those values!
         chi2_dict = dict(avg_im = avg_chi2_im,
-                            chi_square = chi_square,
                             reduced_chi_square = reduced_chi_square,
                             p_value = p_value
                             )
@@ -144,21 +146,23 @@ class ResidPlots:
         I used to use colors.TwoSlopeNorm and the seismic_r color map for the
         flux residuals, but have decided to go with SymLogNorm for now.
         '''
-
         if (avg_im is not None):
 
             norm = colors.SymLogNorm(linthresh=0.01,
                             vmin=0.8*np.min(avg_im),
                             vmax=0.8*np.max(avg_im))
-
+            cmap = plt.cm.bwr_r
+            
         else:
-            if vmin == None:
-                vmin = 0.0001
-            if vmax == None:
-             vmax = 75
-            norm = colors.LogNorm(vmin=vmin, vmax=vmax)
+            if (np.min(self.star_dict.avg_im) <=0):
+                vmin = 0.001
+            else:
+                vmin = np.min(self.star_dict.avg_im)
 
-        cmap = plt.cm.bwr_r
+            norm = colors.SymLogNorm(vmin=vmin,
+                            vmax=np.max(self.star_dict.avg_im),
+                            linthresh=1e-4)
+            cmap=plt.cm.turbo
 
         mpl_dict = dict(cmap=cmap, norm=norm)
 
@@ -172,15 +176,14 @@ class ResidPlots:
         rd = self.resid_dict
         xd = self.chi2_dict
 
-        star_title = 'avg star HSM sigma = %.4f\ngs.calculateFWHM() = %.4f'\
+        star_title = 'median star HSM sigma = %.4f\ngs.calculateFWHM() = %.4f'\
                     % (sd.sigma,sd.fwhm)
-        psf_title = 'avg PSF HSM sigma = %.4f\ngs.calculateFWHM() = %.4f'\
+        psf_title = 'median PSF HSM sigma = %.4f\ngs.calculateFWHM() = %.4f'\
                     % (pd.sigma,pd.fwhm)
-        resid_title = 'sum(mean resid)= %.3f\nmean=%1.2e std=%.3f'\
-                    % (np.nansum(rd.avg_im), np.nanmean(rd.avg_im), np.nanstd(rd.avg_im))
-        chi2_title = '$\chi^2 = %.3f\ \chi^2_{dof} = %.3f$\np-value = %.3f'\
-                    % (xd.chi_square, xd.reduced_chi_square, xd.p_value)
-
+        resid_title = 'sum(median resid)= %.3f\nmedian=%1.2e std=%.3f'\
+                    % (np.nansum(rd.avg_im), np.nanmedian(rd.avg_im), np.nanstd(rd.avg_im))
+        chi2_title = 'Total $\chi^2_{dof} = %.2f$\n'\
+                    % (xd.reduced_chi_square)
 
         sd.title = star_title; pd.title = psf_title
         rd.title = resid_title; xd.title = chi2_title
@@ -247,8 +250,9 @@ class ResidPlots:
                 vmin = 0.001
             else:
                 vmin = np.min(self.star_dict.avg_im)
-            star_norm = colors.LogNorm(vmin=vmin,
-                                vmax=np.max(self.star_dict.avg_im))
+            star_norm = colors.SymLogNorm(vmin=vmin,
+                                vmax=np.max(self.star_dict.avg_im),
+                                linthresh=1e-4)
             if i==2:
                 mpl_dict = dict(norm=colors.LogNorm(), cmap=plt.cm.gist_ncar)
             else:
