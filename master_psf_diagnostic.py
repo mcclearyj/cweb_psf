@@ -199,7 +199,7 @@ def main(args):
     make_output_table(makers, prefix, outfile=outfile)
 
     # Compare rho stats for each type of PSF model fit
-    # compare_rho_stats(prefix, pixel_scale=pix_scale, file_path=outdir)
+    compare_rho_stats(prefix, pixel_scale=pix_scale, file_path=outdir)
 
     return 0
 
