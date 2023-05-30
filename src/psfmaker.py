@@ -33,8 +33,8 @@ class PSFMaker:
     Possible improvements: make more general?
     '''
 
-    def __init__(self, psf_file, pix_scale, vignet_size=None,
-                        psf_type='piff', noisefree=False, rho_params=None):
+    def __init__(self, psf_file, pix_scale, vignet_size=None, psf_type='piff',
+                        noisefree=False, rho_params=None, vb=False):
         '''
         psf_obj is the file name of psf,
         or alternatively an instance of it
@@ -52,12 +52,15 @@ class PSFMaker:
         self.vignet_size = vignet_size
         self.pixel_scale = pix_scale
         self.rho_params = rho_params
+        self.vb = vb
 
+        self.models = []
         self.stamps = []
         self.resids = []
 
         self.sky_level = 0.0
         self.sky_std = 0.0
+        self.sample_scale = 1.0
 
         self.x = []
         self.y = []
@@ -74,7 +77,7 @@ class PSFMaker:
             print("     - 'piff'  : Use PIFF rendering")
 
 
-    def render_psf(self,x=None,y=None,flux=None,psf_type='epsfex',vb=False):
+    def render_psf(self,x=None,y=None,flux=None,psf_type='epsfex'):
         '''
         Method to decide which rendering method to call, then call it.
         Appends PSF cutouts to self
@@ -82,17 +85,23 @@ class PSFMaker:
         would be cool to try to make an assertion error pop out
         '''
 
+        vb = self.vb
+
         if self.psf_type=='epsfex':
             if vb==True: print("rendering epsfex psf")
-            psf_im = self._make_pexim(x_pos=x,y_pos=y,flux=flux,vb=vb)
+            self.sample_scale = self.psf['psf_samp']
+            psf_im = self._make_pexim(x_pos=x, y_pos=y, flux=flux, vb=vb)
 
         elif self.psf_type=='gpsfex':
             if vb==True: print("rendering psfex_des psf")
-            psf_im = self._make_gpsf(x_pos=x,y_pos=y,flux=flux,vb=vb)
+            self.sample_scale = self.psf.sample_scale
+            psf_im = self._make_gpsf(x_pos=x, y_pos=y, flux=flux, vb=vb)
 
         elif self.psf_type=='piff':
             if vb==True: print("rendering PIFF psf")
-            psf_im = self._make_piff(x_pos=x,y_pos=y,flux=flux,vb=vb)
+            #self.sample_scale = self.psf.single_psf.model.scale
+            self.sample_scale = 1
+            psf_im = self._make_piff(x_pos=x, y_pos=y, flux=flux, vb=vb)
 
         else:
             allowed=['piff','epsfex','gpsfex']
@@ -119,25 +128,39 @@ class PSFMaker:
         this_pexim = self.psf.get_rec(y_pos,x_pos)
 
         # You had better hope this is odd
+        '''
+        # This could eventually be a call to BoxCutter...
+        if this_pexim.shape[0] != self.vignet_size:
+            sm = min(this_pexim.shape[0], self.vignet_size)
+            lg = max(this_pexim.shape[0], self.vignet_size)
+            n = int((lg - sm)/2)
+            this_pexim = this_pexim[n:-n,n:-n]
+        '''
+
         if this_pexim.shape[0] != self.vignet_size:
             n = int((this_pexim.shape[0]-self.vignet_size)/2)
             this_pexim = this_pexim[n:-n,n:-n]
 
-        pexim_rs = (this_pexim)/np.sum(this_pexim)*flux
 
         if self.noisefree == False:
-            noise = np.random.normal(loc=self.sky_level,
-                        scale=self.sky_std,size=this_pexim.shape
+            # Original was self.sky_std
+            if vb == True: print("adding noise")
+            noise = np.random.normal(loc=0,
+                        scale=1e-5,size=this_pexim.shape
                         )
-            pexim_rs+=noise
+            this_pexim+=noise
+
+        # Now we normalize
+        pexim_rs = this_pexim #/np.sum(this_pexim)
 
         return pexim_rs
 
 
     def _make_gpsf(self,x_pos,y_pos,flux=None,vb=False):
         '''
-        Generate a gs.des.des_psfex()rendering at position x_pos,y_pos
-        incorporating sky noise & star flux
+        Generate a gs.des.des_psfex() image at position x_pos,y_pos
+        incorporating sky noise & star flux (if desired).
+        NOTE: you do need to set scale=pix_scale if image is oversampled
         '''
 
         pix_scale = self.pixel_scale
@@ -154,16 +177,15 @@ class PSFMaker:
         this_pos = galsim.PositionD(x_pos,y_pos)
         this_psf_des = psfex_des.getPSF(this_pos)
         gpsf_im = this_psf_des.drawImage(method='no_pixel',
-                    nx=self.vignet_size, ny=self.vignet_size,
-                    scale=pix_scale).array
-
-        gpsf_im_rs = (gpsf_im)/np.sum(gpsf_im)*flux
+                    nx=self.vignet_size, ny=self.vignet_size, scale=pix_scale)
 
         if self.noisefree==False:
-            noise = np.random.normal(loc=self.sky_level,
-                        scale=self.sky_std, size=gpsf_im_rs.shape
-                        )
-            gpsf_im_rs+=noise
+            if vb == True: print("adding noise")
+            sky_noise = galsim.GaussianNoise(sigma=1e-5)
+            gpsf_im.addNoise(sky_noise)
+
+        # Now we normalize to one -- not with galsim objects!
+        gpsf_im_rs = gpsf_im #/np.sum(gpsf_im.array)
 
         return gpsf_im_rs
 
@@ -187,15 +209,15 @@ class PSFMaker:
 
         piff_psf = self.psf
         piff_im = piff_psf.draw(x=x_pos,y=y_pos,
-                    stamp_size=self.vignet_size).array
+                    stamp_size=self.vignet_size)
 
-        piff_im_rs = piff_im/np.sum(piff_im)*flux
+        if self.noisefree==False:
+            sky_noise = galsim.GaussianNoise(sigma=1e-5)
+            piff_im.addNoise(sky_noise)
+            if vb == True: print("Noise added")
 
-        if self.noisefree == False:
-            noise = np.random.normal(loc=self.sky_level,
-                        scale=self.sky_std, size=piff_im_rs.shape
-                        )
-            piff_im_rs+=noise
+        # Now we normalize to one -- not with galsim images!
+        piff_im_rs = piff_im #/np.sum(piff_im)
 
         return piff_im_rs
 
@@ -327,11 +349,18 @@ class PSFMaker:
         for i in range(len(stars.x)):
             xpos = stars.x[i]; ypos = stars.y[i]
             flux = stars.star_flux[i]
-            star_stamp=stars.stamps[i]
-            pim = self.render_psf(x=xpos,y=ypos,flux=flux)
-            self.stamps.append(pim)
-            self.resids.append(pim-star_stamp)
-
+            star_stamp = stars.stamps[i]
+            psf_model = self.render_psf(x=xpos,y=ypos,flux=flux)
+            if type(psf_model) is galsim.image.Image:
+                psf_stamp = psf_model.array
+            else:
+                psf_stamp = psf_model
+            try:
+                self.models.append(psf_model)
+                self.stamps.append(psf_stamp)
+                self.resids.append(star_stamp-psf_stamp)
+            except:
+                pdb.set_trace()
         # Do HSM fitting
         do_hsm_fit(maker=self, verbose=vb)
 

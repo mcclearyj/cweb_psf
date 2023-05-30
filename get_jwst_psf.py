@@ -227,7 +227,8 @@ def add_err_cutout(boxcut, image_file, starcat_file):
 
     # Call to grab_boxes method
     errs = boxcut.grab_boxes(image_file=image_file, cat_file=starcat)
-    data = np.zeros(len(errs), dtype=[('ERR_VIGNET', 'f4', (box_size, box_size))])
+    data = np.zeros(len(errs), dtype=[('ERR_VIGNET', \
+                        'f4', (box_size, box_size))])
     for i, err in enumerate(errs):
         data['ERR_VIGNET'][i] = err
     sc_fits[cat_hdu].insert_column('ERR_VIGNET', data['ERR_VIGNET'])
@@ -236,7 +237,7 @@ def add_err_cutout(boxcut, image_file, starcat_file):
     return
 
 
-def run_piffy(image_file, starcat_file, config):
+def run_piffy(image_file, starcat_file, config, echo=True):
     '''
     Run PIFF using supplied im_file and star catalog!
 
@@ -278,7 +279,9 @@ def run_piffy(image_file, starcat_file, config):
                 psfcat_arg, output_arg
                 ])
     print('piff cmd is ' + cmd)
-    #os.system(cmd)
+
+    if echo is False:
+        os.system(cmd)
 
     return
 
@@ -308,11 +311,19 @@ def run_psfex(image_file, starcat_file, config):
     os.system(cmd)
 
     # Again, if there's a better way to do this, I don't know it.
-    cleanup_cmd = ' '.join([
-                        f'mv *_{os.path.basename(starcat_file)}',
-                        f'*_{os.path.basename(starcat_file).replace(".fits", ".pdf")} *.xml',
-                        psfex_outdir])
+    cleanup_cmd = ' '.join([f'mv *_{os.path.basename(starcat_file)}',
+        f'*_{os.path.basename(starcat_file).replace(".fits", ".pdf")} *.xml',
+        psfex_outdir])
     os.system(cleanup_cmd)
+
+    # And for convenience... save a PSFEx stars-only file
+    pexcat = Table.read(outcat_name, hdu=2)
+    starcat = Table.read(starcat_file, hdu=2)
+    pexstar_name = os.path.join(config['outdir'],
+                    base_name.replace('i2d.fits', 'pex_stars.fits'))
+
+    pex_stars = pexcat['FLAGS_PSF']==0
+    starcat[pex_stars].write(pexstar_name, format='fits', overwrite=True)
 
     return
 
@@ -327,6 +338,7 @@ def main(args):
     config = read_yaml(args.config)
     configdir = config['configdir']
     outdir = config['outdir']
+
     # Set default output directory values if none provided
     if configdir is None:
         config['configdir'] = \
@@ -356,10 +368,6 @@ def main(args):
         print(f'Working on file {i2d}...\n\n')
 
         image_file = i2d
-        #img_basename = os.path.basename(image_file)
-        #starcat_file = os.path.join(
-        #        outdir, img_basename.replace('i2d.fits','starcat.fits')
-        #        )
 
         run_sextractor(image_file=image_file, weight_file=image_file,
                             config=config, star_params=star_params)
@@ -370,12 +378,11 @@ def main(args):
         add_err_cutout(boxcut, image_file=image_file,
                                 starcat_file=starcat_file)
 
-        run_psfex(image_file, starcat_file=starcat_file, config=config)
+        run_psfex(image_file, starcat_file=starcat_file,
+                    config=config)
 
-        run_piffy(image_file, starcat_file=starcat_file, config=config)
-
-
-
+        run_piffy(image_file, starcat_file=starcat_file,
+                    config=config, echo=True)
 
     return 0
 

@@ -6,9 +6,10 @@ from matplotlib import rc,rcParams
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import colors
 import matplotlib.pyplot as plt
-import ipdb,pdb
+import ipdb, pdb
 from astropy.io import fits
 from scipy.stats import chi2
+import galsim
 
 from .utils import AttrDict, set_rc_params
 
@@ -47,6 +48,7 @@ class ResidPlots:
 
         Inputs
                 maker:  should be an instance of either StarMaker or PSFMaker
+                stamps: either list of arrays or list of Galsim Image instances
                 wg:  where star and psf fits both succeeded
         Returns:
                 ellip_dict: dict with e1, e2, and theta for plotting,
@@ -55,7 +57,19 @@ class ResidPlots:
 
         fwhm = np.nanmedian(maker.fwhm[wg])
         sigma = np.nanmedian(maker.hsm_sig[wg])
-        avg_im = np.nanmedian(stamps, axis=0)
+
+        try:
+
+            if type(stamps[0]) is galsim.image.Image:
+                stamp_arr = []
+                for stamp in stamps:
+                    stamp_arr.append(stamp.array)
+                avg_im = np.nanmedian(stamp_arr, axis=0)
+            else:
+                avg_im = np.nanmedian(stamps, axis=0)
+
+        except:
+            pdb.set_trace()
 
         im_dict = dict(avg_im = avg_im,
                         fwhm  = fwhm,
@@ -88,30 +102,31 @@ class ResidPlots:
         '''
         psf = self.psfs
         star = self.stars
-        observed = self.star_dict.avg_im # for DOF
 
+        npix = psf.vignet_size * psf.vignet_size
+        dof = npix * psf.sample_scale * psf.sample_scale
 
         chi2_maps = []
+
         for i, resid in enumerate(psf.resids):
-            #noise_map = np.full(resid.shape, np.std(star.stamps[i]))
             noise_map = star.err_stamps[i]
+            #normed_noise_map = noise_map / np.nansum(noise_map)
             chi2_map = np.square(np.divide(resid, noise_map))
-            reduced_chi2_map = chi2_map/(star.vignet_size**2)
+            reduced_chi2_map = chi2_map / dof
             chi2_maps.append(reduced_chi2_map)
 
-        masked_chi2 = np.ma.masked_where(np.isinf(chi2_maps), chi2_maps)
+        # masked_chi2 = np.ma.masked_where(np.isinf(chi2_maps), chi2_maps)
+        masked_chi2 = np.ma.masked_invalid(chi2_maps)
 
-        # Total chi2: should it be chip by chip or computed on avg?
+        # Average (median) image
         avg_chi2_im = np.ma.median(masked_chi2, axis=0).data
-        chi_square = np.sum(avg_chi2_im)
 
-        # Calculate degrees of freedom
-
+        # Total chi2
+        chi_square = np.ma.sum(masked_chi2)
 
         # Calculate reduced chi2
-        #dof = len(star.stamps)
-        dof = 1
-        reduced_chi_square = chi_square / dof
+        ddof = len(chi2_maps)
+        reduced_chi_square = chi_square / ddof
 
         # Calculate p-value
         p_value = 1 - chi2.cdf(chi_square, dof)
@@ -123,8 +138,8 @@ class ResidPlots:
                             )
         self.chi2_dict = AttrDict(chi2_dict)
 
-        # Save the chi-squared image to a fits file, too
-        im = fits.PrimaryHDU(avg_chi2_im)
+        # Save the chi image to a fits file, too
+        im = fits.PrimaryHDU(np.sqrt(avg_chi2_im))
 
         for key in list(chi2_dict.keys())[1:]:
             im.header.set(key, chi2_dict[key])
@@ -148,11 +163,11 @@ class ResidPlots:
         '''
         if (avg_im is not None):
 
-            norm = colors.SymLogNorm(linthresh=0.01,
-                            vmin=0.8*np.min(avg_im),
-                            vmax=0.8*np.max(avg_im))
+            norm = colors.SymLogNorm(linthresh=1e-4,
+                            vmin=np.min(avg_im),
+                            vmax=np.max(avg_im))
             cmap = plt.cm.bwr_r
-            
+
         else:
             if (np.min(self.star_dict.avg_im) <=0):
                 vmin = 0.001
@@ -176,12 +191,13 @@ class ResidPlots:
         rd = self.resid_dict
         xd = self.chi2_dict
 
-        star_title = 'median star HSM sigma = %.4f\ngs.calculateFWHM() = %.4f'\
-                    % (sd.sigma,sd.fwhm)
-        psf_title = 'median PSF HSM sigma = %.4f\ngs.calculateFWHM() = %.4f'\
-                    % (pd.sigma,pd.fwhm)
-        resid_title = 'sum(median resid)= %.3f\nmedian=%1.2e std=%.3f'\
-                    % (np.nansum(rd.avg_im), np.nanmedian(rd.avg_im), np.nanstd(rd.avg_im))
+        star_title = 'median HSM $\sigma^{*} = %.4f$ pix\ngs.calculateFWHM() = %.4f$^{\prime\prime}$'\
+                    % (sd.sigma, sd.fwhm)
+        psf_title = 'median HSM $\sigma^{PSF} = %.4f$ pix\ngs.calculateFWHM() = %.4f$^{\prime\prime}$'\
+                    % (pd.sigma, pd.fwhm)
+        resid_title = 'sum(median resid)= %.3f\nmedian=%1.3e std=%1.3e'\
+                    % (np.nansum(rd.avg_im), np.nanmedian(rd.avg_im),
+                        np.nanstd(rd.avg_im))
         chi2_title = 'Total $\chi^2_{dof} = %.2f$\n'\
                     % (xd.reduced_chi_square)
 
@@ -201,15 +217,14 @@ class ResidPlots:
 
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
                                     figsize=[15,7], tight_layout=True)
-
         for i, dc in enumerate(dicts):
             im = axs[i].imshow(dc.avg_im, **mpl_dicts[i])
             axs[i].set_title(dc.title)
-            axs[i].axvline((dc.avg_im.shape[0]-1)*0.5,color='black')
-            axs[i].axhline((dc.avg_im.shape[1]-1)*0.5,color='black')
             divider = make_axes_locatable(axs[i])
             cax = divider.append_axes("right", size="5%", pad=0.05)
             fig.colorbar(im, cax=cax)
+            axs[i].axvline((dc.avg_im.shape[0]-1)*0.5,color='black')
+            axs[i].axhline((dc.avg_im.shape[1]-1)*0.5,color='black')
 
         return fig
 
@@ -221,13 +236,15 @@ class ResidPlots:
 
         dicts = [self.star_dict, self.psf_dict, self.resid_dict]
 
-        # Make plot param dicts
         mpl_dicts=[]
         for i, dct in enumerate(dicts):
             if i==2:
-                mpl_dict = self._make_mpl_dict(index=i, avg_im=dct.avg_im)
+                mpl_dict = dict(norm=colors.LogNorm(), cmap=plt.cm.bwr_r)
+
             else:
-                mpl_dict = self._make_mpl_dict(index=i)
+                star_norm = colors.SymLogNorm(linthresh=1e-4)
+                mpl_dict = dict(norm=star_norm, cmap=plt.cm.turbo)
+
             mpl_dicts.append(mpl_dict)
 
         # Make actual plot
@@ -246,17 +263,13 @@ class ResidPlots:
 
         mpl_dicts=[]
         for i, dct in enumerate(dicts):
-            if (np.min(self.star_dict.avg_im) <=0):
-                vmin = 0.001
-            else:
-                vmin = np.min(self.star_dict.avg_im)
-            star_norm = colors.SymLogNorm(vmin=vmin,
-                                vmax=np.max(self.star_dict.avg_im),
-                                linthresh=1e-4)
             if i==2:
                 mpl_dict = dict(norm=colors.LogNorm(), cmap=plt.cm.gist_ncar)
+
             else:
+                star_norm = colors.SymLogNorm(linthresh=1e-4)
                 mpl_dict = dict(norm=star_norm, cmap=plt.cm.turbo)
+
             mpl_dicts.append(mpl_dict)
 
         # Make actual plot

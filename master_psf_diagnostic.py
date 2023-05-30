@@ -49,7 +49,7 @@ def parse_args():
                         help='Run PIFF diagnostic')
     parser.add_argument('--noisefree',action='store_true',default=False,
                         help='Disable adding noise to PSF stamps')
-    parser.add_argument('--verbose','-v',action='store_true', default=False,
+    parser.add_argument('--vb',action='store_true', default=False,
                         help='Verbosity')
 
     return parser.parse_args()
@@ -81,7 +81,8 @@ def make_output_table(makers, prefix,
 
     mtab = {}
     mtab['x'] = makers[0].x
-    mtab['y'] = makers[1].y
+    mtab['y'] = makers[0].y
+    mtab['mag_auto'] = makers[0].star_mag
 
     # First, go through and make sub_tables:
     for i,maker in enumerate(makers):
@@ -115,7 +116,7 @@ def main(args):
     run_gpsf = args.gpsfex
     run_pex  = args.epsfex
     noisefree = args.noisefree
-    vb = args.verbose
+    vb = args.vb
 
     rho_params={'min_sep':600,'max_sep':20000,'nbins':12}
 
@@ -133,7 +134,11 @@ def main(args):
 
     if min_snr is not None:
         print(f"selecting S/N > {min_snr:.1f} stars")
-        wg = star_cat['SNR_WIN'] > min_snr
+        try:
+            wg = star_cat['SNR_WIN'] > min_snr
+        except KeyError:
+            wg = star_cat['SNR_PSF'] > min_snr
+
         star_cat = star_cat[wg]
 
     # Calculate star stamp background
@@ -163,7 +168,8 @@ def main(args):
                             pix_scale=pix_scale,
                             vignet_size=vignet_size,
                             noisefree=noisefree,
-                            rho_params=rho_params
+                            rho_params=rho_params,
+                            vb=vb
                             )
         psf_pex.run_all(stars=sm, vb=vb, outdir=outdir)
         makers.append(psf_pex); prefix.append('pex')
@@ -178,7 +184,8 @@ def main(args):
                             pix_scale=pix_scale,
                             vignet_size=vignet_size,
                             noisefree=noisefree,
-                            rho_params=rho_params
+                            rho_params=rho_params,
+                            vb=vb
                             )
         psf_des.run_all(stars=sm, vb=vb, outdir=outdir)
         makers.append(psf_des); prefix.append('gpsf')
@@ -189,10 +196,12 @@ def main(args):
                                 psf_type='piff',
                                 pix_scale=pix_scale,
                                 noisefree=noisefree,
-                                rho_params=rho_params
+                                rho_params=rho_params,
+                                vb=vb
                                 )
         psf_piff.run_all(stars=sm, vb=vb, outdir=outdir)
         makers.append(psf_piff); prefix.append('piff')
+
 
     # Write star & psf HSM fits to file
     outfile = os.path.join(outdir, 'star+psf_HSMfit.fits')

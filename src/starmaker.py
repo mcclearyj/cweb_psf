@@ -24,6 +24,7 @@ class StarMaker():
         '''
         star_cat is either SExtractor catalog,
         catalog file path, or simply list of np.ndarrays
+        models are the PSF models: Galsim object or just np.ndarrays
         '''
 
         self.star_cat = star_cat
@@ -35,8 +36,10 @@ class StarMaker():
 
         self.x = []
         self.y = []
+        self.models = []
         self.stamps = []
         self.star_flux = []
+        self.star_mag = []
         self.err_stamps = []
 
         self.hsm_sig = []
@@ -73,7 +76,7 @@ class StarMaker():
             self.sky_std = 0.0
 
         if vb==True:
-            print("sky level = %.3f +/- %.3f" % (self.sky_level,self.sky_std))
+            print("sky level = %.3f +/- %.3f" % (self.sky_level, self.sky_std))
 
         return
 
@@ -88,22 +91,31 @@ class StarMaker():
         '''
 
         for i in range(len(self.star_cat)):
+
             this_vign = self.star_cat[i]['VIGNET']
             this_err_vign = self.star_cat[i]['ERR_VIGNET']
-            x_pos = self.star_cat[i]['X_IMAGE']; y_pos = self.star_cat[i]['Y_IMAGE']
+            x_pos = self.star_cat[i]['X_IMAGE'];
+            y_pos = self.star_cat[i]['Y_IMAGE']
+            star_mag = self.star_cat[i]['MAG_AUTO']
+            star_flux = self.star_cat[i]['FLUX_AUTO']
 
             this_vign[this_vign <= -999] = np.nan
             this_vign[np.isnan(this_vign)] = self.sky_level
-            #vign_cutout = this_vign[n:-n,n:-n]
             vign_cutout = this_vign
-            star_flux = np.nansum(vign_cutout) - np.size(vign_cutout)*self.sky_level
+
+            # Time to normalize stars
+            star_sum = np.nansum(vign_cutout)
+            vign_cutout = vign_cutout/star_sum
 
             if vb is True:
                 print(f'Star {i} has flux {star_flux:.3f}')
 
-            self.x.append(x_pos); self.y.append(y_pos)
+            self.x.append(x_pos)
+            self.y.append(y_pos)
+            self.star_mag.append(star_mag)
             self.star_flux.append(star_flux)
             self.stamps.append(vign_cutout)
+            self.models.append(vign_cutout)
             self.err_stamps.append(this_err_vign)
 
         self.x=np.array(self.x)

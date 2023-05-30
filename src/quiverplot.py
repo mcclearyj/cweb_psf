@@ -6,7 +6,7 @@ from matplotlib import rc,rcParams
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import colors
 import matplotlib.pyplot as plt
-import ipdb
+import ipdb, pdb
 
 from .utils import AttrDict, set_rc_params
 
@@ -141,7 +141,7 @@ class QuiverPlot:
 
         qkey_scale = 0.05
         qkey_label = r'$e_{HSM} = {%.2f}$' % qkey_scale
-        fontprops = {'size':14, 'weight':'regular'}
+        fontprops = {'size':14, 'weight':'bold'}
 
         q_dict = dict(cmap='cividis',
                         width=90,
@@ -156,7 +156,7 @@ class QuiverPlot:
                         )
 
         qkey_dict = dict(X=0.2,
-                            Y=0.05,
+                            Y=0.02,
                             U=qkey_scale,
                             labelpos='N',
                             label=qkey_label,
@@ -173,14 +173,14 @@ class QuiverPlot:
         rd = self.resid_dict
 
         star_title = \
-            r'median $\sigma^{*}_{HSM} = %.3f^{\prime\prime}$\ $e^{*}_{HSM} = %.3f$'\
-                        % (sd.median_sigma, sd.median_g)
+            'median $\sigma^{*}_{HSM} = %.2f$ mas; $e^{*}_{HSM} = %.5f$'\
+                        % (sd.median_sigma*1000, sd.median_g)
         psf_title = \
-            r'median $\sigma^{PSF}_{HSM} = %.3f^{\prime\prime}$\ $e^{PSF}_{HSM} = %.3f$'\
-                        % (pd.median_sigma, pd.median_g)
+            'median $\sigma^{PSF}_{HSM} = %.2f$ mas; $e^{PSF}_{HSM} = %.5f$'\
+                        % (pd.median_sigma*1000, pd.median_g)
         resid_title = \
-            r'median $\sigma^{resid}_{HSM} = %.3f^{\prime\prime}$\ $e^{resid}_{HSM} = %.3f$'\
-                        % (rd.median_sigma, rd.median_g)
+            'median $\sigma^{resid}_{HSM} = %.2f$ mas; $e^{resid}_{HSM} = %.5f$'\
+                        % (rd.median_sigma*1000, rd.median_g)
 
         return [star_title, psf_title, resid_title]
 
@@ -207,6 +207,12 @@ class QuiverPlot:
             q = axs[i].quiver(self.x, self.y, dc.e1, dc.e2, dc.sigma,
                                 angles=np.rad2deg(dc.theta), **quiver_dict
                                 )
+            # adjust x, y limits
+            lx, rx = axs[i].get_xlim()
+            axs[i].set_xlim(lx-1000, rx+1000)
+            ly, ry = axs[i].get_ylim()
+            axs[i].set_ylim(ly-600, ry+400)
+
             key = axs[i].quiverkey(q, **qkey_dict)
             ax_divider = make_axes_locatable(axs[i])
             cax = ax_divider.append_axes("bottom", size="5%", pad="7%")

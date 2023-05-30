@@ -7,9 +7,11 @@ from astropy.coordinates import SkyCoord
 import astropy.units as u
 from src.utils import read_yaml
 import fitsio
+import astropy.nddata as nd
 
 class BoxCutter:
-    def __init__(self, config_file, image_file=None, box_size=None, x=None, y=None):
+    def __init__(self, config_file, image_file=None,
+                        box_size=None, x=None, y=None):
         '''
         Busted cookie-cutter
         '''
@@ -38,12 +40,11 @@ class BoxCutter:
         coord = SkyCoord(ra=obj[ra_tag]*ra_unit,
                             dec=obj[dec_tag]*dec_unit
                             )
-
+        #c = SkyCoord([1, 2, 3], [-30, 45, 8], frame="icrs", unit="deg")
         wcs = WCS(fits.getheader(self.image_file))
 
-        x, y = wcs.all_world2pix(
-            coord.ra.value, coord.dec.value, 0
-            )
+        x, y = wcs.all_world2pix(coord.ra.value, coord.dec.value, 0)
+
         object_pos_in_image = [x.item(), y.item()]
 
         return
@@ -67,12 +68,20 @@ class BoxCutter:
         k1 = int(np.floor(y-bb))
         k2 = int(np.floor(y+bb))
 
-        box = im[k1:k2, j1:j2]
-
+        '''
+        try:
+            box = im[k1:k2, j1:j2]
+        except:
+            pdb.set_trace()
         if np.shape(box) != (bs, bs):
             box = np.zeros([bs, bs])
+        '''
 
-        return box
+        # No one told me I could just use this
+        box = nd.Cutout2D(data=im, position=(x,y),
+                    size=self.box_size, copy=True, mode='partial')
+
+        return box.data
 
 
     def grab_boxes(self, image_file, cat_file):
@@ -88,7 +97,8 @@ class BoxCutter:
         box_size = config['box_size']
 
         if type(image_file) is str:
-            self.image = fitsio.FITS(image_file, 'r')[hdu]
+            imf = fitsio.FITS(image_file, 'r')[hdu]
+            self.image = imf.read()
         else:
             self.image = image_file
 
