@@ -25,7 +25,7 @@ class BoxCutter:
         self.config = read_yaml(self.config_file)
 
         # We refer to box size a lot so read it in, w/e
-        self.box_size = np.int(self.config['box_size'])
+        self.box_size = np.int32(self.config['box_size'])
 
 
     def _grab_wcs_box(self, obj):
