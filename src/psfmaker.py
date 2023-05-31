@@ -34,7 +34,7 @@ class PSFMaker:
     '''
 
     def __init__(self, psf_file, pix_scale, vignet_size=None, psf_type='piff',
-                        noisefree=False, rho_params=None, vb=False):
+                        add_noise=False, rho_params=None, vb=False):
         '''
         psf_obj is the file name of psf,
         or alternatively an instance of it
@@ -48,7 +48,7 @@ class PSFMaker:
 
         self.psf = psf_file
         self.psf_type = psf_type
-        self.noisefree = noisefree
+        self.add_noise = add_noise
         self.vignet_size = vignet_size
         self.pixel_scale = pix_scale
         self.rho_params = rho_params
@@ -133,7 +133,6 @@ class PSFMaker:
 
         this_pexim = self.psf.get_rec(y_pos,x_pos)
 
-        # You had better hope this is odd
         '''
         # This could eventually be a call to BoxCutter...
         if this_pexim.shape[0] != self.vignet_size:
@@ -143,12 +142,13 @@ class PSFMaker:
             this_pexim = this_pexim[n:-n,n:-n]
         '''
 
+        # You had better hope this is odd
         if this_pexim.shape[0] != self.vignet_size:
             n = int((this_pexim.shape[0]-self.vignet_size)/2)
             this_pexim = this_pexim[n:-n,n:-n]
 
 
-        if self.noisefree == False:
+        if self.add_noise == True:
             # Original was self.sky_std
             if vb == True: print("adding noise")
             noise = np.random.normal(loc=0,
@@ -185,7 +185,7 @@ class PSFMaker:
         gpsf_im = this_psf_des.drawImage(method='no_pixel',
                     nx=self.vignet_size, ny=self.vignet_size, scale=pix_scale)
 
-        if self.noisefree==False:
+        if self.add_noise == True:
             if vb == True: print("adding noise")
             sky_noise = galsim.GaussianNoise(sigma=1e-5)
             gpsf_im.addNoise(sky_noise)
@@ -218,7 +218,7 @@ class PSFMaker:
         piff_im = piff_psf.draw(x=x_pos,y=y_pos,
                     stamp_size=self.vignet_size)
 
-        if self.noisefree==False:
+        if self.add_noise == True:
             sky_noise = galsim.GaussianNoise(sigma=1e-5)
             piff_im.addNoise(sky_noise)
             if vb == True: print("Noise added")
@@ -250,7 +250,7 @@ class PSFMaker:
             n = int((single_im.shape[0]-self.vignet_size)/2)
             single_im = single_im[n:-n,n:-n]
 
-        if self.noisefree == False:
+        if self.add_noise == True:
             noise = np.random.normal(loc=0,
                         scale=1e-5,size=single_im.shape)
             single_im+=noise
