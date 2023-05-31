@@ -1,21 +1,22 @@
 # cweb_psf
 
-PSF characterization code repository for COSMOS-Web lensing working group.
+PSF characterization code repository for COSMOS-Web lensing working group. Still under active development!
 
 `environment.yml` is @mcclearyj's Conda environment for this project; it may
 serve as an example for other users -- TO BE UPDATED
 
 ### get_jwst_psf.py ###
 
-Quick-and-dirty script to make `piff` PSF models for
-COSMOS-Web simulated observations. Currently runs `piff` in single-image mode.
-Still under active development.  
+Quick-and-dirty script to make `piff` and `psfex` PSF models for
+COSMOS-Web observations in `*i2d` format. Code also adds an `ERR` cutout for the source in the 
+star catalog.
 
 Can call `get_jwst_psf.py` with:
 ```
+# Astromatic & PIFF config files 
 export CONFIGDIR='/your/path/name/cweb_psf/astro_config'
-export DATADIR='/your/path/name/mock_data/DEC2022_v.0.0.1'
-export OUTDIR='/your/path/name/mock_data/DEC2022_v.0.0.1/DEC2022_v.0.0.1/working'
+export DATADIR='/your/path/name/data/April2023'
+export CODEDIR='/your/path/name/cweb_psf'
 
 get_jwst_psf.py images [images ...] [-outdir OUTDIR] [-configdir CONFIGDIR]
     [-truthstars TRUTHSTARS] [--overwrite] [--help] [--vb]
@@ -27,13 +28,11 @@ options:
   -h, --help            show this help message and exit
   -outdir OUTDIR        Where to save files
   -configdir CONFIGDIR  Location of SEx/PIFF config files
-  -truthstars TRUTHSTARS
-                        Star catalog to use for PSF fits
-  --overwrite           Overwrite sci/weight files
+  -config CONFIGFILE    Config file for running this script
   --vb                  Print detailed messages [does nothing for now]
 ```
 Dependencies:
-numpy, re, os, astropy, matplotlib, pdb, glob, argparse
+numpy, re, os, astropy, matplotlib, pdb, glob, argparse, esutil
 
 ### master_psf_diagnostic.py ###
 
