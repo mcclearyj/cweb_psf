@@ -50,8 +50,8 @@ def parse_args():
                         help='Run galsim.des_psfex diagnostic')
     parser.add_argument('--piff', action='store_true', default=False,
                         help='Run PIFF diagnostic')
-    parser.add_argument('--noisefree', action='store_true',default=False,
-                        help='Disable adding noise to PSF stamps')
+    parser.add_argument('--add_noise', action='store_true',default=False,
+                        help='Add noise to PSF stamps')
     parser.add_argument('--vb', action='store_true', default=False,
                         help='Verbosity')
 
@@ -119,7 +119,7 @@ def main(args):
     run_piff = args.piff
     run_gpsf = args.gpsfex
     run_pex  = args.epsfex
-    noisefree = args.noisefree
+    add_noise = args.add_noise
     vb = args.vb
 
     rho_params={'min_sep':600,'max_sep':20000,'nbins':12}
@@ -171,7 +171,7 @@ def main(args):
                             psf_type='epsfex',
                             pix_scale=pix_scale,
                             vignet_size=vignet_size,
-                            noisefree=noisefree,
+                            add_noise=add_noise,
                             rho_params=rho_params,
                             vb=vb
                             )
@@ -187,7 +187,7 @@ def main(args):
                             psf_type='gpsfex',
                             pix_scale=pix_scale,
                             vignet_size=vignet_size,
-                            noisefree=noisefree,
+                            add_noise=add_noise,
                             rho_params=rho_params,
                             vb=vb
                             )
@@ -199,7 +199,7 @@ def main(args):
         psf_piff = PSFMaker(psf_file=piff_psf,
                                 psf_type='piff',
                                 pix_scale=pix_scale,
-                                noisefree=noisefree,
+                                add_noise=add_noise,
                                 rho_params=rho_params,
                                 vb=vb
                                 )
@@ -211,7 +211,7 @@ def main(args):
         single_psf = PSFMaker(psf_file=single_psf_file,
                                 psf_type='single',
                                 pix_scale=pix_scale,
-                                noisefree=noisefree,
+                                add_noise=add_noise,
                                 rho_params=rho_params,
                                 vb=vb
                                 )
