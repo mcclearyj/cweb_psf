@@ -84,7 +84,7 @@ class BoxCutter:
         return box.data
 
 
-    def grab_boxes(self, image_file, cat_file):
+    def grab_boxes(self, image_file, cat_file, ext='ERR'):
         '''
         Load image files, call box grabber
         '''
@@ -93,7 +93,7 @@ class BoxCutter:
         x_tag = config['input_catalog']['x_tag']
         y_tag = config['input_catalog']['y_tag']
 
-        hdu = config['err_image']['hdu']
+        hdu = config[f'{ext.lower()}_image']['hdu']
         box_size = config['box_size']
 
         if type(image_file) is str:

@@ -12,7 +12,7 @@ from esutil import htm
 from argparse import ArgumentParser
 import ipdb, pdb
 from src.plotter import size_mag_plots
-from src.utils import read_yaml
+from src.utils import read_yaml, make_outdir
 from src.box_cutter import BoxCutter
 import fitsio
 
@@ -26,9 +26,9 @@ def parse_args():
     parser.add_argument('-outdir', default=None,
                         help = 'Where to save files')
     parser.add_argument('-config', default=None,
-                        help = 'configuration file')
-    parser.add_argument('--overwrite', action='store_true', default=False,
-                        help = 'Overwrite sci/weight files')
+                        help = 'Configuration file for this script')
+    parser.add_argument('-configdir', default=None,
+                        help = 'Astromatic config files')
     parser.add_argument('--vb', action='store_true', default=True,
                         help = 'Print detailed messages [does nothing for now]')
 
@@ -113,7 +113,7 @@ def run_sextractor(image_file, weight_file, config, star_params):
     print("sex cmd is " + cmd)
     os.system(cmd)
 
-    return
+    return cat_name
 
 
 def make_starcat(image_file, config, star_params=None, thresh=0.85):
@@ -203,16 +203,16 @@ def make_starcat(image_file, config, star_params=None, thresh=0.85):
     return starcat_name
 
 
-def add_err_cutout(boxcut, image_file, starcat_file):
+def add_err_cutout(boxcut, image_file, cat_file, ext='ERR'):
     '''
-    Wrapper to call BoxCutter.grab_boxes and add an extra ERR stamp for
-    chi2 calculations. Adding the extra column to the FITS HDU List is a bit
+    Wrapper to call BoxCutter.grab_boxes and add an extra ERR stamp (or other!)
+    for chi2 calculations. Adding the extra column to the FITS HDU List is a bit
     roundabout, but I couldn't figure out a better way to do it.
 
     Inputs
         grabber: should be a BoxCutter instance
-        err_file: the error file to add to catalog
-        starcat_name: catalog that's going to get an extra vignet/stamp
+        image_file: the error file to add to catalog
+        cat_file: catalog that's going to get an extra vignet/stamp
         outdir: where is it getting saved?
     '''
 
@@ -222,16 +222,16 @@ def add_err_cutout(boxcut, image_file, starcat_file):
     box_size = boxcut.box_size
 
     # Read in the fits file so that we can add the column ourselves
-    sc_fits = fitsio.FITS(starcat_file, 'rw')
-    starcat = sc_fits[cat_hdu].read()
+    sc_fits = fitsio.FITS(cat_file, 'rw')
+    imcat = sc_fits[cat_hdu].read()
 
     # Call to grab_boxes method
-    errs = boxcut.grab_boxes(image_file=image_file, cat_file=starcat)
-    data = np.zeros(len(errs), dtype=[('ERR_VIGNET', \
+    boxes = boxcut.grab_boxes(image_file=image_file, cat_file=imcat)
+    data = np.zeros(len(boxes), dtype=[(f'{ext}_VIGNET', \
                         'f4', (box_size, box_size))])
-    for i, err in enumerate(errs):
-        data['ERR_VIGNET'][i] = err
-    sc_fits[cat_hdu].insert_column('ERR_VIGNET', data['ERR_VIGNET'])
+    for i, box in enumerate(boxes):
+        data[f'{ext}_VIGNET'][i] = box
+    sc_fits[cat_hdu].insert_column(f'{ext}_VIGNET', data[f'{ext}_VIGNET'])
     sc_fits.close()
 
     return
@@ -331,30 +331,19 @@ def run_psfex(image_file, starcat_file, config):
 def main(args):
 
     i2d_images = args.images
-    overwrite = args.overwrite
+    outdir = args.outdir
+    configdir = args.configdir
     vb = args.vb
 
-    # This needs to be its own function, I think
-    config = read_yaml(args.config)
+    config_yml = read_yaml(args.config)
+
+    # Returns config with outdir parameter if it was missing
+    config = make_outdir(config_yml, outdir)
     configdir = config['configdir']
-    outdir = config['outdir']
 
-    # Set default output directory values if none provided
+    # Get astromatic configs
     if configdir is None:
-        config['configdir'] = \
-                '/Users/j.mccleary/Research/jwst_cosmos/cweb_psf/astro_config/'
-
-    if outdir is None:
-        basedir = os.path.commonpath(images)
-        outdir = os.path.join(basedir,'working')
-        config['outdir'] = os.path.join(basedir,'working')
-
-    if not os.path.isdir(outdir):
-        cmd = 'mkdir -p {outdir}'.format(outdir=outdir)
-        os.system(cmd)
-        print(f'Made output directory {outdir}')
-    else:
-        print(f'Output directory {outdir} exists, continuing...')
+        config['configdir'] = 'astro_config/'
 
     # Placeholder: table of stellar locus parameters
     star_params = get_star_params()
@@ -369,14 +358,13 @@ def main(args):
 
         image_file = i2d
 
-        run_sextractor(image_file=image_file, weight_file=image_file,
+        cat_file = run_sextractor(image_file=image_file, weight_file=image_file,
                             config=config, star_params=star_params)
+
+        add_err_cutout(boxcut, image_file=image_file, cat_file=cat_file)
 
         starcat_file = make_starcat(image_file=image_file, config=config,
                                         star_params=star_params)
-
-        add_err_cutout(boxcut, image_file=image_file,
-                                starcat_file=starcat_file)
 
         run_psfex(image_file, starcat_file=starcat_file,
                     config=config)

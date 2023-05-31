@@ -27,7 +27,7 @@ sci_image:
 configdir: '/Users/j.mccleary/Research/jwst_cosmos/cweb_psf/astro_config/'
 
 # Output directory
-outdir: '/Users/j.mccleary/Research/jwst_cosmos/real_data/Jan2023/working2/'
+outdir: '/Users/j.mccleary/Research/jwst_cosmos/real_data/Jan2023/working/'
 
 # Reference an external star catalog or parameters
 star_params:

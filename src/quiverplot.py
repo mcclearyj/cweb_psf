@@ -238,26 +238,58 @@ class QuiverPlot:
         Make hex bins for fun and profit
         '''
 
-        dicts = [self.star_dict, self.psf_dict, self.chi2_dict]
-
+        dicts = [self.star_dict, self.psf_dict, self.resid_dict]
         # First things first I'm the reallest
         set_rc_params(fontsize=16)
 
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
-                                    figsize=[15,7], tight_layout=True)
+                                    figsize=[17,6], tight_layout=True)
 
         # First do the e1 map
+        titles = ['Stars $e_1$',
+            'PSF model $e_1$', 'Star-model residuals $e_1$']
         for i, dc in enumerate(dicts):
             im = axs[i].hexbin(self.x, self.y, C=dc.e1,
-                gridsize=(15, 7), bins='log', cmap=plt.cm.RdYlBu, vmin=-0.004, vmax=0.1)
-            axs[i].set_title(dc.title)
+                gridsize=(8, 6), cmap=plt.cm.RdYlBu_r)
+            axs[i].set_title(titles[i])
             divider = make_axes_locatable(axs[i])
             cax = divider.append_axes("right", size="5%", pad=0.05)
             fig.colorbar(im, cax=cax)
+        fig.savefig(outname.split('hex')[0]+'e1_hex.'+outname.split('hex')[1])
 
         # Then do e2 map
+        fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
+                                figsize=[17,6], tight_layout=True)
+        titles = ['Stars $e_2$',
+            'PSF model $e_2$', 'Star-model residuals $e_2$']
+        for i, dc in enumerate(dicts):
+            im = axs[i].hexbin(self.x, self.y, C=dc.e2,
+                gridsize=(8, 6), cmap=plt.cm.RdYlBu_r)
+            axs[i].set_title(titles[i])
+            divider = make_axes_locatable(axs[i])
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            fig.colorbar(im, cax=cax)
+        fig.savefig(outname.split('hex')[0]+'e2_hex.'+outname.split('hex')[1])
 
-        # Then sigma map 
+        # Then sigma map
+        fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
+                                    figsize=[17,6], tight_layout=True)
+        titles = ['Stars $\sigma_{HSM}$',
+            'PSF model $\sigma_{HSM}$', 'Star-model residuals $\sigma_{HSM}$']
+        for i, dc in enumerate(dicts):
+            if i==1:
+                vmin = np.min(dc.sigma); vmax = np.max(dc.sigma)
+            else:
+                vmin = 0.8*np.mean(dc.sigma)
+                vmax = 1.1*np.mean(dc.sigma)
+
+            im = axs[i].hexbin(self.x, self.y, C=dc.sigma, gridsize=(8, 6),
+                cmap=plt.cm.RdYlBu_r, vmin=vmin, vmax=vmax)
+            axs[i].set_title(titles[i])
+            divider = make_axes_locatable(axs[i])
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            fig.colorbar(im, cax=cax)
+        fig.savefig(outname.split('hex')[0]+'sigma_hex.'+outname.split('hex')[1])
 
 
     def run(self, scale=1, outname='quiverplot.png'):
@@ -265,7 +297,6 @@ class QuiverPlot:
         Take a table or whatever, make quiverplot with it
         Filter out failed fits first!
         '''
-
 
         # Populate the dicts
         self._populate_dicts()
@@ -284,7 +315,7 @@ class QuiverPlot:
         fig = self._make_plot(dicts, quiver_dict, qkey_dict, titles, scale)
 
         # Bonus round make hexplots!
-
+        self.make_hex_plots(outname.replace('quiver', 'hexgrid'))
 
         # Print
         fig.savefig(outname)

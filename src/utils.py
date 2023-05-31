@@ -4,6 +4,7 @@ from esutil import htm
 import astropy.wcs as wcs
 import yaml
 import re
+import os
 
 class AttrDict(dict):
     '''
@@ -65,7 +66,7 @@ def match_coords(cat1, cat2):
         cat1_ra = cat1['ALPHAWIN_J2000']
         cat1_dec =  cat1['DELTAWIN_J2000']
     else:
-        raise KeyError('non-standard RA/Dec column in cat1')
+        raise KeyError('cat1: no "ra,dec" or "{ALPHA,DELTA}WIN_J2000" columns')
 
     if 'ra' in cat2.colnames:
         cat2_ra = cat2['ra']
@@ -74,7 +75,7 @@ def match_coords(cat1, cat2):
         cat2_ra = cat2['ALPHAWIN_J2000']
         cat2_dec =  cat2['DELTAWIN_J2000']
     else:
-        raise KeyError('non-standard RA/Dec column in cat2')
+        raise KeyError('cat2: no "ra,dec" or "{ALPHA,DELTA}WIN_J2000" columns')
 
     cat1_matcher = htm.Matcher(16, ra=cat1_ra, dec=cat1_dec)
 
@@ -110,3 +111,40 @@ def read_yaml(yaml_file):
     with open(yaml_file, 'r') as stream:
         # return yaml.safe_load(stream) # see above issue
         return yaml.load(stream, Loader=loader)
+
+
+def make_outdir(config, arg=None, path='./', cval='outdir'):
+    '''
+    Make an output directory. Once we finally move to OOP, we won't have
+    to return the config like it's 2003.
+
+    Inputs:
+        arg: the full outdir path. If it doesn't exist, one will be made.
+        path: the base path in which outdir should be saved
+              [default: './']
+        cval: the config parameter specifying output directory
+              [default: 'outdir']
+    Outputs:
+        config: A parameter named 'outdir' is added if it was missing
+    '''
+
+    if (arg is None):
+        outdir = config[cval]
+    else:
+        outdir = arg
+
+    # Set a sensible default if outdir is still none
+    if outdir is None:
+        #basedir = os.path.commonpath(images)
+        basedir = path
+        outdir = os.path.join(basedir,'working')
+        config['outdir'] = os.path.join(basedir,'working')
+
+    if not os.path.isdir(outdir):
+        cmd = 'mkdir -p {outdir}'.format(outdir=outdir)
+        os.system(cmd)
+        print(f'Made output directory {outdir}')
+    else:
+        print(f'Output directory {outdir} exists, continuing...')
+
+    return config
