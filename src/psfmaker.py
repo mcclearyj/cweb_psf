@@ -69,20 +69,21 @@ class PSFMaker:
         self.hsm_g2 = []
         self.fwhm = []
 
-        if psf_type not in ['epsfex','gpsfex','piff']:
+        if psf_type not in ['epsfex','gpsfex','piff', 'single', 'webbpsf']:
             print("psf_type is the method to use to render the PSF,")
             print("Should be one of the following:")
             print("     - 'epsfex': Erin Sheldon psfex Python package")
             print("     - 'gpsfex': Use galsim.des PSFEx method")
             print("     - 'piff'  : Use PIFF rendering")
+            print("     - 'single': Single (constant) PSFEx model")
+            print("     - 'webbpsf'  : WebbPSF model")
+
 
 
     def render_psf(self,x=None,y=None,flux=None,psf_type='epsfex'):
         '''
         Method to decide which rendering method to call, then call it.
-        Appends PSF cutouts to self
-
-        would be cool to try to make an assertion error pop out
+        Appends PSF objects to self
         '''
 
         vb = self.vb
@@ -103,9 +104,14 @@ class PSFMaker:
             self.sample_scale = 1
             psf_im = self._make_piff(x_pos=x, y_pos=y, flux=flux, vb=vb)
 
+        elif self.psf_type=='single':
+            if vb==True: print("rendering single-model psf")
+            self.sample_scale = self.psf[1].header['PSF_SAMP']
+            psf_im = self._make_single(x_pos=x, y_pos=y, flux=flux, vb=vb)
+
         else:
-            allowed=['piff','epsfex','gpsfex']
-            print("PSF not one of ['piff','epsfex','gpsfex']")
+            allowed=['piff','epsfex','gpsfex', 'single', 'webbpsf']
+            print("PSF not one of ['piff', 'epsfex', 'gpsfex', 'single', 'webbpsf']")
 
         return psf_im
 
@@ -151,7 +157,7 @@ class PSFMaker:
             this_pexim+=noise
 
         # Now we normalize
-        pexim_rs = this_pexim #/np.sum(this_pexim)
+        pexim_rs = this_pexim /np.sum(this_pexim)
 
         return pexim_rs
 
@@ -189,6 +195,7 @@ class PSFMaker:
 
         return gpsf_im_rs
 
+
     def _make_piff(self, x_pos, y_pos, flux=None, vb=False):
         '''
         Render a PIFF psf model and add noise
@@ -220,6 +227,40 @@ class PSFMaker:
         piff_im_rs = piff_im #/np.sum(piff_im)
 
         return piff_im_rs
+
+
+    def _make_single(self, x_pos, y_pos, flux=None, vb=False):
+        '''
+        Load in a Marko-style single PSFEx file or a webbPSF file
+        '''
+
+        if flux == None:
+            star_flux = 1
+        else:
+            star_flux=flux
+            if vb == True: print("using flux=%.2f" % flux)
+
+        single_psf = self.psf
+        try:
+            single_im = single_psf['PSF_DATA'].data[0][0][0]
+        except:
+            pdb.set_trace()
+
+        if single_im.shape[0] != self.vignet_size:
+            n = int((single_im.shape[0]-self.vignet_size)/2)
+            single_im = single_im[n:-n,n:-n]
+
+        if self.noisefree == False:
+            noise = np.random.normal(loc=0,
+                        scale=1e-5,size=single_im.shape)
+            single_im+=noise
+            if vb == True: print("Noise added")
+
+        # Now we normalize to one -- not with galsim images!
+        single_im_rs = single_im /np.sum(single_im)
+
+        return single_im_rs
+
 
 
     def run_rho_stats(self, stars, rho_params, vb=False, outdir='./'):

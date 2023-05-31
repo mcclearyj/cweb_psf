@@ -15,6 +15,7 @@ import fitsio
 
 from .utils import set_rc_params
 
+
 def size_mag_plots(im_cat, star_cat, plot_name, filter_name):
     '''
     Save to file a size-magnitude plot with the stellar locus highlighted
@@ -278,22 +279,30 @@ def compare_rho_stats(prefix, pixel_scale, file_path='./', rho_files=None):
 
         try:
             pexn=os.path.join(file_path,''.join(['epsfex_rho_',str(i),'.txt']))
-            pex=Table.read(pexn,format='ascii',header_start=1)
+            pex=Table.read(pexn, format='ascii', header_start=1)
         except:
             print('no pex found')
             pex=None
         try:
             gpsfn = os.path.join(file_path,''.join(['gpsfex_rho_',str(i),'.txt']))
-            gpsf=Table.read(gpsfn,format='ascii',header_start=1)
+            gpsf=Table.read(gpsfn, format='ascii', header_start=1)
         except:
             print('no gpsf found')
             gpsf=None
         try:
             piffn = os.path.join(file_path,''.join(['piff_rho_',str(i),'.txt']))
-            piff=Table.read(piffn,format='ascii',header_start=1)
+            piff=Table.read(piffn, format='ascii', header_start=1)
         except:
             print('no piff found')
             piff=None
+
+        try:
+            singlen = os.path.join(file_path,''.join(['single_rho_',str(i),'.txt']))
+            single=Table.read(singlen, format='ascii', header_start=1)
+        except:
+            print('no single_model found')
+            single=None
+
 
         savename = os.path.join(file_path,'rho_{}_comparisons.png'.format(i))
 
@@ -354,6 +363,24 @@ def compare_rho_stats(prefix, pixel_scale, file_path='./', rho_files=None):
             ax.errorbar(-r, piff_xip, yerr=piff_sig, capsize=5, color='C5')
 
             legends.append(lp3)
+
+        if single is not None:
+
+            r = single['meanr'] * pixel_scale / 60 # from pixels --> arcminutes
+            single_xip = np.abs(single['xip'])
+            single_sig = single['sigma_xip']
+
+            lp4 = ax.plot(r, single_xip, color='C6', marker='o',lw=2,
+                            ls='-', label='single')
+            ax.plot(r, -single_xip, color='C6',  marker='o', lw=2, ls=':')
+            ax.errorbar(r[single_xip>0], single_xip[single_xip>0], color='C6',
+                            yerr=single_sig[single_xip>0], capsize=5, ls='')
+            ax.errorbar(r[single_xip<0], -single_xip[single_xip<0], color='C6',
+                            yerr=single_sig[single_xip<0], capsize=5,  ls='')
+            ax.errorbar(-r, single_xip, yerr=single_sig, capsize=5, color='C6')
+
+            legends.append(lp4)
+
 
         plt.legend()
         fig.savefig(savename)

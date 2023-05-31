@@ -103,8 +103,8 @@ class ResidPlots:
         psf = self.psfs
         star = self.stars
 
-        npix = psf.vignet_size * psf.vignet_size
-        dof = npix * psf.sample_scale * psf.sample_scale
+        npix = star.vignet_size * star.vignet_size
+        dof = npix
 
         chi2_maps = []
 
@@ -169,13 +169,11 @@ class ResidPlots:
             cmap = plt.cm.bwr_r
 
         else:
-            if (np.min(self.star_dict.avg_im) <=0):
-                vmin = 0.001
-            else:
-                vmin = np.min(self.star_dict.avg_im)
+            vmin = np.min(self.star_dict.avg_im)
+            vmax = np.max(self.star_dict.avg_im)
 
             norm = colors.SymLogNorm(vmin=vmin,
-                            vmax=np.max(self.star_dict.avg_im),
+                            vmax=vmax,
                             linthresh=1e-4)
             cmap=plt.cm.turbo
 
@@ -239,12 +237,12 @@ class ResidPlots:
         mpl_dicts=[]
         for i, dct in enumerate(dicts):
             if i==2:
-                mpl_dict = dict(norm=colors.LogNorm(), cmap=plt.cm.bwr_r)
+                mpl_dict = dict(norm=colors.SymLogNorm(linthresh=1e-4), cmap=plt.cm.bwr_r)
 
             else:
-                star_norm = colors.SymLogNorm(linthresh=1e-4)
-                mpl_dict = dict(norm=star_norm, cmap=plt.cm.turbo)
-
+                #star_norm = colors.SymLogNorm(linthresh=1e-4)
+                #mpl_dict = dict(norm=star_norm, cmap=plt.cm.turbo)
+                mpl_dict = self._make_mpl_dict(i)
             mpl_dicts.append(mpl_dict)
 
         # Make actual plot
@@ -264,11 +262,10 @@ class ResidPlots:
         mpl_dicts=[]
         for i, dct in enumerate(dicts):
             if i==2:
-                mpl_dict = dict(norm=colors.LogNorm(), cmap=plt.cm.gist_ncar)
+                mpl_dict = dict(norm=colors.LogNorm(), cmap=plt.cm.RdYlBu_r)
 
             else:
-                star_norm = colors.SymLogNorm(linthresh=1e-4)
-                mpl_dict = dict(norm=star_norm, cmap=plt.cm.turbo)
+                mpl_dict = self._make_mpl_dict(i)
 
             mpl_dicts.append(mpl_dict)
 
@@ -277,6 +274,27 @@ class ResidPlots:
 
         # Save it
         fig.savefig(outname)
+
+
+    def make_hex_plots(self, outname='hexbins.png'):
+        '''
+        Make hex bins for fun and profit
+        '''
+
+        dicts = [self.star_dict, self.psf_dict, self.chi2_dict]
+
+        # First things first I'm the reallest
+        set_rc_params(fontsize=16)
+
+        fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
+                                    figsize=[15,7], tight_layout=True)
+        for i, dc in enumerate(dicts):
+            #im = axs[i].
+            axs[i].set_title(dc.title)
+            divider = make_axes_locatable(axs[i])
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            fig.colorbar(im, cax=cax)
+
 
 
     def run(self, resid_name=None, chi2_name=None):
@@ -298,5 +316,8 @@ class ResidPlots:
 
         # And make the chi squared plot
         self.make_chi2_plot(chi2_name)
+
+        # Bonus round make T/g1/g2 hexplots
+        self.make_hex_plots(outname=chi2_name)
 
         return

@@ -60,7 +60,7 @@ class BoxCutter:
             WHAT'S IN THE BAAAAHX
         '''
 
-        bs = np.int(self.box_size)
+        bs = np.int32(self.box_size)
         bb = self.box_size/2
         im = self.image
         j1 = int(np.floor(x-bb))

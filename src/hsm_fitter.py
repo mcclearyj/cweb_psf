@@ -28,7 +28,7 @@ def do_hsm_fit(maker,verbose=False):
 
         else:
             gs_object = galsim.Image(model,
-                wcs=galsim.PixelScale(maker.pixel_scale))
+                wcs=galsim.PixelScale(maker.pixel_scale), xmin=0, ymin=0)
             if verbose==True: print('Creating Galsim image from array')
 
         try:

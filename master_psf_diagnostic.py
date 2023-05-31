@@ -10,6 +10,7 @@ from astropy.table import Table
 import pdb,ipdb
 from argparse import ArgumentParser
 import yaml
+from astropy.io import fits
 
 from src.starmaker import StarMaker, StampBackground
 from src.psfmaker import PSFMaker
@@ -36,20 +37,22 @@ def parse_args():
                         help='Output directory for diagnostics [default=./psf_diagnostics]')
     parser.add_argument('-psfex_name',type=str, default=None,
                         help='PSFEx model filename')
-    parser.add_argument('-im_name',type=str, default=None,
+    parser.add_argument('-im_name', type=str, default=None,
                         help='FITS image filename for GalSim PSFEx diagnostic')
-    parser.add_argument('-piff_name',type=str, default=None,
+    parser.add_argument('-piff_name', type=str, default=None,
                         help='PIFF psf model filename')
+    parser.add_argument('-single_model', type=str, default=None,
+                        help='Name of single-PSF model')
     # Select which diagnostics to run
-    parser.add_argument('--epsfex',action='store_true', default=False,
+    parser.add_argument('--epsfex', action='store_true', default=False,
                         help='Run esheldon psfex diagnostic')
-    parser.add_argument('--gpsfex',action='store_true', default=False,
+    parser.add_argument('--gpsfex', action='store_true', default=False,
                         help='Run galsim.des_psfex diagnostic')
-    parser.add_argument('--piff',action='store_true', default=False,
+    parser.add_argument('--piff', action='store_true', default=False,
                         help='Run PIFF diagnostic')
-    parser.add_argument('--noisefree',action='store_true',default=False,
+    parser.add_argument('--noisefree', action='store_true',default=False,
                         help='Disable adding noise to PSF stamps')
-    parser.add_argument('--vb',action='store_true', default=False,
+    parser.add_argument('--vb', action='store_true', default=False,
                         help='Verbosity')
 
     return parser.parse_args()
@@ -112,6 +115,7 @@ def main(args):
     im_name = args.im_name
     psf_name = args.psfex_name
     piff_name = args.piff_name
+    single_model = args.single_model
     run_piff = args.piff
     run_gpsf = args.gpsfex
     run_pex  = args.epsfex
@@ -202,6 +206,17 @@ def main(args):
         psf_piff.run_all(stars=sm, vb=vb, outdir=outdir)
         makers.append(psf_piff); prefix.append('piff')
 
+    if single_model is not None:
+        single_psf_file = fits.open(single_model)
+        single_psf = PSFMaker(psf_file=single_psf_file,
+                                psf_type='single',
+                                pix_scale=pix_scale,
+                                noisefree=noisefree,
+                                rho_params=rho_params,
+                                vb=vb
+                                )
+        single_psf.run_all(stars=sm, vb=vb, outdir=outdir)
+        makers.append(single_psf); prefix.append('single')
 
     # Write star & psf HSM fits to file
     outfile = os.path.join(outdir, 'star+psf_HSMfit.fits')

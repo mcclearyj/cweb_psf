@@ -53,19 +53,22 @@ class QuiverPlot:
         theta = 0.5*np.arctan2(g2, g1)
         e1 = g * np.cos(theta)
         e2 = g * np.sin(theta)
-
+        e = np.sqrt(e1**2 + e2**2)
         # Summary stats for plot titles
         median_g = np.median(g)
         median_sigma = np.median(sigma)
+        median_e = np.median(e)
 
         ellip_dict = dict(g1 = g1,
                             g2 = g2,
                             e1 = e1,
                             e2 = e2,
+                            e = e,
                             theta = theta,
                             sigma = sigma,
                             median_g = median_g,
-                            median_sigma = median_sigma
+                            median_sigma = median_sigma,
+                            median_e = median_e
                             )
 
         return AttrDict(ellip_dict)
@@ -90,18 +93,22 @@ class QuiverPlot:
 
         resid_g  = np.sqrt(resid_g1**2 + resid_g2**2)
         theta_resid = 0.5 * np.arctan2(resid_g2, resid_g1)
-        resid_e1 = resid_g * np.sin(theta_resid)
-        resid_e2 = resid_g * np.cos(theta_resid)
+        resid_e1 = resid_g * np.cos(theta_resid)
+        resid_e2 = resid_g * np.sin(theta_resid)
+        resid_e = np.sqrt(resid_e1**2 + resid_e2**2)
 
         median_resid_g = np.median(resid_g)
+        median_resid_e = np.median(resid_e)
         median_resid_sigma = np.median(resid_sigma)
 
         resid_dict = dict(e1 = resid_e1,
                             e2 = resid_e2,
+                            e = resid_e,
                             sigma = resid_sigma,
                             theta = theta_resid,
                             median_g = median_resid_g,
-                            median_sigma = median_resid_sigma
+                            median_sigma = median_resid_sigma,
+                            median_e = median_resid_e
                             )
 
         return AttrDict(resid_dict)
@@ -174,13 +181,13 @@ class QuiverPlot:
 
         star_title = \
             'median $\sigma^{*}_{HSM} = %.2f$ mas; $e^{*}_{HSM} = %.5f$'\
-                        % (sd.median_sigma*1000, sd.median_g)
+                        % (sd.median_sigma*1000, sd.median_e)
         psf_title = \
             'median $\sigma^{PSF}_{HSM} = %.2f$ mas; $e^{PSF}_{HSM} = %.5f$'\
-                        % (pd.median_sigma*1000, pd.median_g)
+                        % (pd.median_sigma*1000, pd.median_e)
         resid_title = \
             'median $\sigma^{resid}_{HSM} = %.2f$ mas; $e^{resid}_{HSM} = %.5f$'\
-                        % (rd.median_sigma*1000, rd.median_g)
+                        % (rd.median_sigma*1000, rd.median_e)
 
         return [star_title, psf_title, resid_title]
 
@@ -213,6 +220,11 @@ class QuiverPlot:
             ly, ry = axs[i].get_ylim()
             axs[i].set_ylim(ly-600, ry+400)
 
+            # Define the minimum arrow size and create a mask of smaller arrows
+            min_size = 5
+            mask = dc.e < min_size
+
+
             key = axs[i].quiverkey(q, **qkey_dict)
             ax_divider = make_axes_locatable(axs[i])
             cax = ax_divider.append_axes("bottom", size="5%", pad="7%")
@@ -220,6 +232,32 @@ class QuiverPlot:
             axs[i].set_title(titles[i])
 
         return fig
+
+    def make_hex_plots(self, outname='hexbins.png'):
+        '''
+        Make hex bins for fun and profit
+        '''
+
+        dicts = [self.star_dict, self.psf_dict, self.chi2_dict]
+
+        # First things first I'm the reallest
+        set_rc_params(fontsize=16)
+
+        fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
+                                    figsize=[15,7], tight_layout=True)
+
+        # First do the e1 map
+        for i, dc in enumerate(dicts):
+            im = axs[i].hexbin(self.x, self.y, C=dc.e1,
+                gridsize=(15, 7), bins='log', cmap=plt.cm.RdYlBu, vmin=-0.004, vmax=0.1)
+            axs[i].set_title(dc.title)
+            divider = make_axes_locatable(axs[i])
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            fig.colorbar(im, cax=cax)
+
+        # Then do e2 map
+
+        # Then sigma map 
 
 
     def run(self, scale=1, outname='quiverplot.png'):
@@ -244,6 +282,9 @@ class QuiverPlot:
 
         # Make plot
         fig = self._make_plot(dicts, quiver_dict, qkey_dict, titles, scale)
+
+        # Bonus round make hexplots!
+
 
         # Print
         fig.savefig(outname)

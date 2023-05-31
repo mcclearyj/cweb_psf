@@ -29,7 +29,7 @@ def set_rc_params(fontsize=None):
     rc('font',**{'family':'serif'})
     rc('text', usetex=True)
 
-    plt.rcParams.update({'figure.facecolor':'w'})
+    #plt.rcParams.update({'figure.facecolor':'w'})
     plt.rcParams.update({'axes.linewidth': 1.3})
     plt.rcParams.update({'xtick.labelsize': fontsize})
     plt.rcParams.update({'ytick.labelsize': fontsize})
