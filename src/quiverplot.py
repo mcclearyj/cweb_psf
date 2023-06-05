@@ -211,20 +211,24 @@ class QuiverPlot:
 
         for i, dc in enumerate(dicts):
 
-            q = axs[i].quiver(self.x, self.y, dc.e1, dc.e2, dc.sigma,
-                                angles=np.rad2deg(dc.theta), **quiver_dict
+            # Set up masks for really circular objects
+            min_ellip = 0.01
+
+            # Define the minimum ellipse size and create a mask of circles
+            mask = dc.e <= min_ellip
+            round = axs[i].scatter(self.x[mask], self.y[mask], s=9,
+                        facecolor='black', edgecolors='black')
+
+            mask = dc.e > min_ellip
+            q = axs[i].quiver(self.x[mask], self.y[mask],
+                                dc.e1[mask], dc.e2[mask], dc.sigma[mask],
+                                angles=np.rad2deg(dc.theta[mask]), **quiver_dict
                                 )
             # adjust x, y limits
             lx, rx = axs[i].get_xlim()
             axs[i].set_xlim(lx-1000, rx+1000)
             ly, ry = axs[i].get_ylim()
             axs[i].set_ylim(ly-600, ry+400)
-
-            # Define the minimum arrow size and create a mask of smaller arrows
-            min_size = 5
-            mask = dc.e < min_size
-
-
             key = axs[i].quiverkey(q, **qkey_dict)
             ax_divider = make_axes_locatable(axs[i])
             cax = ax_divider.append_axes("bottom", size="5%", pad="7%")
@@ -291,6 +295,9 @@ class QuiverPlot:
             fig.colorbar(im, cax=cax)
         fig.savefig(outname.split('hex')[0]+'sigma_hex.'+outname.split('hex')[1])
 
+        # Close fig
+
+
 
     def run(self, scale=1, outname='quiverplot.png'):
         '''
@@ -314,10 +321,14 @@ class QuiverPlot:
         # Make plot
         fig = self._make_plot(dicts, quiver_dict, qkey_dict, titles, scale)
 
+        # Save to file
+        fig.savefig(outname)
+
+        # Close figure
+
+
         # Bonus round make hexplots!
         self.make_hex_plots(outname.replace('quiver', 'hexgrid'))
 
-        # Print
-        fig.savefig(outname)
 
         return
