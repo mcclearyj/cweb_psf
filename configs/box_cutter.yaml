@@ -2,15 +2,15 @@
 ### Cookie cutter parameters
 input_catalog:
   hdu: 2
-  x_tag: 'XWIN_IMAGE'
-  y_tag: 'YWIN_IMAGE'
+  x_tag: 'X_IMAGE'
+  y_tag: 'Y_IMAGE'
   ra_tag: 'ALPHAWIN_J2000'
   dec_tag: 'DELTAWIN_J2000'
   ra_units: 'deg'
   dec_units: 'deg'
 
 # Box size for all images
-box_size: 61
+box_size: 261
 
 # This is actually called ERR, not weight, shruggie emoticon
 weight_image:
@@ -27,7 +27,7 @@ sci_image:
 configdir: '/Users/j.mccleary/Research/jwst_cosmos/cweb_psf/astro_config/'
 
 # Output directory
-outdir: '/Users/j.mccleary/Research/jwst_cosmos/real_data/Jan2023/working/'
+outdir: '/Users/j.mccleary/Research/jwst_cosmos/real_data/Jan2023/working2/'
 
 # Reference an external star catalog or parameters
 star_params:
