@@ -100,14 +100,22 @@ class PSFMaker:
 
         elif self.psf_type=='piff':
             if vb==True: print("rendering PIFF psf")
-            #self.sample_scale = self.psf.single_psf.model.scale
-            self.sample_scale = 1
+            self.sample_scale = self.psf.single_psf.model.scale/self.pixel_scale
             psf_im = self._make_piff(x_pos=x, y_pos=y, flux=flux, vb=vb)
 
         elif self.psf_type=='single':
             if vb==True: print("rendering single-model psf")
-            self.sample_scale = self.psf[1].header['PSF_SAMP']
+            try:
+                self.sample_scale = self.psf[1].header['PSF_SAMP']
+            except:
+                self.sample_scale = 1
             psf_im = self._make_single(x_pos=x, y_pos=y, flux=flux, vb=vb)
+
+        elif self.psf_type=='webbpsf':
+            if vb==True: print("rendering single-model WebbPSF")
+            self.sample_scale = 1
+            psf_im = self._make_single(x_pos=x, y_pos=y, flux=flux, vb=vb)
+
 
         else:
             allowed=['piff','epsfex','gpsfex', 'single', 'webbpsf']
@@ -133,21 +141,19 @@ class PSFMaker:
 
         this_pexim = self.psf.get_rec(y_pos,x_pos)
 
+        if self.vignet_size is not None:
+            if this_pexim.shape[0] > self.vignet_size:
+                n = int((this_pexim.shape[0]-self.vignet_size)/2)
+                k = n; j = -n
+            else:
+                k = 0; j = None
+        else:
+            k=0; j=None
+
+        this_pexim = this_pexim[k:j,k:j]
+
         '''
-        # This could eventually be a call to BoxCutter...
-        if this_pexim.shape[0] != self.vignet_size:
-            sm = min(this_pexim.shape[0], self.vignet_size)
-            lg = max(this_pexim.shape[0], self.vignet_size)
-            n = int((lg - sm)/2)
-            this_pexim = this_pexim[n:-n,n:-n]
-        '''
-
-        # You had better hope this is odd
-        if this_pexim.shape[0] != self.vignet_size:
-            n = int((this_pexim.shape[0]-self.vignet_size)/2)
-            this_pexim = this_pexim[n:-n,n:-n]
-
-
+        # Commented out b/c GalSim was doing something odd with correlated noise
         if self.add_noise == True:
             # Original was self.sky_std
             if vb == True: print("adding noise")
@@ -155,6 +161,7 @@ class PSFMaker:
                         scale=1e-5,size=this_pexim.shape
                         )
             this_pexim+=noise
+        '''
 
         # Now we normalize
         pexim_rs = this_pexim /np.sum(this_pexim)
@@ -241,10 +248,11 @@ class PSFMaker:
             if vb == True: print("using flux=%.2f" % flux)
 
         single_psf = self.psf
+
         try:
-            single_im = single_psf['PSF_DATA'].data[0][0][0]
+            single_im = single_psf['PSF_DATA'].data['PSF_MASK'][0, 0, :,:]
         except:
-            pdb.set_trace()
+            single_im = single_psf['PSF_DATA'].data
 
         if single_im.shape[0] != self.vignet_size:
             n = int((single_im.shape[0]-self.vignet_size)/2)

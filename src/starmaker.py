@@ -7,7 +7,7 @@ import numpy as np
 import os
 import sys
 from astropy.table import Table
-import ipdb
+import ipdb, pdb
 
 from .hsm_fitter import do_hsm_fit
 
@@ -90,6 +90,20 @@ class StarMaker():
         an ERR column
         '''
 
+        if self.vignet_size is not None:
+            if self.star_cat[0]['VIGNET'].shape[0] > self.vignet_size:
+                n = int((self.star_cat[0]['VIGNET'].shape[0]-self.vignet_size)/2)
+                j = n; k = -n
+                #single_im = single_im[k:-j,k:-j]
+            else:
+                j = 0; k = None
+        else:
+            # If vignet_size wasn't supplied, set it to the star VIGNET size
+            j = 0; k = None
+            self.vignet_size = self.star_cat[0]['VIGNET'].shape[0]
+            print(f'Setting vignet size to {self.vignet_size}')
+
+
         for i in range(len(self.star_cat)):
 
             this_vign = self.star_cat[i]['VIGNET']
@@ -101,7 +115,10 @@ class StarMaker():
 
             this_vign[this_vign <= -999] = np.nan
             this_vign[np.isnan(this_vign)] = self.sky_level
-            vign_cutout = this_vign
+
+            # Subselect star and err vignets if needed
+            vign_cutout = this_vign[j:k, j:k]
+            err_cutout = this_err_vign[j:k, j:k]
 
             # Time to normalize stars
             star_sum = np.nansum(vign_cutout)
@@ -116,15 +133,11 @@ class StarMaker():
             self.star_flux.append(star_flux)
             self.stamps.append(vign_cutout)
             self.models.append(vign_cutout)
-            self.err_stamps.append(this_err_vign)
+            self.err_stamps.append(err_cutout)
 
         self.x=np.array(self.x)
         self.y=np.array(self.y)
 
-        # If a vignet_size wasn't supplied, set it to be the star VIGNET size
-        if self.vignet_size == None:
-            self.vignet_size = np.shape(this_vign)[1]
-            print(f'Setting vignet size to {self.vignet_size}')
         return
 
 

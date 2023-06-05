@@ -46,10 +46,10 @@ def get_star_params(config=None):
     '''
 
     filter_names = ['f115w','f150w','f277w', 'f444w']
-    fwhms = [0.058, 0.0628, 0.125, 0.165]
+    fwhms = [0.058, 0.0628, 0.120, 0.165]
     min_size = [0.88, 1, 1.83, 2.33]
-    max_size = [1.7, 1.5, 2.5, 3.2]
-    max_mag = [26.2, 26.5, 27, 27.1]
+    max_size = [1.6, 1.5, 2.5, 3.2]
+    max_mag = [26., 26.5, 26.5, 29]
     min_mag = [19.5, 19.5, 19, 19]
 
     star_params = Table([filter_names, fwhms, min_size,\
@@ -116,7 +116,7 @@ def run_sextractor(image_file, weight_file, config, star_params):
     return cat_name
 
 
-def make_starcat(image_file, config, star_params=None, thresh=0.85):
+def make_starcat(image_file, config, star_params=None, thresh=0.55, cat_file=None):
     '''
     Create a star catalog from the SExtractor image catalog using cuts on
     the SExtractor CLASS_STAR parameter and the supplied table of star properties.
@@ -146,9 +146,10 @@ def make_starcat(image_file, config, star_params=None, thresh=0.85):
     except AttributeError:
         filter_name = re.search(r"f(\d){3}w", image_file).group()
 
-    imcat_name = os.path.join(
-                outdir, img_basename.replace('i2d.fits','cat.fits')
-                )
+    #imcat_name = os.path.join(
+    #            outdir, img_basename.replace('i2d.fits','cat.fits')
+    #            )
+    imcat_name = cat_file
     starcat_name = os.path.join(
                 outdir, img_basename.replace('i2d.fits','starcat.fits')
                 )
@@ -221,10 +222,17 @@ def add_err_cutout(boxcut, image_file, cat_file, ext='ERR'):
     cat_hdu = config['input_catalog']['hdu']
     box_size = boxcut.box_size
 
+
     # Read in the fits file so that we can add the column ourselves
     sc_fits = fitsio.FITS(cat_file, 'rw')
     imcat = sc_fits[cat_hdu].read()
 
+    # We need box_size to be same as star size for chi2 calc
+    if (box_size != imcat['VIGNET'][0].shape[0]):
+        print(f'supplied box_size={box_size} and vignet size={imcat["VIGNET"][0].shape[0]} differ!!')
+        print(f'overring supplied box_size to {imcat["VIGNET"][0].shape[0]}')
+        box_size = imcat['VIGNET'][0].shape[0]
+        boxcut.box_size = box_size
     # Call to grab_boxes method
     boxes = boxcut.grab_boxes(image_file=image_file, cat_file=imcat)
     data = np.zeros(len(boxes), dtype=[(f'{ext}_VIGNET', \
@@ -352,7 +360,7 @@ def main(args):
     boxcut = BoxCutter(config_file=args.config)
 
     # Process exposures
-    for i2d in i2d_images:
+    for j, i2d in enumerate(i2d_images):
 
         print(f'Working on file {i2d}...\n\n')
 
@@ -361,10 +369,10 @@ def main(args):
         cat_file = run_sextractor(image_file=image_file, weight_file=image_file,
                             config=config, star_params=star_params)
 
-        add_err_cutout(boxcut, image_file=image_file, cat_file=cat_file)
-
         starcat_file = make_starcat(image_file=image_file, config=config,
-                                        star_params=star_params)
+                                        star_params=star_params, cat_file=cat_file)
+
+        add_err_cutout(boxcut, image_file=image_file, cat_file=starcat_file)
 
         run_psfex(image_file, starcat_file=starcat_file,
                     config=config)

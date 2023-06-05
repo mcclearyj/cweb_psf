@@ -35,21 +35,21 @@ def parse_args():
                         help='Image/PSF pixel scale [default=26]')
     parser.add_argument('-outdir',type=str, default=None,
                         help='Output directory for diagnostics [default=./psf_diagnostics]')
-    parser.add_argument('-psfex_name',type=str, default=None,
+    parser.add_argument('-psfex_model',type=str, default=None,
                         help='PSFEx model filename')
     parser.add_argument('-im_name', type=str, default=None,
                         help='FITS image filename for GalSim PSFEx diagnostic')
-    parser.add_argument('-piff_name', type=str, default=None,
+    parser.add_argument('-piff_model', type=str, default=None,
                         help='PIFF psf model filename')
     parser.add_argument('-single_model', type=str, default=None,
                         help='Name of single-PSF model')
+    parser.add_argument('-webb_model', type=str, default=None,
+                        help='Name of WebbPSF model')
     # Select which diagnostics to run
     parser.add_argument('--epsfex', action='store_true', default=False,
                         help='Run esheldon psfex diagnostic')
     parser.add_argument('--gpsfex', action='store_true', default=False,
                         help='Run galsim.des_psfex diagnostic')
-    parser.add_argument('--piff', action='store_true', default=False,
-                        help='Run PIFF diagnostic')
     parser.add_argument('--add_noise', action='store_true',default=False,
                         help='Add noise to PSF stamps')
     parser.add_argument('--vb', action='store_true', default=False,
@@ -113,10 +113,10 @@ def main(args):
     pix_scale = args.pix_scale
     vignet_size = args.vignet_size
     im_name = args.im_name
-    psf_name = args.psfex_name
-    piff_name = args.piff_name
+    psf_model = args.psfex_model
+    piff_model = args.piff_model
     single_model = args.single_model
-    run_piff = args.piff
+    webb_model = args.webb_model
     run_gpsf = args.gpsfex
     run_pex  = args.epsfex
     add_noise = args.add_noise
@@ -134,7 +134,6 @@ def main(args):
         print(f'Using default image/PSF pixel scale {pix_scale}')
 
     star_cat = Table.read(os.path.join(basedir, star_cat), hdu='LDAC_OBJECTS')
-    #star_cat = Table.read(os.path.join(basedir, star_cat))
 
     if min_snr is not None:
         print(f"selecting S/N > {min_snr:.1f} stars")
@@ -165,7 +164,7 @@ def main(args):
     # Render PSFs, do HSM fits, save diagnostics to file
     if run_pex==True:
         pex = psfex.PSFEx(
-                    os.path.join(basedir, psf_name)
+                    os.path.join(basedir, psf_model)
                     )
         psf_pex = PSFMaker(psf_file=pex,
                             psf_type='epsfex',
@@ -180,7 +179,7 @@ def main(args):
 
     if run_gpsf==True:
         psfex_des = galsim.des.DES_PSFEx(
-                    os.path.join(basedir, psf_name),
+                    os.path.join(basedir, psf_model),
                     os.path.join(basedir, im_name)
                     )
         psf_des = PSFMaker(psf_file=psfex_des,
@@ -194,8 +193,8 @@ def main(args):
         psf_des.run_all(stars=sm, vb=vb, outdir=outdir)
         makers.append(psf_des); prefix.append('gpsf')
 
-    if run_piff==True:
-        piff_psf = piff.read(os.path.join(basedir, piff_name))
+    if piff_model is not None:
+        piff_psf = piff.read(os.path.join(basedir, piff_model))
         psf_piff = PSFMaker(psf_file=piff_psf,
                                 psf_type='piff',
                                 pix_scale=pix_scale,
@@ -207,8 +206,8 @@ def main(args):
         makers.append(psf_piff); prefix.append('piff')
 
     if single_model is not None:
-        single_psf_file = fits.open(single_model)
-        single_psf = PSFMaker(psf_file=single_psf_file,
+        psf_file = fits.open(single_model)
+        single_psf = PSFMaker(psf_file=psf_file,
                                 psf_type='single',
                                 pix_scale=pix_scale,
                                 add_noise=add_noise,
@@ -217,6 +216,19 @@ def main(args):
                                 )
         single_psf.run_all(stars=sm, vb=vb, outdir=outdir)
         makers.append(single_psf); prefix.append('single')
+
+    if webb_model is not None:
+        psf_file = fits.open(webb_model)
+        single_psf = PSFMaker(psf_file=psf_file,
+                                psf_type='webbpsf',
+                                pix_scale=pix_scale,
+                                add_noise=add_noise,
+                                rho_params=rho_params,
+                                vb=vb
+                                )
+        single_psf.run_all(stars=sm, vb=vb, outdir=outdir)
+        makers.append(single_psf); prefix.append('webbpsf')
+
 
     # Write star & psf HSM fits to file
     outfile = os.path.join(outdir, 'star+psf_HSMfit.fits')
