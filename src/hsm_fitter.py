@@ -14,10 +14,6 @@ def do_hsm_fit(maker,verbose=False):
     function, and so on until the moments that are measured are the same as those used for the
     weight function.
 
-    Might seem strange to take galsim.Image() output of des_psfex and
-    piff.draw, take array part of galsim.Image and redraw with a pixel scale
-    wcs since the GSObjects already *had* a WCS. However, it can be shown
-    that the result of HSM fit is the same in both cases.
     '''
 
     for i, model in enumerate(maker.models):
@@ -45,9 +41,14 @@ def do_hsm_fit(maker,verbose=False):
         try:
             maker.fwhm.append(gs_object.calculateFWHM())
         except:
-            fwhm_object = galsim.Image(model.array,
-                wcs=galsim.PixelScale(maker.pixel_scale))
-            maker.fwhm.append(fwhm_object.calculateFWHM())
+            try:
+                fwhm_object = galsim.Image(model.array,
+                    wcs=galsim.PixelScale(maker.pixel_scale))
+                maker.fwhm.append(fwhm_object.calculateFWHM())
+            except:
+                print("FWHM fit for stamp #%d failed, skipping" % i)
+                maker.fwhm.append(-9999)
+
 
     maker.hsm_sig = np.array(maker.hsm_sig)
     maker.hsm_g1 = np.array(maker.hsm_g1)

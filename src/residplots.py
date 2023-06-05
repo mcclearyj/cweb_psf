@@ -111,7 +111,6 @@ class ResidPlots:
         for i, resid in enumerate(psf.resids):
             noise_map = star.err_stamps[i]
             chi2_map = np.divide(np.square(resid), np.square(noise_map))
-            #reduced_chi2_map = chi2_map / dof
             chi2_maps.append(chi2_map)
 
         # masked_chi2 = np.ma.masked_where(np.isinf(chi2_maps), chi2_maps)
@@ -124,7 +123,6 @@ class ResidPlots:
         chi_square = np.ma.sum(masked_chi2)
 
         # Calculate reduced chi2
-        #ddof = len(chi2_maps)
         reduced_chi_square = chi_square / dof
 
         # Calculate p-value
@@ -273,8 +271,6 @@ class ResidPlots:
 
         # Save it
         fig.savefig(outname)
-
-
 
 
     def run(self, resid_name=None, chi2_name=None):
