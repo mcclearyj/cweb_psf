@@ -281,11 +281,12 @@ class QuiverPlot:
         titles = ['Stars $\sigma_{HSM}$',
             'PSF model $\sigma_{HSM}$', 'Star-model residuals $\sigma_{HSM}$']
         for i, dc in enumerate(dicts):
-            if i==1:
-                vmin = np.min(dc.sigma); vmax = np.max(dc.sigma)
-            else:
+
+            if i==0:
                 vmin = 0.8*np.mean(dc.sigma)
                 vmax = 1.1*np.mean(dc.sigma)
+            else:
+                vmin = np.min(dc.sigma); vmax = np.max(dc.sigma)
 
             im = axs[i].hexbin(self.x, self.y, C=dc.sigma, gridsize=(8, 6),
                 cmap=plt.cm.RdYlBu_r, vmin=vmin, vmax=vmax)
@@ -294,9 +295,6 @@ class QuiverPlot:
             cax = divider.append_axes("right", size="5%", pad=0.05)
             fig.colorbar(im, cax=cax)
         fig.savefig(outname.split('hex')[0]+'sigma_hex.'+outname.split('hex')[1])
-
-        # Close fig
-
 
 
     def run(self, scale=1, outname='quiverplot.png'):

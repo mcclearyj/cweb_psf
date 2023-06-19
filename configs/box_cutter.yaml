@@ -10,7 +10,7 @@ input_catalog:
   dec_units: 'deg'
 
 # Box size for all images
-box_size: 261
+box_size: 301
 
 # This is actually called ERR, not weight, shruggie emoticon
 weight_image:
@@ -19,7 +19,7 @@ weight_image:
 err_image:
   hdu: 2
 
-# Science exposure is usually 0th extension
+# Science exposure is usually 0th or 1th extension
 sci_image:
   hdu: 1
 
