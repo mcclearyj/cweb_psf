@@ -373,17 +373,26 @@ class ResidPlots:
         # Populate dicts
         self._populate_dicts()
 
+<<<<<<< HEAD
         # Make chi-square residuals;
         self.make_chi2(polydeg=polydeg, outname=chi2_name)
 
+=======
+>>>>>>> 891b6a0 (fix resid plots)
         # Get titles (they're defined here!)
         self._get_plot_titles()
 
         # Make flux residual plots
         self.make_flux_resid_plot(resid_name)
 
-        # And make the chi squared plot
-        self.make_chi2_plot(chi2_name)
+        try:
+            # Make chi-square residuals;
+            self.make_chi2(nparams=3, outname=chi2_name)
+
+            # And make the chi squared plot
+            self.make_chi2_plot(chi2_name)
+        except:
+            print("Skipping chi2 calculation")
 
         # Bonus, do the SSIM figure
         self.make_ssim_ims(resid_name)

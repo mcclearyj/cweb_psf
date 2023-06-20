@@ -122,7 +122,7 @@ def main(args):
     add_noise = args.add_noise
     vb = args.vb
 
-    rho_params={'min_sep':600,'max_sep':20000,'nbins':12}
+    rho_params={'min_sep':200,'max_sep':10000,'nbins':11}
 
     if outdir is None:
         outdir = './psf_diagnostics_plots'

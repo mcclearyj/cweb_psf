@@ -110,8 +110,8 @@ class StarMaker():
         for i in range(len(self.star_cat)):
 
             this_vign = self.star_cat[i]['VIGNET']
-            x_pos = self.star_cat[i]['X_IMAGE'];
-            y_pos = self.star_cat[i]['Y_IMAGE']
+            x_pos = self.star_cat[i]['XWIN_IMAGE'];
+            y_pos = self.star_cat[i]['YWIN_IMAGE']
             star_mag = self.star_cat[i]['MAG_AUTO']
             star_flux = self.star_cat[i]['FLUX_AUTO']
             background = self.star_cat[i]['BACKGROUND']

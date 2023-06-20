@@ -192,7 +192,6 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     axes[0].set_ylabel(r'$\rho(\theta)$', fontsize=fontsize)
     #axes[0].set_xscale('log')
     axes[0].set_yscale('log', nonpositive='clip')
-
     ##
     ## rho3 correlation: dg x dg
     ##
@@ -216,13 +215,18 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
 
     lab4 = r'$\rho_4(\theta)$'
     lp4 = axes[0].plot(r, xip, color='tab:green',marker='o',ls='-',label=lab4)
-    axes[0].plot(r, -xip, color='tab:green', marker='o',ls=':')
+    #axes[0].plot(r, -xip, color='tab:green', marker='o', markerfacecolor='white', ls=':', markersize=8)
+    axes[0].plot(r, -xip, color='tab:green',marker='o',ls=':')
     axes[0].errorbar(r[xip>0], xip[xip>0], yerr=sig[xip>0], color='tab:green', ls='', capsize=5)
-    axes[0].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], color='tab:green', ls='', capsize=5)
+    #axes[0].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], marker='o', \markerfacecolor='white', markersize=8, color='tab:green', ls='', capsize=5)
+    axes[0].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], marker='o', color='tab:green', ls='', capsize=5)
     axes[0].errorbar(-r, xip, yerr=sig, color='tab:green', capsize=5)
 
     axes[0].legend([lp1, lp3, lp4], fontsize=14)
     axes[0].legend(fontsize=14, loc='upper right')
+    axes[0].set_xlim(0.4, 28)
+    axes[0].set_ylim(2e-9, 5e-4)
+    axes[0].minorticks_on()
 
     ##
     ## rho 2 correlation: g x dg
@@ -231,7 +235,9 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     xip = rho2.xip
     sig = np.sqrt(rho2.varxip)
 
-    lp2 = axes[1].plot(r, xip, color='tab:cyan',marker='o', ls='-', label=r'$\rho_2(\theta)$')
+    lab2=r'$\rho_2(\theta)$'
+    #lp2 = axes[1].plot(r, abs(xip), color='tab:cyan',marker='o', ls=':')
+    lp2 = axes[1].plot(r, xip, color='tab:cyan',marker='o', ls='-', label=lab2)
     axes[1].plot(r, -xip, color='tab:cyan', marker='o', ls=':')
     axes[1].errorbar(r[xip>0], xip[xip>0], yerr=sig[xip>0], color='tab:cyan', ls='', capsize=5)
     axes[1].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], color='tab:cyan', ls='', capsize=5)
@@ -256,6 +262,10 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     axes[1].errorbar(-r, xip, yerr=sig, color='tab:purple', capsize=5)
 
     axes[1].legend([lp2,lp5])
+    axes[1].set_xlim(0.4, 28)
+    axes[1].set_ylim(2e-9, 5e-4)
+    axes[1].minorticks_on()
+
     plt.legend(loc='upper right')
 
     fig.savefig(outname)
@@ -323,7 +333,7 @@ def compare_rho_stats(prefix, pixel_scale, file_path='./', rho_files=None):
         if pex is not None:
 
             r = pex['meanr'] * pixel_scale / 60 # from pixels --> arcminutes
-            pex_xip = np.abs(pex['xip'])
+            pex_xip = pex['xip']
             pex_sig = pex['sigma_xip']
 
             lp = ax.plot(r, pex_xip, color='C3', marker='o', ls='-', lw=2,
@@ -340,7 +350,7 @@ def compare_rho_stats(prefix, pixel_scale, file_path='./', rho_files=None):
         if gpsf is not None:
 
             r = gpsf['meanr'] * pixel_scale / 60 # from pixels --> arcminutes
-            gpsf_xip = np.abs(gpsf['xip'])
+            gpsf_xip = gpsf['xip']
             gpsf_sig = gpsf['sigma_xip']
 
             lp2 = ax.plot(r, gpsf_xip, color='C4', marker='o', lw=2,
@@ -357,7 +367,7 @@ def compare_rho_stats(prefix, pixel_scale, file_path='./', rho_files=None):
         if piff is not None:
 
             r = piff['meanr'] * pixel_scale / 60 # from pixels --> arcminutes
-            piff_xip = np.abs(piff['xip'])
+            piff_xip = piff['xip']
             piff_sig = piff['sigma_xip']
 
             lp3 = ax.plot(r, piff_xip, color='C5', marker='o',lw=2,
@@ -374,7 +384,7 @@ def compare_rho_stats(prefix, pixel_scale, file_path='./', rho_files=None):
         if single is not None:
 
             r = single['meanr'] * pixel_scale / 60 # from pixels --> arcminutes
-            single_xip = np.abs(single['xip'])
+            single_xip = single['xip']
             single_sig = single['sigma_xip']
 
             lp4 = ax.plot(r, single_xip, color='C6', marker='o',lw=2,
