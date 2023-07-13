@@ -178,7 +178,7 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     fig,axes=plt.subplots(nrows=2,ncols=1,figsize=[10,7], sharex=True, tight_layout=True)
 
     r = np.exp(rho1.meanlogr) * pixel_scale / 60
-    xip = np.abs(rho1.xip)
+    xip = rho1.xip
     sig = np.sqrt(rho1.varxip)
 
     lab1 = r'$\rho_1(\theta)$'
@@ -197,7 +197,7 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     ## rho3 correlation: dg x dg
     ##
     r = np.exp(rho3.meanlogr) * pixel_scale / 60
-    xip = np.abs(rho3.xip)
+    xip = rho3.xip
     sig = np.sqrt(rho3.varxip)
 
     lab3 = r'$\rho_3(\theta)$'
@@ -211,7 +211,7 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     ## rho4 correlation: dg x dg
     ##
     r = np.exp(rho4.meanlogr) * pixel_scale / 60
-    xip = np.abs(rho4.xip)
+    xip = rho4.xip
     sig = np.sqrt(rho4.varxip)
 
     lab4 = r'$\rho_4(\theta)$'
@@ -228,7 +228,7 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     ## rho 2 correlation: g x dg
     ##
     r = np.exp(rho2.meanlogr) * pixel_scale / 60
-    xip = np.abs(rho2.xip)
+    xip = rho2.xip
     sig = np.sqrt(rho2.varxip)
 
     lp2 = axes[1].plot(r, xip, color='tab:cyan',marker='o', ls='-', label=r'$\rho_2(\theta)$')

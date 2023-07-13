@@ -129,7 +129,7 @@ class StarMaker():
                 self.err_stamps.append(err_cutout)
             except:
                 pass
-                
+
             '''
             # Time to normalize stars and error maps
             star_sum = np.nansum(vign_cutout)
@@ -185,10 +185,10 @@ class StampBackground():
 
     '''
 
-    def __init__(self,cat=None,sky_level=None,sky_std=None):
+    def __init__(self,cat=None,sky_level=None,sky_std=None, vclip=6):
 
         self.cat = cat
-        self.vclip = 6
+        self.vclip = vclip
         self.sky_level = 0.0
         self.sky_std = 0.0
         self.substamps = []
@@ -254,7 +254,7 @@ class StampBackground():
             self.substamps.append(cutout[-j:,-j:])
             self.substamps.append(cutout[0:j,0:j])
 
-        sky_level = np.nanmedian(self.substamps)
+        sky_level = np.nanmean(self.substamps)
         sky_std = np.nanstd(self.substamps)
 
         return sky_level, sky_std

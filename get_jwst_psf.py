@@ -339,10 +339,6 @@ def run_psfex(image_file, starcat_file, config):
 
     return
 
-    # Marko Shuntov's catalog dir
-    ms_catdir = '/Users/j.mccleary/Research/jwst_cosmos/real_data/Jan2023/mshuntov_psfex'
-    ms_catnames = ['COSMOS-Web-PSFEx-SE-Cat_f115w_JAN.fits', 'COSMOS-Web-PSFEx-SE-Cat_f150w_JAN.fits', 'COSMOS-Web-PSFEx-SE-Cat_f277w_JAN.fits', 'COSMOS-Web-PSFEx-SE-Cat_f444w_JAN.fits']
-
 
 def main(args):
 
@@ -367,9 +363,6 @@ def main(args):
     # Create a BoxCutter instance
     boxcut = BoxCutter(config_file=args.config)
 
-    ms_catdir = '/Users/j.mccleary/Research/jwst_cosmos/real_data/Jan2023/mshuntov_psfex'
-    ms_catnames = ['COSMOS-Web-PSFEx-SE-Cat_f115w_JAN.fits', 'COSMOS-Web-PSFEx-SE-Cat_f150w_JAN.fits', 'COSMOS-Web-PSFEx-SE-Cat_f277w_JAN.fits', 'COSMOS-Web-PSFEx-SE-Cat_f444w_JAN.fits']
-
 
     # Process exposures
     for j, i2d in enumerate(i2d_images):
@@ -378,11 +371,8 @@ def main(args):
 
         image_file = i2d
 
-        #cat_file = run_sextractor(image_file=image_file, weight_file=image_file,
-        #                    config=config, star_params=star_params)
-
-        cat_file = os.path.join(ms_catdir, ms_catnames[j])
-
+        cat_file = run_sextractor(image_file=image_file, weight_file=image_file,
+                            config=config, star_params=star_params)
 
         starcat_file = make_starcat(image_file=image_file, config=config,
                                         star_params=star_params,
@@ -390,8 +380,8 @@ def main(args):
 
         add_err_cutout(boxcut, image_file=image_file, cat_file=starcat_file)
 
-        #run_psfex(image_file, starcat_file=starcat_file,
-        #            config=config)
+        run_psfex(image_file, starcat_file=starcat_file,
+                    config=config)
 
         #run_piffy(image_file, starcat_file=starcat_file,
         #            config=config, echo=True)

@@ -52,40 +52,52 @@ def set_rc_params(fontsize=None):
 
     return
 
-def match_coords(cat1, cat2):
+def match_coords(cat1, cat2, ratag1=None, dectag1=None, ratag2=None, dectag2=None, radius=0.5):
     '''
     Utility function to match cat1 to cat 2 using celestial coordinates
     '''
 
     # Either 'ra/dec' or 'ALPHAWIN_J2000/DELTAWIN_J2000'!
 
-    if 'ra' in cat1.colnames:
-        cat1_ra = cat1['ra']
-        cat1_dec =  cat1['dec']
-    elif 'ALPHAWIN_J2000' in cat1.colnames:
-        cat1_ra = cat1['ALPHAWIN_J2000']
-        cat1_dec =  cat1['DELTAWIN_J2000']
-    else:
-        raise KeyError('cat1: no "ra,dec" or "{ALPHA,DELTA}WIN_J2000" columns')
+    try:
+        if (ratag1 is not None) and (dectag1 is not None):
+            cat1_ra = cat1[ratag1]
+            cat1_dec =  cat1[dectag1]
+        elif 'ra' in cat1.colnames:
+            cat1_ra = cat1['ra']
+            cat1_dec =  cat1['dec']
+        elif 'ALPHAWIN_J2000' in cat1.colnames:
+            cat1_ra = cat1['ALPHAWIN_J2000']
+            cat1_dec =  cat1['DELTAWIN_J2000']
+        else:
+            raise KeyError('cat1: no "ra,dec" or "{ALPHA,DELTA}WIN_J2000" columns')
+    except:
+        print("Couldn't load catalog 1 RA & Dec")
 
-    if 'ra' in cat2.colnames:
-        cat2_ra = cat2['ra']
-        cat2_dec =  cat2['dec']
-    elif 'ALPHAWIN_J2000' in cat2.colnames:
-        cat2_ra = cat2['ALPHAWIN_J2000']
-        cat2_dec =  cat2['DELTAWIN_J2000']
-    else:
-        raise KeyError('cat2: no "ra,dec" or "{ALPHA,DELTA}WIN_J2000" columns')
+    try:
+        if (ratag2 is not None) and (dectag2 is not None):
+            cat2_ra = cat2[ratag1]
+            cat2_dec =  cat2[dectag1]
+        elif 'ra' in cat2.colnames:
+            cat2_ra = cat2['ra']
+            cat2_dec =  cat2['dec']
+        elif 'ALPHAWIN_J2000' in cat2.colnames:
+            cat2_ra = cat2['ALPHAWIN_J2000']
+            cat2_dec =  cat2['DELTAWIN_J2000']
+        else:
+            raise KeyError('cat2: no "ra,dec" or "{ALPHA,DELTA}WIN_J2000" columns')
+    except:
+        print("Couldn't load catalog 2 RA & Dec")
 
     cat1_matcher = htm.Matcher(16, ra=cat1_ra, dec=cat1_dec)
 
     cat2_ind, cat1_ind, dist = cat1_matcher.match(ra=cat2_ra,
                                                   dec=cat2_dec,
                                                   maxmatch=1,
-                                                  radius=0.5/3600.
+                                                  radius=radius/3600.
                                                   )
-    if self.vb == True:
-        print(f'{len(dist)}/{len(cat1)} gals matched to truth')
+
+    print(f'{len(dist)}/{len(cat1)} gals matched to truth')
 
     return cat1[cat1_ind], cat2[cat2_ind]
 

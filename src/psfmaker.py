@@ -158,7 +158,8 @@ class PSFMaker:
         # Create noise and add it to stamp
         if self.vb == True: print("adding noise")
         # loc for 150:2.014110796154E-04 scale: 2.978151291609E-2
-        noise = np.random.normal(loc=sex_bkg,
+        # Sky level is better for larger vignet sizes
+        noise = np.random.normal(loc=sky_level,
                                     scale=sky_std,
                                     size=psf_stamp.shape
                                     )

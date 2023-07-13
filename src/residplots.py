@@ -61,8 +61,8 @@ class ResidPlots:
                             plus some summary stats, cast to a class
         '''
 
-        fwhm = np.nanmedian(maker.fwhm[wg])
-        sigma = np.nanmedian(maker.hsm_sig[wg])
+        fwhm = np.nanmean(maker.fwhm[wg])
+        sigma = np.nanmean(maker.hsm_sig[wg])
 
         try:
 
@@ -70,9 +70,9 @@ class ResidPlots:
                 stamp_arr = []
                 for stamp in stamps:
                     stamp_arr.append(stamp.array)
-                avg_im = np.nanmedian(stamp_arr, axis=0)
+                avg_im = np.nanmean(stamp_arr, axis=0)
             else:
-                avg_im = np.nanmedian(stamps, axis=0)
+                avg_im = np.nanmean(stamps, axis=0)
 
         except:
             pdb.set_trace()
@@ -130,6 +130,7 @@ class ResidPlots:
             # Make image-model chi2 map and append it to list
             noise_map = star.err_stamps[i]
             chi2_map = np.divide(np.square(resid), np.square(noise_map))
+            #chi2_map = np.divide(np.square(resid), np.var(star.stamps[i]))
             chi2_maps.append(chi2_map)
 
             # Also compute total reduced chi2 for image-model
@@ -140,15 +141,15 @@ class ResidPlots:
         # Mask out NaNs or Infs
         masked_chi2 = np.ma.masked_invalid(chi2_maps)
 
-        # Average (OK, median) image
-        avg_chi2_im = np.ma.median(masked_chi2, axis=0).data
+        # Average (OK, mean) image
+        avg_chi2_im = np.ma.mean(masked_chi2, axis=0).data
 
         # Total chi2
         chi_square = np.ma.sum(masked_chi2)
 
         # Calculate reduced chi2
         reduced_chi_square = chi_square / dof / len(chi2_maps)
-        median_reduced_chi_sq = np.median(chi2_vals)
+        mean_reduced_chi_sq = np.mean(chi2_vals)
 
         # Calculate p-value
         p_value = 1 - chi2.cdf(chi_square, dof)
@@ -156,7 +157,7 @@ class ResidPlots:
         # get a dict with all those values!
         chi2_dict = dict(avg_im = avg_chi2_im,
                             reduced_chi_square = reduced_chi_square,
-                            median_reduced_chi_sq = median_reduced_chi_sq
+                            mean_reduced_chi_sq = mean_reduced_chi_sq
                             )
         self.chi2_dict = AttrDict(chi2_dict)
 
@@ -172,7 +173,7 @@ class ResidPlots:
 
     def _make_mpl_dict(self, index, vmin=None, vmax=None, avg_im=None):
         '''
-        EXTREMELY SPECIFIC PLOTTING KEYWORDS -- CHANGE WITH CAUTION
+        EXTREMELY SPECIFIC PLOTTING KEYWORDS
         (Plots may not make sense or errors may be thrown). Assumes that passed
         avg_im is a residual plot of some sort.
 
@@ -184,13 +185,6 @@ class ResidPlots:
         flux residuals, but have decided to go with SymLogNorm for now.
         '''
         if (avg_im is not None):
-
-            '''
-            norm = colors.SymLogNorm(linthresh=1e-4,
-                            vmin=np.min(avg_im),
-                            vmax=1.1*np.max(avg_im))
-            cmap = plt.cm.bwr_r
-            '''
             norm = colors.TwoSlopeNorm(0, vmin=-0.2, vmax=1.1)
             cmap = plt.cm.bwr_r
 
@@ -215,18 +209,20 @@ class ResidPlots:
         rd = self.resid_dict
         xd = self.chi2_dict
 
-        star_title = 'median HSM $\sigma^{*} = %.4f$ pix\ngs.calculateFWHM() = %.4f$^{\prime\prime}$'\
+        star_title = 'mean HSM $\sigma^{*} = %.4f$ pix\ngs.calculateFWHM() = %.4f$^{\prime\prime}$'\
                     % (sd.sigma, sd.fwhm)
-        psf_title = 'median HSM $\sigma^{PSF} = %.4f$ pix\ngs.calculateFWHM() = %.4f$^{\prime\prime}$'\
+        psf_title = 'mean HSM $\sigma^{PSF} = %.4f$ pix\ngs.calculateFWHM() = %.4f$^{\prime\prime}$'\
                     % (pd.sigma, pd.fwhm)
+        # Exclude crazy outliers
+        wg = (rd.avg_im.ravel() > -50) & (rd.avg_im.ravel() < 50)
         resid_title = 'mean norm. resid: %1.3f std=%1.3f\n'\
-                    % (np.nanmean(rd.avg_im),np.nanstd(rd.avg_im))
+                    % (np.nanmean(rd.avg_im.ravel()[wg]),np.nanstd(rd.avg_im.ravel()[wg]))
         try:
-            chi2_title = '$\overline{\chi^2_{dof}} = %.2f$\nmedian $\chi^2_{dof} = %.2f$'\
-                        % (xd.reduced_chi_square, xd.median_reduced_chi_sq)
+            chi2_title = '$\overline{\chi^2_{dof}} = %.2f$\nmean $\chi^2_{dof} = %.2f$'\
+                        % (xd.reduced_chi_square, xd.mean_reduced_chi_sq)
             xd.title = chi2_title
         except:
-            pass
+            pdb.set_trace()
 
         sd.title = star_title; pd.title = psf_title; rd.title = resid_title
 
@@ -251,7 +247,7 @@ class ResidPlots:
             fig.colorbar(im, cax=cax)
             axs[i].axvline((dc.avg_im.shape[0]-1)*0.5,color='black')
             axs[i].axhline((dc.avg_im.shape[1]-1)*0.5,color='black')
-
+        fig.tight_layout()
         return fig
 
 
@@ -265,7 +261,7 @@ class ResidPlots:
         for i, dct in enumerate(dicts):
             if i==2:
                 cmap = plt.cm.bwr_r
-                mpl_dict = dict(norm=colors.TwoSlopeNorm(0,vmin=-0.5, vmax=0.5), cmap=cmap)
+                mpl_dict = dict(norm=colors.TwoSlopeNorm(0, vmin=-5, vmax=5), cmap=cmap)
             else:
                 mpl_dict = self._make_mpl_dict(i)
 
@@ -276,6 +272,15 @@ class ResidPlots:
 
         # Save plot
         fig.savefig(outname)
+
+        # Also save a FITS file for making histograms later
+        im = fits.PrimaryHDU(self.resid_dict.avg_im)
+        for key in list(self.resid_dict.keys())[1:]:
+            try:
+                im.header.set(key, self.resid_dict[key])
+            except:
+                pass
+        im.writeto(outname.replace('.png', '.fits'), overwrite=True)
 
 
     def make_chi2_plot(self, outname='chi2_residuals.png'):
@@ -334,15 +339,15 @@ class ResidPlots:
             ssim_res = ssim(psf_stamp, star, full=True, win_size=3,
                             data_range=psf_stamp.max()-psf_stamp.min())
             ssim_val.append(ssim_res[0])
-            ssims.append(ssim_res[1]-np.mean(ssim_res[1]))
+            ssims.append(ssim_res[1]-np.median(ssim_res[1]))
             nrmse.append(normalized_root_mse(star, psf_stamp))
 
         title = f'Mean SSIM: %.4f\nNorm. RMSE: %.4f'\
-                    % (np.mean(ssim_val), np.mean(nrmse))
+                    % (np.median(ssim_val), np.median(nrmse))
 
-        ssim_dict = dict(avg_im = np.median(ssims, axis=0),
-                            ssim  = np.median(ssim_val),
-                            nrmse = np.median(nrmse),
+        ssim_dict = dict(avg_im = np.mean(ssims, axis=0),
+                            ssim  = np.mean(ssim_val),
+                            nrmse = np.mean(nrmse),
                             title = title
                             )
 
@@ -353,7 +358,7 @@ class ResidPlots:
 
         for i, dct in enumerate(dicts):
             if i==2:
-                norm = colors.TwoSlopeNorm(0)
+                norm = colors.CenteredNorm(0, halfrange=0.4)
                 cmap = plt.cm.bwr_r
                 mpl_dict = dict(cmap=cmap, norm=norm)
             else:
@@ -376,17 +381,17 @@ class ResidPlots:
         # Populate dicts
         self._populate_dicts()
 
+        # Make chi-square residuals;
+        self.make_chi2(polydeg=polydeg, outname=chi2_name)
+
         # Get titles (they're defined here!)
         self._get_plot_titles()
 
         # Make flux residual plots
         self.make_flux_resid_plot(resid_name)
 
-        # Make chi-square residuals;
-        #self.make_chi2(polydeg=polydeg, outname=chi2_name)
-
         # And make the chi squared plot
-        #self.make_chi2_plot(chi2_name)
+        self.make_chi2_plot(chi2_name)
 
         # Bonus, do the SSIM figure
         self.make_ssim_ims(resid_name)
