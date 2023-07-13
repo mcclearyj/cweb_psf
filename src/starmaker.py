@@ -34,14 +34,17 @@ class StarMaker():
         self.sky_std = 0.0
         self.vb = vb
 
+        # Sextractor catalog parameters
         self.x = []
         self.y = []
         self.models = []
         self.stamps = []
         self.star_flux = []
         self.star_mag = []
+        self.sex_bkg = []
         self.err_stamps = []
 
+        # HSM fit parameters
         self.hsm_sig = []
         self.hsm_g1 = []
         self.hsm_g2 = []
@@ -107,22 +110,34 @@ class StarMaker():
         for i in range(len(self.star_cat)):
 
             this_vign = self.star_cat[i]['VIGNET']
-            this_err_vign = self.star_cat[i]['ERR_VIGNET']
-            x_pos = self.star_cat[i]['XWIN_IMAGE'];
-            y_pos = self.star_cat[i]['YWIN_IMAGE']
+            x_pos = self.star_cat[i]['X_IMAGE'];
+            y_pos = self.star_cat[i]['Y_IMAGE']
             star_mag = self.star_cat[i]['MAG_AUTO']
             star_flux = self.star_cat[i]['FLUX_AUTO']
+            background = self.star_cat[i]['BACKGROUND']
 
+            # Set a default sky level in areas where new stars were found
             this_vign[this_vign <= -999] = np.nan
             this_vign[np.isnan(this_vign)] = self.sky_level
 
             # Subselect star and err vignets if needed
             vign_cutout = this_vign[j:k, j:k]
-            err_cutout = this_err_vign[j:k, j:k]
 
-            # Time to normalize stars
+            try:
+                this_err_vign = self.star_cat[i]['ERR_VIGNET']
+                err_cutout = this_err_vign[j:k, j:k]
+                self.err_stamps.append(err_cutout)
+            except:
+                pass
+
+            '''
+            # Time to normalize stars and error maps
             star_sum = np.nansum(vign_cutout)
             vign_cutout = vign_cutout/star_sum
+
+            err_sum = np.nansum(err_cutout)
+            err_cutout = err_cutout/err_sum
+            '''
 
             if vb is True:
                 print(f'Star {i} has flux {star_flux:.3f}')
@@ -131,9 +146,9 @@ class StarMaker():
             self.y.append(y_pos)
             self.star_mag.append(star_mag)
             self.star_flux.append(star_flux)
+            self.sex_bkg.append(background)
             self.stamps.append(vign_cutout)
             self.models.append(vign_cutout)
-            self.err_stamps.append(err_cutout)
 
         self.x=np.array(self.x)
         self.y=np.array(self.y)
@@ -170,10 +185,10 @@ class StampBackground():
 
     '''
 
-    def __init__(self,cat=None,sky_level=None,sky_std=None):
+    def __init__(self,cat=None,sky_level=None,sky_std=None, vclip=6):
 
         self.cat = cat
-        self.vclip = 6
+        self.vclip = vclip
         self.sky_level = 0.0
         self.sky_std = 0.0
         self.substamps = []
@@ -239,7 +254,7 @@ class StampBackground():
             self.substamps.append(cutout[-j:,-j:])
             self.substamps.append(cutout[0:j,0:j])
 
-        sky_level = np.nanmedian(self.substamps)
+        sky_level = np.nanmean(self.substamps)
         sky_std = np.nanstd(self.substamps)
 
         return sky_level, sky_std

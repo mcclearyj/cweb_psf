@@ -178,7 +178,7 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     fig,axes=plt.subplots(nrows=2,ncols=1,figsize=[10,7], sharex=True, tight_layout=True)
 
     r = np.exp(rho1.meanlogr) * pixel_scale / 60
-    xip = np.abs(rho1.xip)
+    xip = rho1.xip
     sig = np.sqrt(rho1.varxip)
 
     lab1 = r'$\rho_1(\theta)$'
@@ -189,7 +189,7 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     axes[0].errorbar(-r, xip, yerr=sig, color='tab:blue', capsize=5)
 
     #axes[0].set_xlabel(r'$\theta$ (arcmin)', fontsize=fontsize)
-    axes[0].set_ylabel(r'$\xi_+(\theta)$', fontsize=fontsize)
+    axes[0].set_ylabel(r'$\rho(\theta)$', fontsize=fontsize)
     #axes[0].set_xscale('log')
     axes[0].set_yscale('log', nonpositive='clip')
 
@@ -197,7 +197,7 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     ## rho3 correlation: dg x dg
     ##
     r = np.exp(rho3.meanlogr) * pixel_scale / 60
-    xip = np.abs(rho3.xip)
+    xip = rho3.xip
     sig = np.sqrt(rho3.varxip)
 
     lab3 = r'$\rho_3(\theta)$'
@@ -211,7 +211,7 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     ## rho4 correlation: dg x dg
     ##
     r = np.exp(rho4.meanlogr) * pixel_scale / 60
-    xip = np.abs(rho4.xip)
+    xip = rho4.xip
     sig = np.sqrt(rho4.varxip)
 
     lab4 = r'$\rho_4(\theta)$'
@@ -228,7 +228,7 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     ## rho 2 correlation: g x dg
     ##
     r = np.exp(rho2.meanlogr) * pixel_scale / 60
-    xip = np.abs(rho2.xip)
+    xip = rho2.xip
     sig = np.sqrt(rho2.varxip)
 
     lp2 = axes[1].plot(r, xip, color='tab:cyan',marker='o', ls='-', label=r'$\rho_2(\theta)$')
@@ -238,7 +238,7 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     axes[1].errorbar(-r, xip, yerr=sig, color='tab:cyan', capsize=5)
 
     axes[1].set_xlabel(r'$\theta$ (arcmin)', fontsize=fontsize)
-    axes[1].set_ylabel(r'$\xi_+(\theta)$', fontsize=fontsize)
+    axes[1].set_ylabel(r'$\rho(\theta)$', fontsize=fontsize)
     axes[1].set_xscale('log')
     axes[1].set_yscale('log', nonpositive='clip')
 
@@ -259,6 +259,7 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     plt.legend(loc='upper right')
 
     fig.savefig(outname)
+    fig.savefig(outname.replace('png', 'pdf'))
 
     return
 
@@ -303,6 +304,12 @@ def compare_rho_stats(prefix, pixel_scale, file_path='./', rho_files=None):
             print('no single_model found')
             single=None
 
+        try:
+            webbpsfn = os.path.join(file_path,''.join(['webbpsf_rho_',str(i),'.txt']))
+            webbpsf=Table.read(webbpsfn, format='ascii', header_start=1)
+        except:
+            print('no single_model found')
+            webbpsf=None
 
         savename = os.path.join(file_path,'rho_{}_comparisons.png'.format(i))
 
@@ -380,6 +387,23 @@ def compare_rho_stats(prefix, pixel_scale, file_path='./', rho_files=None):
             ax.errorbar(-r, single_xip, yerr=single_sig, capsize=5, color='C6')
 
             legends.append(lp4)
+
+        if webbpsf is not None:
+
+            r = webbpsf['meanr'] * pixel_scale / 60 # from pixels --> arcminutes
+            webbpsf_xip = np.abs(webbpsf['xip'])
+            webbpsf_sig = webbpsf['sigma_xip']
+
+            lp5 = ax.plot(r, webbpsf_xip, color='C7', marker='o',lw=2,
+                            ls='-', label='webbpsf')
+            ax.plot(r, -webbpsf_xip, color='C7',  marker='o', lw=2, ls=':')
+            ax.errorbar(r[webbpsf_xip>0], webbpsf_xip[webbpsf_xip>0], color='C7',
+                            yerr=webbpsf_sig[webbpsf_xip>0], capsize=5, ls='')
+            ax.errorbar(r[webbpsf_xip<0], -webbpsf_xip[webbpsf_xip<0], color='C7',
+                            yerr=webbpsf_sig[webbpsf_xip<0], capsize=5,  ls='')
+            ax.errorbar(-r, webbpsf_xip, yerr=webbpsf_sig, capsize=5, color='C7')
+
+            legends.append(lp5)
 
 
         plt.legend()

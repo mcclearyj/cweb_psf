@@ -145,7 +145,7 @@ def main(args):
         star_cat = star_cat[wg]
 
     # Calculate star stamp background
-    cs = StampBackground(star_cat)
+    cs = StampBackground(star_cat, vclip=10)
     sky_bg, sky_std = cs.calc_star_bkg(vb=vb)
 
     # Do star HSM fits

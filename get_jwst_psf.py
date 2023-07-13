@@ -49,7 +49,7 @@ def get_star_params(config=None):
     fwhms = [0.058, 0.0628, 0.120, 0.165]
     min_size = [0.88, 1, 1.83, 2.33]
     max_size = [1.6, 1.5, 2.5, 3.2]
-    max_mag = [26., 26.5, 26.5, 29]
+    max_mag = [26., 26.5, 26.5, 26.5]
     min_mag = [19.5, 19.5, 19, 19]
 
     star_params = Table([filter_names, fwhms, min_size,\
@@ -207,14 +207,14 @@ def make_starcat(image_file, config, star_params=None, thresh=0.55, cat_file=Non
 def add_err_cutout(boxcut, image_file, cat_file, ext='ERR'):
     '''
     Wrapper to call BoxCutter.grab_boxes and add an extra ERR stamp (or other!)
-    for chi2 calculations. Adding the extra column to the FITS HDU List is a bit
+    for chi2 calculations. Adding the extra column to the FITS HDU List is
     roundabout, but I couldn't figure out a better way to do it.
 
     Inputs
         grabber: should be a BoxCutter instance
         image_file: the error file to add to catalog
         cat_file: catalog that's going to get an extra vignet/stamp
-        outdir: where is it getting saved?
+        ext: what extension are we reading in?
     '''
 
     # V. nice, accessing config through imported class
@@ -230,11 +230,13 @@ def add_err_cutout(boxcut, image_file, cat_file, ext='ERR'):
     # We need box_size to be same as star size for chi2 calc
     if (box_size != imcat['VIGNET'][0].shape[0]):
         print(f'supplied box_size={box_size} and vignet size={imcat["VIGNET"][0].shape[0]} differ!!')
-        print(f'overring supplied box_size to {imcat["VIGNET"][0].shape[0]}')
+        print(f'overriding supplied box_size to {imcat["VIGNET"][0].shape[0]}')
         box_size = imcat['VIGNET'][0].shape[0]
         boxcut.box_size = box_size
+
     # Call to grab_boxes method
     boxes = boxcut.grab_boxes(image_file=image_file, cat_file=imcat)
+
     data = np.zeros(len(boxes), dtype=[(f'{ext}_VIGNET', \
                         'f4', (box_size, box_size))])
     for i, box in enumerate(boxes):
@@ -252,8 +254,7 @@ def run_piffy(image_file, starcat_file, config, echo=True):
     Inputs:
         im_file : the exposure to characterize
         star_cat_file : catalog of stars for PSF fitting
-        configdir : path to PIFF config file
-        outdir : where to save PIFF results
+        config : the run config
     '''
 
     sci = config['sci_image']['hdu']
@@ -327,6 +328,9 @@ def run_psfex(image_file, starcat_file, config):
     # And for convenience... save a PSFEx stars-only file
     pexcat = Table.read(outcat_name, hdu=2)
     starcat = Table.read(starcat_file, hdu=2)
+
+
+
     pexstar_name = os.path.join(config['outdir'],
                     base_name.replace('i2d.fits', 'pex_stars.fits'))
 
@@ -359,6 +363,7 @@ def main(args):
     # Create a BoxCutter instance
     boxcut = BoxCutter(config_file=args.config)
 
+
     # Process exposures
     for j, i2d in enumerate(i2d_images):
 
@@ -370,15 +375,16 @@ def main(args):
                             config=config, star_params=star_params)
 
         starcat_file = make_starcat(image_file=image_file, config=config,
-                                        star_params=star_params, cat_file=cat_file)
+                                        star_params=star_params,
+                                        cat_file=cat_file)
 
         add_err_cutout(boxcut, image_file=image_file, cat_file=starcat_file)
 
         run_psfex(image_file, starcat_file=starcat_file,
                     config=config)
 
-        run_piffy(image_file, starcat_file=starcat_file,
-                    config=config, echo=True)
+        #run_piffy(image_file, starcat_file=starcat_file,
+        #            config=config, echo=True)
 
     return 0
 
