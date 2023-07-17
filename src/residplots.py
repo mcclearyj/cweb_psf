@@ -130,7 +130,6 @@ class ResidPlots:
             # Make image-model chi2 map and append it to list
             noise_map = star.err_stamps[i]
             chi2_map = np.divide(np.square(resid), np.square(noise_map))
-            #chi2_map = np.divide(np.square(resid), np.var(star.stamps[i]))
             chi2_maps.append(chi2_map)
 
             # Also compute total reduced chi2 for image-model
@@ -176,13 +175,6 @@ class ResidPlots:
         EXTREMELY SPECIFIC PLOTTING KEYWORDS
         (Plots may not make sense or errors may be thrown). Assumes that passed
         avg_im is a residual plot of some sort.
-
-            #norm = colors.TwoSlopeNorm(np.median(avg_im),
-            #        vmin=0.8*np.min(avg_im),
-            #        vmax=0.8*np.max(avg_im))
-
-        I used to use colors.TwoSlopeNorm and the seismic_r color map for the
-        flux residuals, but have decided to go with SymLogNorm for now.
         '''
         if (avg_im is not None):
             norm = colors.TwoSlopeNorm(0, vmin=-0.2, vmax=1.1)

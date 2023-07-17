@@ -1,5 +1,5 @@
 ###
-### Cookie cutter parameters
+### Box cutter parameters
 input_catalog:
   hdu: 2
   x_tag: 'XWIN_IMAGE'
@@ -12,10 +12,11 @@ input_catalog:
 # Box size for all images
 box_size: 301
 
-# This is actually called ERR, not weight, shruggie emoticon
+# For i2d structure
 weight_image:
   hdu: 4
 
+# For i2d structure
 err_image:
   hdu: 2
 
@@ -24,12 +25,12 @@ sci_image:
   hdu: 1
 
 # Location of SEx/PIFF/PSFEx config files
-configdir: '/Users/j.mccleary/Research/jwst_cosmos/cweb_psf/astro_config/'
+configdir: 'astro_config/'
 
 # Output directory
-outdir: '/Users/j.mccleary/Research/jwst_cosmos/real_data/Jan2023/working2/'
+outdir: 'working/'
 
 # Reference an external star catalog or parameters
 star_params:
   truthstars:
-  param_file: '/Users/j.mccleary/Research/jwst_cosmos/cweb_psf/configs/Jan2023_star_params.yaml'
+  param_file: 'configs/star_params.yaml'

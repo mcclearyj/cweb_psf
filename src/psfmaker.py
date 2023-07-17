@@ -151,13 +151,9 @@ class PSFMaker:
         psf_stamp = psf_stamp/np.sum(psf_stamp)
         psf_stamp *= star_flux
 
-        # Create a background stamp that matches stamp background
-        # sky_bg_im = np.ones_like(psf_stamp) * sex_bkg
-        # psf_stamp *= sky_bg_im
-
         # Create noise and add it to stamp
         if self.vb == True: print("adding noise")
-        # loc for 150:2.014110796154E-04 scale: 2.978151291609E-2
+
         # Sky level is better for larger vignet sizes
         noise = np.random.normal(loc=sky_level,
                                     scale=sky_std,
