@@ -45,7 +45,7 @@ def get_star_params(config=None):
     images have a flux_rad vs. flux_auto
     '''
 
-    filter_names = ['f115w','f150w','f277w', 'f444w']
+    filter_names = ['F115W','F150W','F277W', 'F444W']
     fwhms = [0.058, 0.0628, 0.120, 0.165]
     min_size = [0.88, 1, 1.83, 2.33]
     max_size = [1.6, 1.5, 2.5, 3.2]
@@ -78,6 +78,7 @@ def run_sextractor(image_file, weight_file, config, star_params):
     wht = config['weight_image']['hdu']
     outdir = config['outdir']
     configdir = config['configdir']
+    filter_name = fits.getval(image_file, 'FILTER', ext=0)
 
     img_basename = os.path.basename(image_file)
 
@@ -90,7 +91,6 @@ def run_sextractor(image_file, weight_file, config, star_params):
     sgm_name = os.path.join(
                 outdir, img_basename.replace('i2d.fits','sgm.fits')
                 )
-    filter_name = re.search(r"f(\d){3}w", img_basename).group()
 
     wg = np.isin(star_params['filter_name'], filter_name)
     star_fwhm = star_params[wg]['star_fwhm']
@@ -125,10 +125,9 @@ def make_starcat(image_file, config, star_params=None, thresh=0.55, cat_file=Non
 
     Inputs:
         image_file : image file
-        out_dir : where to save star catalog (also assumed to be location of image catalog)
-        truthstars : reference star catalog
         star_params : table with stellar locus parameters
-        thresh : CLASS_STAR threshold for accepting as star
+        thresh : CLASS_STAR threshold for accepting a star candidate
+        cat_file : input sextractor catalog
 
     Outputs:
         star_cat_file: name of the star catalog (saved to file)
@@ -139,22 +138,14 @@ def make_starcat(image_file, config, star_params=None, thresh=0.55, cat_file=Non
 
     img_basename = os.path.basename(image_file)
     outdir = config['outdir']
-
-    try:
-        filter_name = re.search(r"f(\d){3}w", image_file).group() \
-                        +'_'+ re.search(r"(\d){2}mas",image_file).group()
-    except AttributeError:
-        filter_name = re.search(r"f(\d){3}w", image_file).group()
-
-    #imcat_name = os.path.join(
-    #            outdir, img_basename.replace('i2d.fits','cat.fits')
-    #            )
     imcat_name = cat_file
+    filter_name = fits.getval(image_file, 'FILTER', ext=0)
+
     starcat_name = os.path.join(
-                outdir, img_basename.replace('i2d.fits','starcat.fits')
+                outdir, img_basename.replace('.fits','_starcat.fits')
                 )
     plot_name = os.path.join(
-                outdir, img_basename.replace('i2d.fits','sizemag.pdf')
+                outdir, img_basename.replace('.fits','_sizemag.pdf')
                 )
 
     if not os.path.exists(imcat_name):
@@ -173,8 +164,6 @@ def make_starcat(image_file, config, star_params=None, thresh=0.55, cat_file=Non
                                     maxmatch=1, radius = 0.5/3600)
 
     else:
-
-        filter_name = re.search(r"f(\d){3}w", image_file).group()
         wg = np.isin(star_params['filter_name'], filter_name)
         min_size = star_params[wg]['min_size']
         min_size = np.float64(min_size)

@@ -373,12 +373,9 @@ class ResidPlots:
         # Populate dicts
         self._populate_dicts()
 
-<<<<<<< HEAD
         # Make chi-square residuals;
         self.make_chi2(polydeg=polydeg, outname=chi2_name)
 
-=======
->>>>>>> 891b6a0 (fix resid plots)
         # Get titles (they're defined here!)
         self._get_plot_titles()
 
