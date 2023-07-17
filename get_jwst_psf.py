@@ -329,8 +329,6 @@ def run_psfex(image_file, starcat_file, config):
     pexcat = Table.read(outcat_name, hdu=2)
     starcat = Table.read(starcat_file, hdu=2)
 
-
-
     pexstar_name = os.path.join(config['outdir'],
                     base_name.replace('i2d.fits', 'pex_stars.fits'))
 
