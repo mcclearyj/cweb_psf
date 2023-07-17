@@ -23,7 +23,7 @@ get_jwst_psf.py $DATADIR/image1 [image2 ...] -config RUN_CONFIG [-outdir OUTDIR]
           -configdir [CONFIGDIR] [--overwrite] [--help] [--vb]
 
 positional arguments:
-  images                Images to process (wildcards OK)
+  image1 [image2 ...]   Images to process (wildcards OK)
 
 options:
   -h, --help            show this help message and exit
