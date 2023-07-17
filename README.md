@@ -19,7 +19,7 @@ export CONFIGDIR='/your/path/name/cweb_psf/astro_config'
 export DATADIR='/your/path/name/data/April2023'
 export CODEDIR='/your/path/name/cweb_psf'
 
-get_jwst_psf.py images [images ...] -config RUN_CONFIG [-outdir OUTDIR]
+get_jwst_psf.py $DATADIR/image1 [image2 ...] -config RUN_CONFIG [-outdir OUTDIR]
           -configdir [CONFIGDIR] [--overwrite] [--help] [--vb]
 
 positional arguments:
