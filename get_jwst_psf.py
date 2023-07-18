@@ -81,13 +81,13 @@ def run_sextractor(image_file, weight_file, config, star_params):
     img_basename = os.path.basename(image_file)
 
     cat_name = os.path.join(
-                outdir, img_basename.replace('i2d.fits','cat.fits')
+                outdir, img_basename.replace('.fits','.cat.fits')
                 )
     bkg_sub  = os.path.join(
-                    outdir, img_basename.replace('i2d.fits','sub.fits')
+                    outdir, img_basename.replace('.fits','.sub.fits')
                     )
     sgm_name = os.path.join(
-                outdir, img_basename.replace('i2d.fits','sgm.fits')
+                outdir, img_basename.replace('.fits','.sgm.fits')
                 )
 
     wg = np.isin(star_params['filter_name'], filter_name)
@@ -315,7 +315,7 @@ def run_psfex(image_file, starcat_file, config):
     starcat = Table.read(starcat_file, hdu=2)
 
     pexstar_name = os.path.join(config['outdir'],
-                    base_name.replace('i2d.fits', 'pex_stars.fits'))
+                    base_name.replace('.fits', '_pex_stars.fits'))
 
     pex_stars = pexcat['FLAGS_PSF']==0
     starcat[pex_stars].write(pexstar_name, format='fits', overwrite=True)
