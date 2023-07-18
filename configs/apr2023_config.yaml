@@ -14,7 +14,7 @@ box_size: 261
 
 # For mosaic i2d structure
 weight_image:
-  hdu: 4
+  hdu: 2
 
 # For i2d structure
 err_image:
@@ -25,7 +25,7 @@ sci_image:
   hdu: 1
 
 # Location of SEx/PIFF/PSFEx config files
-configdir: 'astro_config/'
+configdir: '/Users/j.mccleary/Research/jwst_cosmos/cweb_psf/astro_config/'
 
 # Output directory
 outdir: 'working/'
@@ -38,7 +38,6 @@ webb_psf:
   oversample_lw: False
 
 # Reference an external star catalog or parameters
-# DOES NOT WORK YET!!
 star_params:
   truthstars:
   param_file: 'configs/star_params.yaml'

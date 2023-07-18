@@ -14,6 +14,8 @@ import ipdb, pdb
 from src.plotter import size_mag_plots
 from src.utils import read_yaml, make_outdir
 from src.box_cutter import BoxCutter
+from src.run_webb_psf import run_webb_psf
+
 import fitsio
 
 
@@ -23,12 +25,8 @@ def parse_args():
 
     parser.add_argument('images', nargs='+',
                         help = 'Images to process (wildcards OK)')
-    parser.add_argument('-outdir', default=None,
-                        help = 'Where to save files')
     parser.add_argument('-config', default=None,
                         help = 'Configuration file for this script')
-    parser.add_argument('-configdir', default=None,
-                        help = 'Astromatic config files')
     parser.add_argument('--vb', action='store_true', default=True,
                         help = 'Print detailed messages [does nothing for now]')
 
@@ -193,7 +191,7 @@ def make_starcat(image_file, config, star_params=None, thresh=0.55, cat_file=Non
     return starcat_name
 
 
-def add_err_cutout(boxcut, image_file, cat_file, ext='ERR'):
+def add_err_cutout(config, boxcut, image_file, cat_file, ext='ERR'):
     '''
     Wrapper to call BoxCutter.grab_boxes and add an extra ERR stamp (or other!)
     for chi2 calculations. Adding the extra column to the FITS HDU List is
@@ -206,10 +204,8 @@ def add_err_cutout(boxcut, image_file, cat_file, ext='ERR'):
         ext: what extension are we reading in?
     '''
 
-    # V. nice, accessing config through imported class
-    config = boxcut.config
     cat_hdu = config['input_catalog']['hdu']
-    box_size = boxcut.box_size
+    box_size = config['box_size']
 
 
     # Read in the fits file so that we can add the column ourselves
@@ -330,26 +326,33 @@ def run_psfex(image_file, starcat_file, config):
 def main(args):
 
     i2d_images = args.images
-    outdir = args.outdir
-    configdir = args.configdir
-    vb = args.vb
 
     config_yml = read_yaml(args.config)
 
-    # Returns config with outdir parameter if it was missing
-    config = make_outdir(config_yml, outdir)
+    # Adds an outdir parameter to config if it was missing
+    config = make_outdir(config_yml)
     configdir = config['configdir']
 
     # Get astromatic configs
     if configdir is None:
         config['configdir'] = 'astro_config/'
 
-    # Placeholder: table of stellar locus parameters
+    # Set a make_webb_psf flag
+    if config['webb_psf']['make_webb_psf'] in ['True', 'true', True]:
+        make_webb_psf = True
+        if config['webb_psf']['oversample_lw'] in ['True', 'true', True]:
+            oversample_lw = True
+        else:
+            oversample_lw = False
+    else:
+        make_webb_psf = False
+        oversample_lw = False
+
+    # Stellar locus parameters
     star_params = get_star_params()
 
     # Create a BoxCutter instance
     boxcut = BoxCutter(config_file=args.config)
-
 
     # Process exposures
     for j, i2d in enumerate(i2d_images):
@@ -359,19 +362,21 @@ def main(args):
         image_file = i2d
 
         cat_file = run_sextractor(image_file=image_file, weight_file=image_file,
-                            config=config, star_params=star_params)
+                                        config=config, star_params=star_params)
 
         starcat_file = make_starcat(image_file=image_file, config=config,
                                         star_params=star_params,
                                         cat_file=cat_file)
 
-        add_err_cutout(boxcut, image_file=image_file, cat_file=starcat_file)
+        add_err_cutout(config=config, boxcut=boxcut,
+                        image_file=image_file, cat_file=starcat_file)
 
         run_psfex(image_file, starcat_file=starcat_file,
                     config=config)
 
-        #run_piffy(image_file, starcat_file=starcat_file,
-        #            config=config, echo=True)
+        if make_webb_psf is True:
+            run_webb_psf(image_file, oversample_lw)
+
 
     return 0
 
