@@ -31,7 +31,7 @@ def run_webb_psf(image_file, oversample_lw, outdir=None):
         outdir = os.path.dirname(image_file)
     image_name = os.path.basename(image_file)
     output_file = os.path.join(outdir,
-                    image_name.replace('.fits', '_webbPSF.fits'))
+                    image_name.replace('.fits', '_WebbPSF.fits'))
     # Set oversample scale
     if (filter_name in ['F277W', 'F444W']) and (oversample_lw == True):
         oversample = 2
