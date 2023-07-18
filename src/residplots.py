@@ -92,8 +92,7 @@ class ResidPlots:
 
         psfs  = self.psfs
         stars = self.stars
-        resids = np.array(psfs.resids)/(np.array(stars.stamps)+1.0e-6)
-        #resids = psfs.resids
+        resids = np.array(psfs.resids)/(np.array(stars.stamps) + 1.0e-6)
 
         wg = (psfs.hsm_g1 > -9999) & (stars.hsm_g1 > -9999)
         self.star_dict  = self._make_im_dict(stars, stars.stamps, wg)
@@ -125,11 +124,12 @@ class ResidPlots:
         chi2_maps = []
         chi2_vals = []
 
-        for i, resid in enumerate(np.array(psf.resids)[wg]):
+        for i, psf_stamp in enumerate(np.array(psf.stamps)[wg]):
 
             # Make image-model chi2 map and append it to list
             noise_map = star.err_stamps[i]
-            chi2_map = np.divide(np.square(resid), np.square(noise_map))
+            star_stamp = star.stamps[i]
+            chi2_map = np.divide(np.square(star_stamp-psf_stamp), np.square(noise_map))
             chi2_maps.append(chi2_map)
 
             # Also compute total reduced chi2 for image-model
@@ -328,18 +328,18 @@ class ResidPlots:
 
         for i, star in enumerate(np.array(stars.stamps)[wg]):
             psf_stamp = psfs.stamps[i]
-            ssim_res = ssim(psf_stamp, star, full=True, win_size=3,
+            ssim_res = ssim(psf_stamp, star, full=True, win_size=7,
                             data_range=psf_stamp.max()-psf_stamp.min())
             ssim_val.append(ssim_res[0])
-            ssims.append(ssim_res[1]-np.median(ssim_res[1]))
+            ssims.append(ssim_res[1] - np.median(ssim_res[1]))
             nrmse.append(normalized_root_mse(star, psf_stamp))
 
-        title = f'Mean SSIM: %.4f\nNorm. RMSE: %.4f'\
+        title = f'Median SSIM: %.4f\nMedian Norm. RMSE: %.4f'\
                     % (np.median(ssim_val), np.median(nrmse))
 
         ssim_dict = dict(avg_im = np.mean(ssims, axis=0),
-                            ssim  = np.mean(ssim_val),
-                            nrmse = np.mean(nrmse),
+                            ssim  = np.median(ssim_val),
+                            nrmse = np.median(nrmse),
                             title = title
                             )
 
@@ -350,7 +350,7 @@ class ResidPlots:
 
         for i, dct in enumerate(dicts):
             if i==2:
-                norm = colors.CenteredNorm(0, halfrange=0.4)
+                norm = colors.CenteredNorm(0)
                 cmap = plt.cm.bwr_r
                 mpl_dict = dict(cmap=cmap, norm=norm)
             else:
@@ -382,14 +382,8 @@ class ResidPlots:
         # Make flux residual plots
         self.make_flux_resid_plot(resid_name)
 
-        try:
-            # Make chi-square residuals;
-            self.make_chi2(nparams=3, outname=chi2_name)
-
-            # And make the chi squared plot
-            self.make_chi2_plot(chi2_name)
-        except:
-            print("Skipping chi2 calculation")
+        # And make the chi squared plot
+        self.make_chi2_plot(chi2_name)
 
         # Bonus, do the SSIM figure
         self.make_ssim_ims(resid_name)
