@@ -3,7 +3,7 @@ import galsim,galsim.des
 import pdb
 import matplotlib.pyplot as plt; plt.ion()
 
-def do_hsm_fit(maker,verbose=False):
+def do_hsm_fit(maker, verbose=False):
     '''
     Get Hirata-Seljak fit moments for PSF and star images. From the GalSim docs:
 
@@ -23,6 +23,7 @@ def do_hsm_fit(maker,verbose=False):
             if verbose==True: print('found Galsim Object, using native HSM fit')
 
         else:
+            # HSM fits fail if there are too many negative pixels
             gs_object = galsim.Image(model,
                 wcs=galsim.PixelScale(maker.pixel_scale), xmin=0, ymin=0)
             if verbose==True: print('Creating Galsim image from array')
@@ -33,10 +34,19 @@ def do_hsm_fit(maker,verbose=False):
             maker.hsm_g1.append(HSM_fit.observed_shape.g1)
             maker.hsm_g2.append(HSM_fit.observed_shape.g2)
         except:
-            print("HSM fit for stamp #%d failed, skipping" % i)
-            maker.hsm_sig.append(-9999)
-            maker.hsm_g1.append(-9999)
-            maker.hsm_g2.append(-9999)
+            print("HSM fit for stamp #%d failed, using robust mode" % i)
+            try:
+                gs_object = galsim.Image(model+abs(np.min(model)),
+                    wcs=galsim.PixelScale(maker.pixel_scale), xmin=0, ymin=0)
+                HSM_fit=gs_object.FindAdaptiveMom(round_moments=True)
+                maker.hsm_sig.append(HSM_fit.moments_sigma)
+                maker.hsm_g1.append(HSM_fit.observed_shape.g1)
+                maker.hsm_g2.append(HSM_fit.observed_shape.g2)
+            except:
+                print("Robust-mode HSM fit for stamp #%d failed, skipping" % i)
+                maker.hsm_sig.append(-9999)
+                maker.hsm_g1.append(-9999)
+                maker.hsm_g2.append(-9999)
 
         try:
             maker.fwhm.append(gs_object.calculateFWHM())
