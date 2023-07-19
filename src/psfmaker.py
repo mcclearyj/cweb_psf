@@ -270,10 +270,11 @@ class PSFMaker:
 
     def _make_single(self, x_pos, y_pos, index, flux=None, vb=False):
         '''
-        Load in a Marko-style single PSFEx file or a webbPSF file
+        Load in a Marko-style single PSFEx file
         '''
 
         single_psf = self.psf
+        extension_names = [ext.name for ext in single_psf]
 
         if flux == None:
             star_flux = 1
@@ -281,10 +282,18 @@ class PSFMaker:
             star_flux=flux
             if vb == True: print("using flux=%.2f" % flux)
 
+        if 'DET_DIST' in extension_names:
+            ext = 'DET_DIST'
+        elif 'PSF_DATA' in extension_names:
+            ext = 'PSF_DATA'
+        else:
+            raise "Extension not found in WebbPSF/SinglePSF model"
+
         try:
-            single_im = single_psf['PSF_DATA'].data['PSF_MASK'][0, 0, :,:]
+            # Marko's PSFEx format
+            single_im = single_psf[ext].data['PSF_MASK'][0, 0, :,:]
         except:
-            single_im = single_psf['PSF_DATA'].data
+            single_im = single_psf[ext].data
 
         if single_im.shape[0] != self.vignet_size:
             n = int((single_im.shape[0]-self.vignet_size)/2)
@@ -293,7 +302,6 @@ class PSFMaker:
         single_im_rs = self._add_flux(single_im, index)
 
         return single_im_rs
-
 
 
     def run_rho_stats(self, stars, rho_params, vb=False, outdir='./'):
@@ -328,6 +336,10 @@ class PSFMaker:
 
         # Define quantities to be used
         wg = (self.hsm_g1 > -9999) & (stars.hsm_g1 > -9999)
+        if len(wg.nonzero()[0])<1:
+            print("too many stars failed, exiting")
+            pdb.set_trace()
+
         star_g1 = stars.hsm_g1[wg]
         star_g2 = stars.hsm_g2[wg]
         psf_g1 = self.hsm_g1[wg]
