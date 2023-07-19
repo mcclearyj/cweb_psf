@@ -45,8 +45,8 @@ def get_star_params(config=None):
 
     filter_names = ['F115W','F150W','F277W', 'F444W']
     fwhms = [0.058, 0.0628, 0.120, 0.165]
-    min_size = [0.88, 1, 1.83, 2.33]
-    max_size = [1.6, 1.5, 2.5, 3.2]
+    min_size = [0.88, 1, 0.8, 1.1]
+    max_size = [1.6, 1.5, 1.2, 1.6]
     max_mag = [26., 26.5, 26.5, 26.5]
     min_mag = [19.5, 19.5, 19, 19]
 
