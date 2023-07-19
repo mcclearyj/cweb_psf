@@ -328,7 +328,7 @@ class ResidPlots:
 
         for i, star in enumerate(np.array(stars.stamps)[wg]):
             psf_stamp = psfs.stamps[i]
-            ssim_res = ssim(psf_stamp, star, full=True, win_size=7,
+            ssim_res = ssim(psf_stamp, star, full=True, win_size=3,
                             data_range=psf_stamp.max()-psf_stamp.min())
             ssim_val.append(ssim_res[0])
             ssims.append(ssim_res[1] - np.median(ssim_res[1]))
