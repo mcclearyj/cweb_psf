@@ -23,7 +23,7 @@ def run_webb_psf(image_file, oversample_lw, outdir=None):
     imhead = fits.getheader(image_file, ext=0)
     filter_name = imhead['FILTER']
     date = imhead['DATE']
-    detector = imhead['DETECTOR']
+    detector = imhead['DETECTOR'].replace('LONG', '5')
     roll_angle = fits.getval(image_file, 'ROLL_REF', ext=1)
 
     # Define output file name
@@ -48,9 +48,9 @@ def run_webb_psf(image_file, oversample_lw, outdir=None):
     # Load OSS by date
     nc.load_wss_opd_by_date(date)
 
-    # Calculate PSF & save to file
-    # Make it big so we don't truncate anything
-    psf = nc.calc_psf(crop_psf=False, fov_pixels=301)
+    # Calculate PSF & save to file. Make it big so we don't truncate anything.
+    # If crop_psf=False, the distorted image will have different dimensions.
+    psf = nc.calc_psf(crop_psf=True, fov_pixels=301)
     print(f"nc.oversample is {nc.oversample}")
     psf.writeto(output_file, overwrite=True)
 
