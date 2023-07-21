@@ -5,6 +5,9 @@ from astropy.io import fits
 from astropy.table import Table, vstack, hstack, Column
 import numpy as np
 
+'''
+Some Utility Functions used for Shopt
+'''
 def objective_function(p, x, y, degree):
     num_coefficients = (degree + 1) * (degree + 2) // 2
     value = 0
@@ -30,6 +33,10 @@ def p(u,v, polMatrix, degree):
             psf[i,j] = objective_function(polMatrix[i,j,:], u, v, degree)
     return psf/np.sum(psf)
 
+'''
+Define a class for catalog. This seems intuitive as catalogs are databases structures 
+that lend themselves nicely to object oriented programming with getters and setters to change the database.
+'''
 class catalog:
     def __init__(self, catalog):
         self.catalog = catalog
@@ -55,7 +62,11 @@ class catalog:
                 new_hdul.writeto('new_file.fits', overwrite=True)
         except (IOError, TypeError) as e:
             print("Error occurred:", e)
-
+'''
+Define a super class for PSF with the filename. This is useful because we can have
+shared functions for things like adding noise but each subclass will have it's own render
+method and coordinate system; (x,y) or (u,v) or (ra,dec) etc. 
+'''
 class psf:
     def __init__(self, psfFileName):
         self.psfFileName = psfFileName
@@ -144,9 +155,16 @@ class piff_psf(psf):
     def nameColumn(self):
         return 'VIGNET_PIFF'
 
+'''
+Test Code by iteratively adding a VIGNETS column for each PSF Model
+'''
+
 catalog_object = catalog('new_file.fits')
 psfex_object = epsfex('working/psfex-output/jw01727116001_04101_00001_nrca3_cal/jw01727116001_04101_00001_nrca3_cal_starcat.psf')
 piff_object = piff_psf('/home/eddieberman/research/mcclearygroup/mock_data/mosaics/COSMOS2020_sims/piff-output/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci.piff')
 shopt_object = shopt('/home/eddieberman/research/mcclearygroup/shopt/outdir/2023-07-20T11:42:39.026/summary.shopt')
 webb_object = webbpsf('/home/eddieberman/research/mcclearygroup/cweb_psf/single_exposures/jw01727116001_02101_00004_nrcb4_cal_WebbPSF.fits')
+#catalog_object.augment(piff_object)
+#catalog_object.augment(psfex_object)
+#catalog_object.augment(shopt_object)
 catalog_object.augment(webb_object)
