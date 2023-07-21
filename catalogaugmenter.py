@@ -84,11 +84,12 @@ class psf:
     '''
 
 class epsfex(psf):
-    def __init__(self, psfFileName):
+    def __init__(self, psfFileName, vignet_size = None):
         super().__init__(psfFileName)
         self.psfex = psfex.PSFEx(self.psfFileName)
+        self.vignet_size = vignet_size
 
-    def render(self, x, y):
+    def render(self, x, y, vignet_size = 75):
         psfex_model = self.psfex
         return psfex_model.get_rec(y, x)
 
