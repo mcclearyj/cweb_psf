@@ -36,8 +36,6 @@ class catalog:
 
     def augment(self, psf):
         '''
-        Supply a list of psf objects. For each psf object, call psf.render to generate augmented catalog.
-        For example: augment([psfex, webbpsf, shopt, piff]), 
         '''
         current_catalog = fits.open(self.catalog)
         data = Table(current_catalog[2].data)
@@ -53,12 +51,9 @@ class catalog:
                 new_hdul = fits.HDUList(original_hdul)
                 new_table_hdu = fits.BinTableHDU(data, name='LDAC_OBJECTS')
                 new_hdul[2] = new_table_hdu
-                #new_hdul.header['EXTNAME'] = 'LDAC_OBJECTS'
-                # 94   VIGNETS_hdu.header['EXTNAME'] = 'VIGNETS'
                 new_hdul.writeto('new_file.fits', overwrite=True)
         except (IOError, TypeError) as e:
             print("Error occurred:", e)
-        print(data)
 
 class psf:
     def __init__(self, psfFileName):
@@ -110,12 +105,12 @@ class shopt(psf):
         return p(u, v, self.polMatrix, self.degree)
 
     def coordinate_columns(self):
-        return 'ALPHA_J2000', 'DELTA_J2000'
+        return 'ALPHAWIN_J2000', 'DELTAWIN_J2000'
 
     def nameColumn(self):
         return 'VIGNET_SHOPT'
 
-class piff(psf):
+class piff_psf(psf):
     def __init__(self, psfFileName):
         super().__init__(psfFileName)
         self.piff_psf = piff.read(self.psfFileName)
@@ -123,13 +118,15 @@ class piff(psf):
     def render(self, u, v):
         piff_psf = self.piff_psf
         piff_im = piff_psf.draw(u, v)
+        return piff_im.array
 
     def coordinate_columns(self):
-        return 'ALPHA_J2000', 'DELTA_J2000'
+        return 'ALPHAWIN_J2000', 'DELTAWIN_J2000'
     
     def nameColumn(self):
         return 'VIGNET_PIFF'
 
-catalog_object = catalog('working/jw01727116001_04101_00001_nrca3_cal_starcat.fits')
+catalog_object = catalog('new_file.fits')
 psfex_object = epsfex('working/psfex-output/jw01727116001_04101_00001_nrca3_cal/jw01727116001_04101_00001_nrca3_cal_starcat.psf')
-catalog_object.augment(psfex_object)
+piff_object = piff_psf('/home/eddieberman/research/mcclearygroup//mock_data/mosaics/COSMOS2020_sims/piff-output/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci.piff')
+catalog_object.augment(piff_object)
