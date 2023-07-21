@@ -128,5 +128,6 @@ class piff_psf(psf):
 
 catalog_object = catalog('new_file.fits')
 psfex_object = epsfex('working/psfex-output/jw01727116001_04101_00001_nrca3_cal/jw01727116001_04101_00001_nrca3_cal_starcat.psf')
-piff_object = piff_psf('/home/eddieberman/research/mcclearygroup//mock_data/mosaics/COSMOS2020_sims/piff-output/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci.piff')
-catalog_object.augment(piff_object)
+piff_object = piff_psf('/home/eddieberman/research/mcclearygroup/mock_data/mosaics/COSMOS2020_sims/piff-output/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci.piff')
+shopt_object = shopt('/home/eddieberman/research/mcclearygroup//shopt/outdir/2023-07-20T11:42:39.026/summary.shopt')
+catalog_object.augment(shopt_object)
