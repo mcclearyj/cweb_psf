@@ -43,6 +43,7 @@ class catalog:
         for i in range(len(current_catalog[2].data['XWIN_IMAGE'])):
             ext_name1, ext_name2 = psf.coordinate_columns()
             new_column_data.append(psf.render(data[ext_name1][i], data[ext_name2][i]))
+            #print(data[ext_name1][i], data[ext_name2][i])
         new_column = Column(new_column_data, name=psf.nameColumn())
         data.add_column(new_column)
         current_catalog.close()
@@ -90,11 +91,28 @@ class webbpsf(psf):
     def __init__(self, psfFileName):
         super().__init__(psfFileName)
 
-    def render(self):
-        pass
+    def render(self, x, y):
+        single_psf = fits.open(self.psfFileName)
+        extension_names = [ext.name for ext in single_psf]
+        if 'DET_DIST' in extension_names:
+            ext = 'DET_DIST'
+        elif 'PSF_DATA' in extension_names:
+            ext = 'PSF_DATA'
+        else:
+            raise "Extension not found in WebbPSF/SinglePSF model"
+        try:
+            # Marko's PSFEx format
+            single_im = single_psf[ext].data['PSF_MASK'][0, 0, :,:]
+        except:
+            single_im = single_psf[ext].data
+        print(x,y)
+        return single_im
 
     def nameColumn(self):
         return 'VIGNET_WEBBPSF'
+    
+    def coordinate_columns(self):
+        return 'XWIN_IMAGE', 'YWIN_IMAGE'
 
 class shopt(psf):
     def __init__(self, psfFileName):
@@ -129,5 +147,6 @@ class piff_psf(psf):
 catalog_object = catalog('new_file.fits')
 psfex_object = epsfex('working/psfex-output/jw01727116001_04101_00001_nrca3_cal/jw01727116001_04101_00001_nrca3_cal_starcat.psf')
 piff_object = piff_psf('/home/eddieberman/research/mcclearygroup/mock_data/mosaics/COSMOS2020_sims/piff-output/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci.piff')
-shopt_object = shopt('/home/eddieberman/research/mcclearygroup//shopt/outdir/2023-07-20T11:42:39.026/summary.shopt')
-catalog_object.augment(shopt_object)
+shopt_object = shopt('/home/eddieberman/research/mcclearygroup/shopt/outdir/2023-07-20T11:42:39.026/summary.shopt')
+webb_object = webbpsf('/home/eddieberman/research/mcclearygroup/cweb_psf/single_exposures/jw01727116001_02101_00004_nrcb4_cal_WebbPSF.fits')
+catalog_object.augment(webb_object)
