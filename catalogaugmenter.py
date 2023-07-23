@@ -22,7 +22,10 @@ def objective_function(p, x, y, degree):
 def read_shopt(shoptFile):
     f = fits.open(shoptFile)
     polyMatrix = f[0].data
-    degree = f[1].data['polynomial degree'][0]
+    try: 
+        degree = f[1].data['polynomial degree'][0]
+    except:
+        degree = f[1].data['POLYNOMIAL_DEGREE'][0]
     return polyMatrix, degree
 
 def p(u,v, polMatrix, degree):
@@ -43,6 +46,7 @@ class catalog:
 
     def augment(self, psf):
         '''
+        Add outdir argument?
         '''
         current_catalog = fits.open(self.catalog)
         data = Table(current_catalog[2].data)
@@ -62,6 +66,18 @@ class catalog:
                 new_hdul.writeto('new_file.fits', overwrite=True)
         except (IOError, TypeError) as e:
             print("Error occurred:", e)
+    
+    def add_noise(self, psf_extname):
+        '''
+        Look at Vignets to get noise, then replace all the VIGNETS in psf_extname with themselves + noise
+        '''
+        pass
+
+    def crop(self, pst_extname, vignet_size=None):
+        '''
+        Crop all the VIGNETS in psf_extname to 75x75
+        '''
+        pass
 '''
 Define a super class for PSF with the filename. This is useful because we can have
 shared functions for things like adding noise but each subclass will have it's own render
@@ -74,8 +90,6 @@ class psf:
     def render(self):
         pass
 
-    def add_noise(self):
-        pass
 
     def nameColumn(self):
         pass
@@ -84,10 +98,9 @@ class psf:
     '''
 
 class epsfex(psf):
-    def __init__(self, psfFileName, vignet_size = None):
+    def __init__(self, psfFileName):
         super().__init__(psfFileName)
         self.psfex = psfex.PSFEx(self.psfFileName)
-        self.vignet_size = vignet_size
 
     def render(self, x, y, vignet_size = 75):
         psfex_model = self.psfex
@@ -165,7 +178,7 @@ psfex_object = epsfex('working/psfex-output/jw01727116001_04101_00001_nrca3_cal/
 piff_object = piff_psf('/home/eddieberman/research/mcclearygroup/mock_data/mosaics/COSMOS2020_sims/piff-output/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci.piff')
 shopt_object = shopt('/home/eddieberman/research/mcclearygroup/shopt/outdir/2023-07-20T11:42:39.026/summary.shopt')
 webb_object = webbpsf('/home/eddieberman/research/mcclearygroup/cweb_psf/single_exposures/jw01727116001_02101_00004_nrcb4_cal_WebbPSF.fits')
-#catalog_object.augment(piff_object)
-#catalog_object.augment(psfex_object)
-#catalog_object.augment(shopt_object)
+catalog_object.augment(piff_object)
+catalog_object.augment(psfex_object)
+catalog_object.augment(shopt_object)
 catalog_object.augment(webb_object)
