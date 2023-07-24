@@ -28,7 +28,7 @@ sci_image:
 astro_config_dir: 'astro_config/'
 
 # Output directory
-outdir: '/Users/j.mccleary/Research/jwst_cosmos/real_data/Apr2023/gal_cutout_working/'
+outdir: 'gal_cutout_working/'
 
 
 # Reference an external star catalog or parameters
