@@ -67,11 +67,23 @@ class catalog:
         except (IOError, TypeError) as e:
             print("Error occurred:", e)
     
-    def add_noise(self, psf_extname):
-        '''
-        Look at Vignets to get noise, then replace all the VIGNETS in psf_extname with themselves + noise
-        '''
-        pass
+    def add_noise_flux(self, psf_list, outname='new_file.fits'):
+        catalog = fits.open(self.catalog)
+        data = Table(catalog[2].data)
+        for psf in psf_list:
+            for i in range(len(data['FLUX_AUTO'])):
+                data[psf.nameColumn()][i] *= data['FLUX_AUTO'][i]
+                data[psf.nameColumn()][i] = data[psf.nameColumn()][i]/np.nansum(data[psf.nameColumn()][i])
+        catalog.close()
+        try:
+            with fits.open(self.catalog) as original_hdul:
+                new_hdul = fits.HDUList(original_hdul)
+                new_table_hdu = fits.BinTableHDU(data, name='LDAC_OBJECTS')
+                new_hdul[2] = new_table_hdu
+                new_hdul.writeto(outname, overwrite=True)
+        except (IOError, TypeError) as e:
+            print("Error occurred:", e)
+
 
     def crop(self, psf_list, vignet_size=None, replace_original_psf=False, outname='new_file.fits'):
         '''
@@ -139,22 +151,22 @@ class catalog:
         except (IOError, TypeError) as e:
             print("Error occurred:", e)
         
-   def concatenate_catalogs(self, catalog_new, outname='new_file.fits'):
-       catalog1 = self.catalog
-       catalog2 = catalog_new.catalog
-       data1 = Table(catalog1[2].data)
-       data2 = Table(catalog2[2].data)
-       data = vstack([data1, data2])
-       catalog1.close()
-       catalog2.close()
-       try:
-           with fits.open(self.catalog) as original_hdul:
-               new_hdul = fits.HDUList(original_hdul)
-               new_table_hdu = fits.BinTableHDU(data, name='LDAC_OBJECTS')
-               new_hdul[2] = new_table_hdu
-               new_hdul.writeto(outname, overwrite=True)
-       except (IOError, TypeError) as e:
-           print("Error occurred:", e)
+    def concatenate_catalogs(self, catalog_new, outname='new_file.fits'):
+        catalog1 = fits.open(self.catalog)
+        catalog2 = fits.open(catalog_new.catalog)
+        data1 = Table(catalog1[2].data)
+        data2 = Table(catalog2[2].data)
+        data = vstack([data1, data2])
+        catalog1.close()
+        catalog2.close()
+        try:
+            with fits.open(self.catalog) as original_hdul:
+                new_hdul = fits.HDUList(original_hdul)
+                new_table_hdu = fits.BinTableHDU(data, name='LDAC_OBJECTS')
+                new_hdul[2] = new_table_hdu
+                new_hdul.writeto(outname, overwrite=True)
+        except (IOError, TypeError) as e:
+            print("Error occurred:", e)
 
 '''
 Define a super class for PSF with the filename. This is useful because we can have
@@ -264,4 +276,6 @@ webb_object = webbpsf('/home/eddieberman/research/mcclearygroup/cweb_psf/single_
 You should add noise to the image before you crop it, or when you crop it make sure to crop the error image as well
 '''
 #catalog_object.crop([psfex_object, piff_object, shopt_object, webb_object])
-catalog_object.crop([piff_object])
+#catalog_object.crop([piff_object])
+#catalog_object.add_noise_flux([psfex_object, piff_object, shopt_object, webb_object], outname='new_new_file.fits')
+#catalog_object.concatenate_catalogs(catalog_object, outname='newest_file.fits')
