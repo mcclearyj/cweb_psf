@@ -320,8 +320,32 @@ class piff_psf(psf):
         return 'VIGNET_PIFF'
 
 '''
-Test Code by iteratively adding a VIGNETS column for each PSF Model
+Test Code by Iteratively Adding Columns for rendering PSF stamps of different fitters.
+
+Note: You should always augment before calling the cropping or noise flux methods, otherwise you will be adding noise flux to stamps that don't yet exist. 
+I would also recommend specifying the optional outcame arguments so that you don't overwrite your original catalog file, incase you make a mistake 
+(or find a mistake in my code).
 '''
+
+'''
+In general:
+
+catalog_object = catalog('current_file.fits')
+
+psfex_obect = epsfex('/path/model.psf')
+piff_object = piff_psf('/path/model.piff')
+shopt_object = shopt('/path/summary.shopt')
+webb_object = webbpsf('/path/model.fits')
+
+# Set outname to current name to overwrite your existing file instead of creating a new catalog
+catalog_object.augment(psfex_object, outname='current_file.fits')  
+catalog_object.augment(piff_object, outname='current_file.fits')
+catalog_object.augment(shopt_object, outname='current_file.fits') 
+catalog_object.augment(webb_object, outname='current_file.fits') 
+'''
+
+'''
+Here is some of my testing: 
 
 catalog_object = catalog('new_file.fits')
 psfex_object = epsfex('working/psfex-output/jw01727116001_04101_00001_nrca3_cal/jw01727116001_04101_00001_nrca3_cal_starcat.psf')
@@ -329,9 +353,9 @@ piff_object = piff_psf('/home/eddieberman/research/mcclearygroup/mock_data/mosai
 shopt_object = shopt('/home/eddieberman/research/mcclearygroup/shopt/outdir/2023-07-20T11:42:39.026/summary.shopt')
 webb_object = webbpsf('/home/eddieberman/research/mcclearygroup/cweb_psf/single_exposures/jw01727116001_02101_00004_nrcb4_cal_WebbPSF.fits')
 
-catalog_object.augment(piff_object)
-catalog_object.augment(psfex_object)
-catalog_object.augment(shopt_object)
+#catalog_object.augment(piff_object) 
+#catalog_object.augment(psfex_object)
+#catalog_object.augment(shopt_object)
 catalog_object.augment(webb_object)
 
 catalog_object.crop([psfex_object, piff_object, shopt_object, webb_object])
@@ -342,3 +366,4 @@ catalog_object.concatenate_catalogs(catalog_object, outname='newest_file.fits') 
 
 boxcut = BoxCutter(config_file='/home/eddieberman/research/mcclearygroup/cweb_psf/configs/box_cutter.yaml')
 catalog_object.add_err_cutout(config='/home/eddieberman/research/mcclearygroup/cweb_psf/configs/box_cutter.yaml', boxcut=boxcut, image_file='single_exposures/jw01727116001_04101_00001_nrca3_cal.fits', cat_file='working/psfex-output/jw01727116001_04101_00001_nrca3_cal/jw01727116001_04101_00001_nrca3_cal_starcat.fits', outname='Added_err.fits')
+'''
