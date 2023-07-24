@@ -44,7 +44,7 @@ class catalog:
     def __init__(self, catalog):
         self.catalog = catalog
 
-    def augment(self, psf):
+    def augment(self, psf, outname='new_file.fits'):
         '''
         Add outdir argument?
         '''
@@ -63,7 +63,7 @@ class catalog:
                 new_hdul = fits.HDUList(original_hdul)
                 new_table_hdu = fits.BinTableHDU(data, name='LDAC_OBJECTS')
                 new_hdul[2] = new_table_hdu
-                new_hdul.writeto('new_file.fits', overwrite=True)
+                new_hdul.writeto(outname, overwrite=True)
         except (IOError, TypeError) as e:
             print("Error occurred:", e)
     
@@ -73,7 +73,7 @@ class catalog:
         '''
         pass
 
-    def crop(self, psf_list, vignet_size=None, replace_original_psf=False):
+    def crop(self, psf_list, vignet_size=None, replace_original_psf=False, outname='new_file.fits'):
         '''
         Crop all the VIGNETS in psf_extname to 75x75
         '''
@@ -135,11 +135,26 @@ class catalog:
                 new_hdul = fits.HDUList(original_hdul)
                 new_table_hdu = fits.BinTableHDU(data, name='LDAC_OBJECTS')
                 new_hdul[2] = new_table_hdu
-                new_hdul.writeto('new_file.fits', overwrite=True)
+                new_hdul.writeto(outname, overwrite=True)
         except (IOError, TypeError) as e:
             print("Error occurred:", e)
         
-        
+   def concatenate_catalogs(self, catalog_new, outname='new_file.fits'):
+       catalog1 = self.catalog
+       catalog2 = catalog_new.catalog
+       data1 = Table(catalog1[2].data)
+       data2 = Table(catalog2[2].data)
+       data = vstack([data1, data2])
+       catalog1.close()
+       catalog2.close()
+       try:
+           with fits.open(self.catalog) as original_hdul:
+               new_hdul = fits.HDUList(original_hdul)
+               new_table_hdu = fits.BinTableHDU(data, name='LDAC_OBJECTS')
+               new_hdul[2] = new_table_hdu
+               new_hdul.writeto(outname, overwrite=True)
+       except (IOError, TypeError) as e:
+           print("Error occurred:", e)
 
 '''
 Define a super class for PSF with the filename. This is useful because we can have
