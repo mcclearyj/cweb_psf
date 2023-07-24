@@ -19,7 +19,7 @@ else
 fi
 
 # Run get_jwst_psf on the files
-#python $CODEDIR/get_jwst_psf.py -config $CODEDIR/'configs/apr2023_config.yaml'  $files
+python $CODEDIR/get_jwst_psf.py -config $CODEDIR/'configs/apr2023_config.yaml'  $files
 
 
 # Loop through each file
