@@ -159,4 +159,4 @@ def make_outdir(config, arg=None, path='./', cval='outdir'):
     else:
         print(f'Output directory {outdir} exists, continuing...')
 
-    return config
+    return

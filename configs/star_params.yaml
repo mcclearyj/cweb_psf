@@ -1,0 +1,47 @@
+##
+## Star params:
+##
+## Define stellar locus parameters for each filter
+## Update as needed for images of interest!
+##
+
+filter_names: ['F115W','F150W','F277W', 'F444W']
+
+# Minimum SExtractor CLASS_STAR value
+class_star_thresh: 0.55
+
+# FWHM specifies the PSF FWHM in arcseconds (OK if approximate value).
+# min_size and max_size are FLUX_RADIUS in pixels; stellar locus tends to be
+# more apparent in size-mag diagrams with FLUX_RADIUS than FWHM_IMAGE.
+# min/max mag define the magnitude range to consider for stellar locus.
+# Note: PSFEx outputs a PSF "FWHM" that is actually 2*FLUX_RADIUS.
+
+filter_params:
+  #
+  F115W:
+    fwhm: 0.058
+    min_size: 0.88
+    max_size: 1.7
+    max_mag: 26.
+    min_mag: 19.
+  #
+  F150W:
+    fwhm: 0.0628
+    min_size: 1.
+    max_size: 1.6
+    max_mag: 26.
+    min_mag: 19.
+  #
+  F277W:
+    fwhm: 0.125
+    min_size: 1.83
+    max_size: 2.7
+    max_mag: 26.
+    min_mag: 19.
+  #
+  F444W:
+    fwhm: 0.165
+    min_size: 2.33
+    max_size: 3.1
+    max_mag: 26.
+    min_mag: 19.
