@@ -328,16 +328,17 @@ psfex_object = epsfex('working/psfex-output/jw01727116001_04101_00001_nrca3_cal/
 piff_object = piff_psf('/home/eddieberman/research/mcclearygroup/mock_data/mosaics/COSMOS2020_sims/piff-output/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci.piff')
 shopt_object = shopt('/home/eddieberman/research/mcclearygroup/shopt/outdir/2023-07-20T11:42:39.026/summary.shopt')
 webb_object = webbpsf('/home/eddieberman/research/mcclearygroup/cweb_psf/single_exposures/jw01727116001_02101_00004_nrcb4_cal_WebbPSF.fits')
-#catalog_object.augment(piff_object)
-#catalog_object.augment(psfex_object)
-#catalog_object.augment(shopt_object)
-#catalog_object.augment(webb_object)
-'''
-You should add noise to the image before you crop it, or when you crop it make sure to crop the error image as well
-'''
-#catalog_object.crop([psfex_object, piff_object, shopt_object, webb_object])
-#catalog_object.crop([piff_object])
-#catalog_object.add_noise_flux([psfex_object, piff_object, shopt_object, webb_object], outname='new_newest_file.fits')
-#catalog_object.concatenate_catalogs(catalog_object, outname='newest_file.fits')
+
+catalog_object.augment(piff_object)
+catalog_object.augment(psfex_object)
+catalog_object.augment(shopt_object)
+catalog_object.augment(webb_object)
+
+catalog_object.crop([psfex_object, piff_object, shopt_object, webb_object])
+
+catalog_object.add_noise_flux([psfex_object, piff_object, shopt_object, webb_object], outname='new_newest_file.fits')
+
+catalog_object.concatenate_catalogs(catalog_object, outname='newest_file.fits') #concatenates with itself
+
 boxcut = BoxCutter(config_file='/home/eddieberman/research/mcclearygroup/cweb_psf/configs/box_cutter.yaml')
 catalog_object.add_err_cutout(config='/home/eddieberman/research/mcclearygroup/cweb_psf/configs/box_cutter.yaml', boxcut=boxcut, image_file='single_exposures/jw01727116001_04101_00001_nrca3_cal.fits', cat_file='working/psfex-output/jw01727116001_04101_00001_nrca3_cal/jw01727116001_04101_00001_nrca3_cal_starcat.fits', outname='Added_err.fits')
