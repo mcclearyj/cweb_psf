@@ -329,14 +329,14 @@ def main(args):
         image_file = i2d
         weight_file = i2d
 
-        '''
+
         cat_file = run_sextractor(image_file=image_file,
                         weight_file=weight_file, star_params=star_params,
                         run_config=run_config)
 
         add_err_cutout(image_file=image_file, cat_file=cat_file,
                         boxcut=boxcut, run_config=run_config)
-        '''
+
 
         cat_file = os.path.join(run_config['outdir'],
                     os.path.basename(image_file).replace('.fits', '.cat.fits'))
@@ -344,8 +344,8 @@ def main(args):
         starcat_file = make_starcat(image_file=image_file, cat_file=cat_file,
                         star_params=star_params, run_config=run_config)
 
-        #run_psfex(image_file=image_file, starcat_file=starcat_file,
-        #                run_config=run_config)
+        run_psfex(image_file=image_file, starcat_file=starcat_file,
+                        run_config=run_config)
 
         render_psf(image_file=image_file, cat_file=cat_file,
                         run_config=run_config)
