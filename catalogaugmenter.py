@@ -79,6 +79,7 @@ class catalog:
         '''
         vignets_colnames = []
         vignets_colnames.append('VIGNET')
+        vignets_colnames.append('ERR_VIGNET')
         
         for psf in psf_list:
             vignets_colnames.append(psf.nameColumn())
@@ -101,6 +102,7 @@ class catalog:
             vignets_sizes.append(catalog[2].data[colname].shape[1])
 
         min_dim = min(vignets_sizes)
+        print("Minimum dimension of vignets is", min_dim)
         data = Table(catalog[2].data)
         catalog.close()
 
@@ -109,13 +111,25 @@ class catalog:
 
         for colname in vignets_colnames:
             new_column_data = []
-            print(colname)
             for i in range(len(data[colname])):
                 if data[colname][i].shape[1] > min_dim:
                     new_column_data.append(get_middle_pixels(data[colname][i], min_dim))
                     if i == range(len(data[colname]))[-1]:
-                        new_column = Column(new_column_data, name=colname+'_CROPPED')
-                        data.add_column(new_column)
+                        if replace_original_psf == True:
+                            new_column = Column(new_column_data, name=colname)
+                            try:
+                                data.add_column(new_column)
+                            except:
+                                data.remove_column(colname)
+                                data.add_column(new_column)
+                        else:
+                            new_column = Column(new_column_data, name=colname+'_CROPPED')
+                            try:
+                                data.add_column(new_column)
+                            except:
+                                data.remove_column(colname+'_CROPPED')
+                                data.add_column(new_column)
+                            print("Cropped column", colname)
         try:
             with fits.open(self.catalog) as original_hdul:
                 new_hdul = fits.HDUList(original_hdul)
@@ -231,4 +245,8 @@ webb_object = webbpsf('/home/eddieberman/research/mcclearygroup/cweb_psf/single_
 #catalog_object.augment(psfex_object)
 #catalog_object.augment(shopt_object)
 #catalog_object.augment(webb_object)
-catalog_object.crop([psfex_object, piff_object, shopt_object, webb_object])
+'''
+You should add noise to the image before you crop it, or when you crop it make sure to crop the error image as well
+'''
+#catalog_object.crop([psfex_object, piff_object, shopt_object, webb_object])
+catalog_object.crop([piff_object])
