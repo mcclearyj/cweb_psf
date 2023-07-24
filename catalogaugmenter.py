@@ -4,6 +4,10 @@ import piff
 from astropy.io import fits
 from astropy.table import Table, vstack, hstack, Column
 import numpy as np
+from src.box_cutter import BoxCutter
+import fitsio
+import yaml
+from src.utils import read_yaml
 
 '''
 Some Utility Functions used for Shopt
@@ -43,18 +47,17 @@ that lend themselves nicely to object oriented programming with getters and sett
 class catalog:
     def __init__(self, catalog):
         self.catalog = catalog
+        self.sky_level = 0.0 
+        self.sky_std = 0.0
 
     def augment(self, psf, outname='new_file.fits'):
-        '''
-        Add outdir argument?
-        '''
         current_catalog = fits.open(self.catalog)
         data = Table(current_catalog[2].data)
         new_column_data = []
         for i in range(len(current_catalog[2].data['XWIN_IMAGE'])):
             ext_name1, ext_name2 = psf.coordinate_columns()
             new_column_data.append(psf.render(data[ext_name1][i], data[ext_name2][i]))
-            #print(data[ext_name1][i], data[ext_name2][i])
+        
         new_column = Column(new_column_data, name=psf.nameColumn())
         data.add_column(new_column)
         current_catalog.close()
@@ -66,14 +69,20 @@ class catalog:
                 new_hdul.writeto(outname, overwrite=True)
         except (IOError, TypeError) as e:
             print("Error occurred:", e)
+
+        return
     
     def add_noise_flux(self, psf_list, outname='new_file.fits'):
         catalog = fits.open(self.catalog)
         data = Table(catalog[2].data)
+        sky_level = self.sky_level
+        sky_std = self.sky_std
         for psf in psf_list:
             for i in range(len(data['FLUX_AUTO'])):
+                noise = np.random.normal(loc = sky_level, scale = sky_std, size = data[psf.nameColumn()][i].shape)
                 data[psf.nameColumn()][i] *= data['FLUX_AUTO'][i]
                 data[psf.nameColumn()][i] = data[psf.nameColumn()][i]/np.nansum(data[psf.nameColumn()][i])
+                data[psf.nameColumn()][i] += noise
         catalog.close()
         try:
             with fits.open(self.catalog) as original_hdul:
@@ -83,7 +92,54 @@ class catalog:
                 new_hdul.writeto(outname, overwrite=True)
         except (IOError, TypeError) as e:
             print("Error occurred:", e)
+        
+        return
 
+    def add_err_cutout(self, config, boxcut, image_file, cat_file, ext='ERR', outname='new_file.fits'):
+        config = read_yaml(config)
+        cat_hdu = config['input_catalog']['hdu']
+        box_size = config['box_size']
+
+        # Read in the fits file so that we can add the column ourselves
+        catalog = fits.open(self.catalog)
+        table = catalog[2].data
+        imcat = Table(table) 
+
+        # We need box_size to be same as star size for chi2 calc
+        if (box_size != imcat['VIGNET'][0].shape[0]):
+            print(f'supplied box_size={box_size} and vignet size={imcat["VIGNET"][0].shape[0]} differ!!')
+            print(f'overriding supplied box_size to {imcat["VIGNET"][0].shape[0]}')
+            box_size = imcat['VIGNET'][0].shape[0]
+            boxcut.box_size = box_size
+
+        # Call to grab_boxes method
+        boxes = boxcut.grab_boxes(image_file=image_file, cat_file=imcat)
+
+        data = np.zeros(len(boxes), dtype=[(f'{ext}_VIGNET', 'f4', (box_size, box_size))])
+        for i, box in enumerate(boxes):
+            data[f'{ext}_VIGNET'][i] = box
+
+        try:
+            # Check if the column already exists, if so, replace it
+            if f'{ext}_VIGNET' in imcat.colnames:
+                imcat.replace_column(f'{ext}_VIGNET', data[f'{ext}_VIGNET'])
+            else:
+                imcat.add_column(Column(data=data[f'{ext}_VIGNET'], name=f'{ext}_VIGNET'))
+        except Exception as e:
+            print(f"Error occurred while adding/replacing the column: {e}")
+        finally:
+            catalog.close()
+        
+        try:
+            with fits.open(self.catalog) as original_hdul:
+                new_hdul = fits.HDUList(original_hdul)
+                new_table_hdu = fits.BinTableHDU(imcat, name='LDAC_OBJECTS')
+                new_hdul[2] = new_table_hdu
+                new_hdul.writeto(outname, overwrite=True)
+        except (IOError, TypeError) as e:
+            print("Error occurred:", e)
+
+        return
 
     def crop(self, psf_list, vignet_size=None, replace_original_psf=False, outname='new_file.fits'):
         '''
@@ -150,6 +206,8 @@ class catalog:
                 new_hdul.writeto(outname, overwrite=True)
         except (IOError, TypeError) as e:
             print("Error occurred:", e)
+
+        return
         
     def concatenate_catalogs(self, catalog_new, outname='new_file.fits'):
         catalog1 = fits.open(self.catalog)
@@ -167,6 +225,8 @@ class catalog:
                 new_hdul.writeto(outname, overwrite=True)
         except (IOError, TypeError) as e:
             print("Error occurred:", e)
+
+        return
 
 '''
 Define a super class for PSF with the filename. This is useful because we can have
@@ -277,5 +337,7 @@ You should add noise to the image before you crop it, or when you crop it make s
 '''
 #catalog_object.crop([psfex_object, piff_object, shopt_object, webb_object])
 #catalog_object.crop([piff_object])
-#catalog_object.add_noise_flux([psfex_object, piff_object, shopt_object, webb_object], outname='new_new_file.fits')
+#catalog_object.add_noise_flux([psfex_object, piff_object, shopt_object, webb_object], outname='new_newest_file.fits')
 #catalog_object.concatenate_catalogs(catalog_object, outname='newest_file.fits')
+boxcut = BoxCutter(config_file='/home/eddieberman/research/mcclearygroup/cweb_psf/configs/box_cutter.yaml')
+catalog_object.add_err_cutout(config='/home/eddieberman/research/mcclearygroup/cweb_psf/configs/box_cutter.yaml', boxcut=boxcut, image_file='single_exposures/jw01727116001_04101_00001_nrca3_cal.fits', cat_file='working/psfex-output/jw01727116001_04101_00001_nrca3_cal/jw01727116001_04101_00001_nrca3_cal_starcat.fits', outname='Added_err.fits')
