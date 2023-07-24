@@ -35,26 +35,6 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_star_params(star_param_file):
-    '''
-    Return a look-up table containing approximate stellar
-    FWHMs for each of the filters.
-    '''
-
-    star_params = read_yaml(star_param_file)
-    filter_names = star_params['filter_names']
-    filter_params = star_params['filter_params']
-
-
-    star_params = Table([filter_names, fwhms, min_size,\
-                        max_size, max_mag, min_mag],
-                        names=['filter_name', 'star_fwhm', 'min_size',\
-                        'max_size', 'max_mag', 'min_mag']
-                        )
-
-    return star_params
-
-
 def run_sextractor(image_file, weight_file, star_params, run_config):
     '''
     Run Source Extractor, including the appropriate star FWHM for
