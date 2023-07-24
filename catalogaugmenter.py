@@ -73,11 +73,60 @@ class catalog:
         '''
         pass
 
-    def crop(self, pst_extname, vignet_size=None):
+    def crop(self, psf_list, vignet_size=None, replace_original_psf=False):
         '''
         Crop all the VIGNETS in psf_extname to 75x75
         '''
-        pass
+        vignets_colnames = []
+        vignets_colnames.append('VIGNET')
+        
+        for psf in psf_list:
+            vignets_colnames.append(psf.nameColumn())
+
+        def get_middle_pixels(array_2d, n):
+            if len(array_2d) != len(array_2d[0]):
+                raise ValueError("The input array must be square (n x n)")
+
+            if n <= 0 or n > len(array_2d):
+                raise ValueError("Invalid value of n")
+            
+            start = (len(array_2d) - n) // 2
+            end = start + n
+            middle_pixels = [row[start:end] for row in array_2d[start:end]]
+            return middle_pixels
+
+        vignets_sizes = []
+        catalog = fits.open(self.catalog)
+        for colname in vignets_colnames:
+            vignets_sizes.append(catalog[2].data[colname].shape[1])
+
+        min_dim = min(vignets_sizes)
+        data = Table(catalog[2].data)
+        catalog.close()
+
+        if vignet_size is not None:
+            min_dim = vignet_size
+
+        for colname in vignets_colnames:
+            new_column_data = []
+            print(colname)
+            for i in range(len(data[colname])):
+                if data[colname][i].shape[1] > min_dim:
+                    new_column_data.append(get_middle_pixels(data[colname][i], min_dim))
+                    if i == range(len(data[colname]))[-1]:
+                        new_column = Column(new_column_data, name=colname+'_CROPPED')
+                        data.add_column(new_column)
+        try:
+            with fits.open(self.catalog) as original_hdul:
+                new_hdul = fits.HDUList(original_hdul)
+                new_table_hdu = fits.BinTableHDU(data, name='LDAC_OBJECTS')
+                new_hdul[2] = new_table_hdu
+                new_hdul.writeto('new_file.fits', overwrite=True)
+        except (IOError, TypeError) as e:
+            print("Error occurred:", e)
+        
+        
+
 '''
 Define a super class for PSF with the filename. This is useful because we can have
 shared functions for things like adding noise but each subclass will have it's own render
@@ -178,7 +227,8 @@ psfex_object = epsfex('working/psfex-output/jw01727116001_04101_00001_nrca3_cal/
 piff_object = piff_psf('/home/eddieberman/research/mcclearygroup/mock_data/mosaics/COSMOS2020_sims/piff-output/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci.piff')
 shopt_object = shopt('/home/eddieberman/research/mcclearygroup/shopt/outdir/2023-07-20T11:42:39.026/summary.shopt')
 webb_object = webbpsf('/home/eddieberman/research/mcclearygroup/cweb_psf/single_exposures/jw01727116001_02101_00004_nrcb4_cal_WebbPSF.fits')
-catalog_object.augment(piff_object)
-catalog_object.augment(psfex_object)
-catalog_object.augment(shopt_object)
-catalog_object.augment(webb_object)
+#catalog_object.augment(piff_object)
+#catalog_object.augment(psfex_object)
+#catalog_object.augment(shopt_object)
+#catalog_object.augment(webb_object)
+catalog_object.crop([psfex_object, piff_object, shopt_object, webb_object])
