@@ -8,6 +8,9 @@ from src.box_cutter import BoxCutter
 import fitsio
 import yaml
 from src.utils import read_yaml
+import galsim
+from skimage.metrics import structural_similarity as ssim
+from skimage.metrics import mean_squared_error, normalized_root_mse
 
 '''
 Some Utility Functions used for Shopt
@@ -49,6 +52,12 @@ class catalog:
         self.catalog = catalog
         self.sky_level = 0.0 
         self.sky_std = 0.0
+        self.data = Table(fits.open(self.catalog)[2].data)
+        self.pixel_scale = 0.03
+        self.hsm_sig = []
+        self.hsm_g1 = []
+        self.hsm_g2 = []
+        self.fwhm = []
 
     def augment(self, psf, outname='new_file.fits'):
         current_catalog = fits.open(self.catalog)
@@ -61,14 +70,7 @@ class catalog:
         new_column = Column(new_column_data, name=psf.nameColumn())
         data.add_column(new_column)
         current_catalog.close()
-        try:
-            with fits.open(self.catalog) as original_hdul:
-                new_hdul = fits.HDUList(original_hdul)
-                new_table_hdu = fits.BinTableHDU(data, name='LDAC_OBJECTS')
-                new_hdul[2] = new_table_hdu
-                new_hdul.writeto(outname, overwrite=True)
-        except (IOError, TypeError) as e:
-            print("Error occurred:", e)
+        self.data = data
 
         return
     
@@ -84,15 +86,8 @@ class catalog:
                 data[psf.nameColumn()][i] = data[psf.nameColumn()][i]/np.nansum(data[psf.nameColumn()][i])
                 data[psf.nameColumn()][i] += noise
         catalog.close()
-        try:
-            with fits.open(self.catalog) as original_hdul:
-                new_hdul = fits.HDUList(original_hdul)
-                new_table_hdu = fits.BinTableHDU(data, name='LDAC_OBJECTS')
-                new_hdul[2] = new_table_hdu
-                new_hdul.writeto(outname, overwrite=True)
-        except (IOError, TypeError) as e:
-            print("Error occurred:", e)
-        
+        self.data = data 
+
         return
 
     def add_err_cutout(self, config, boxcut, image_file, cat_file, ext='ERR', outname='new_file.fits'):
@@ -130,18 +125,10 @@ class catalog:
         finally:
             catalog.close()
         
-        try:
-            with fits.open(self.catalog) as original_hdul:
-                new_hdul = fits.HDUList(original_hdul)
-                new_table_hdu = fits.BinTableHDU(imcat, name='LDAC_OBJECTS')
-                new_hdul[2] = new_table_hdu
-                new_hdul.writeto(outname, overwrite=True)
-        except (IOError, TypeError) as e:
-            print("Error occurred:", e)
-
+        self.data = imcat
         return
 
-    def crop(self, psf_list, vignet_size=None, replace_original_psf=False, outname='new_file.fits'):
+    def crop(self, psf_list, vignet_size=None, replace_original_psf=False):
         '''
         Crop all the VIGNETS in psf_extname to 75x75
         '''
@@ -176,6 +163,8 @@ class catalog:
 
         if vignet_size is not None:
             min_dim = vignet_size
+        
+        print("Minimum dimension of vignets is", min_dim)
 
         for colname in vignets_colnames:
             new_column_data = []
@@ -198,33 +187,33 @@ class catalog:
                                 data.remove_column(colname+'_CROPPED')
                                 data.add_column(new_column)
                             print("Cropped column", colname)
+        self.data = data
+        return
+    
+    def save_new(self, outname='new_file.fits'):        
         try:
             with fits.open(self.catalog) as original_hdul:
                 new_hdul = fits.HDUList(original_hdul)
-                new_table_hdu = fits.BinTableHDU(data, name='LDAC_OBJECTS')
+                new_table_hdu = fits.BinTableHDU(self.data, name='LDAC_OBJECTS')
                 new_hdul[2] = new_table_hdu
                 new_hdul.writeto(outname, overwrite=True)
         except (IOError, TypeError) as e:
             print("Error occurred:", e)
+        return 
 
-        return
-        
     def concatenate_catalogs(self, catalog_new, outname='new_file.fits'):
         catalog1 = fits.open(self.catalog)
         catalog2 = fits.open(catalog_new.catalog)
         data1 = Table(catalog1[2].data)
         data2 = Table(catalog2[2].data)
         data = vstack([data1, data2])
+        
+        if set(data1.colnames) != set(data2.colnames):
+            raise ValueError("Columns in the two catalogs do not match.")
+
         catalog1.close()
         catalog2.close()
-        try:
-            with fits.open(self.catalog) as original_hdul:
-                new_hdul = fits.HDUList(original_hdul)
-                new_table_hdu = fits.BinTableHDU(data, name='LDAC_OBJECTS')
-                new_hdul[2] = new_table_hdu
-                new_hdul.writeto(outname, overwrite=True)
-        except (IOError, TypeError) as e:
-            print("Error occurred:", e)
+        self.data = data
 
         return
 
@@ -236,6 +225,12 @@ method and coordinate system; (x,y) or (u,v) or (ra,dec) etc.
 class psf:
     def __init__(self, psfFileName):
         self.psfFileName = psfFileName
+        self.fwhm = []
+        self.pixel_scale = 0.03
+        self.hsm_sig = []
+        self.hsm_g1 = []
+        self.hsm_g2 = []
+
 
     def render(self):
         pass
@@ -262,7 +257,7 @@ class epsfex(psf):
     def nameColumn(self):
         return 'VIGNET_PSFEX'
 
-class webbpsf(psf):
+class webb_psf(psf):
     def __init__(self, psfFileName):
         super().__init__(psfFileName)
 
@@ -335,7 +330,7 @@ catalog_object = catalog('current_file.fits')
 psfex_obect = epsfex('/path/model.psf')
 piff_object = piff_psf('/path/model.piff')
 shopt_object = shopt('/path/summary.shopt')
-webb_object = webbpsf('/path/model.fits')
+webb_object = webb_psf('/path/model.fits')
 
 # Set outname to current name to overwrite your existing file instead of creating a new catalog
 catalog_object.augment(psfex_object, outname='current_file.fits')  
@@ -351,7 +346,7 @@ catalog_object = catalog('new_file.fits')
 psfex_object = epsfex('working/psfex-output/jw01727116001_04101_00001_nrca3_cal/jw01727116001_04101_00001_nrca3_cal_starcat.psf')
 piff_object = piff_psf('/home/eddieberman/research/mcclearygroup/mock_data/mosaics/COSMOS2020_sims/piff-output/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci.piff')
 shopt_object = shopt('/home/eddieberman/research/mcclearygroup/shopt/outdir/2023-07-20T11:42:39.026/summary.shopt')
-webb_object = webbpsf('/home/eddieberman/research/mcclearygroup/cweb_psf/single_exposures/jw01727116001_02101_00004_nrcb4_cal_WebbPSF.fits')
+webb_object = webb_psf('/home/eddieberman/research/mcclearygroup/cweb_psf/single_exposures/jw01727116001_02101_00004_nrcb4_cal_WebbPSF.fits')
 
 #catalog_object.augment(piff_object) 
 #catalog_object.augment(psfex_object)
@@ -367,3 +362,4 @@ catalog_object.concatenate_catalogs(catalog_object, outname='newest_file.fits') 
 boxcut = BoxCutter(config_file='/home/eddieberman/research/mcclearygroup/cweb_psf/configs/box_cutter.yaml')
 catalog_object.add_err_cutout(config='/home/eddieberman/research/mcclearygroup/cweb_psf/configs/box_cutter.yaml', boxcut=boxcut, image_file='single_exposures/jw01727116001_04101_00001_nrca3_cal.fits', cat_file='working/psfex-output/jw01727116001_04101_00001_nrca3_cal/jw01727116001_04101_00001_nrca3_cal_starcat.fits', outname='Added_err.fits')
 '''
+#print(catalog('new_file.fits').data['VIGNET'])
