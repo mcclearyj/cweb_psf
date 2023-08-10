@@ -147,7 +147,7 @@ def make_starcat(image_file, config, star_params=None, thresh=0.55, cat_file=Non
                 )
 
     if not os.path.exists(imcat_name):
-        print(f'\n\ncould not find image im_cat file {imcat_name}\n\n')
+        print(f'\n\ncould not find image im_cat file {imcat_name}\n\n\n')
     else:
         im_cat_fits = fits.open(imcat_name)
         im_cat = im_cat_fits['LDAC_OBJECTS'].data
