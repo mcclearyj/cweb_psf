@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#export CODEDIR='/Users/j.mccleary/Research/jwst_cosmos/cweb_psf'
-#export CONFIGDIR='/Users/j.mccleary/Research/jwst_cosmos/cweb_psf/astro_config'
-#export DATADIR='/Users/j.mccleary/Research/jwst_cosmos/real_data/Apr2023/jw01727128001'
+export CODEDIR='/Users/j.mccleary/Research/jwst_cosmos/cweb_psf'
+export CONFIGDIR='/Users/j.mccleary/Research/jwst_cosmos/cweb_psf/astro_config'
+export DATADIR='/Users/j.mccleary/Research/jwst_cosmos/real_data/Apr2023/jw01727128001'
 export OUTDIR='working'
 
 
@@ -19,13 +19,15 @@ else
 fi
 
 # Run get_jwst_psf on the files
+python $CODEDIR/get_jwst_psf.py -config $CODEDIR/'configs/apr2023_config.yaml'  $files
+
+
+# Loop through each file
 for file in $files; do
   python get_jwst_psf.py -config 'configs/box_cutter.yaml' $file
   if [ $? -ne 0 ]; then
     echo "Error processing file $file. Continuing with the next file."
   fi
 done
-#python get_jwst_psf.py -config 'configs/box_cutter.yaml'  $files
 
 
-done

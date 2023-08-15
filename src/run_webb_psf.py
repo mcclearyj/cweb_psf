@@ -36,7 +36,7 @@ def run_webb_psf(image_file, oversample_lw, outdir=None):
     if (filter_name in ['F277W', 'F444W']) and (oversample_lw == True):
         oversample = 2
     else:
-        oversample = 1
+        oversample = 4
 
     # create WebbPSF instance for given image parameters
     nc = webbpsf.NIRCam()
