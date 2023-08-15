@@ -59,33 +59,83 @@ class catalog:
         self.hsm_g2 = []
         self.fwhm = []
 
-    def augment(self, psf, outname='new_file.fits'):
-        current_catalog = fits.open(self.catalog)
-        data = Table(current_catalog[2].data)
+    def set_sky_level(self, sky_level):
+        self.sky_level = sky_level
+        return
+
+    def set_sky_std(self, sky_std):
+        self.sky_std = sky_std
+        return
+
+    def augment(self, psf, size = None):
+        #current_catalog = fits.open(self.catalog)
+        data = self.data
+        #data = Table(current_catalog[2].data)
         new_column_data = []
-        for i in range(len(current_catalog[2].data['XWIN_IMAGE'])):
+        for i in range(len(data['XWIN_IMAGE'])):
             ext_name1, ext_name2 = psf.coordinate_columns()
-            new_column_data.append(psf.render(data[ext_name1][i], data[ext_name2][i]))
+            if size is not None:
+                new_column_data.append(psf.render(data[ext_name1][i], data[ext_name2][i], shape=size))
+            else:
+                new_column_data.append(psf.render(data[ext_name1][i], data[ext_name2][i]))
         
         new_column = Column(new_column_data, name=psf.nameColumn())
         data.add_column(new_column)
-        current_catalog.close()
+        #current_catalog.close()
         self.data = data
 
         return
     
-    def add_noise_flux(self, psf_list, outname='new_file.fits'):
-        catalog = fits.open(self.catalog)
-        data = Table(catalog[2].data)
-        sky_level = self.sky_level
-        sky_std = self.sky_std
+    def set_vignet_pix_scale(self, pixel_scale):
+        self.pixel_scale = pixel_scale
+        return
+    
+    import numpy as np
+
+    def pad_with_nans(self, arr, target_shape):
+        if not isinstance(arr, np.ndarray):
+            raise ValueError("Input 'arr' must be a NumPy array.")
+        
+        if len(arr.shape) != 2:
+            raise ValueError("Input 'arr' must be a 2D array.")
+        
+        if not isinstance(target_shape, tuple) or len(target_shape) != 2:
+            raise ValueError("Input 'target_shape' must be a tuple representing the desired shape (rows, cols).")
+        
+        target_rows, target_cols = target_shape
+        rows, cols = arr.shape
+        
+        if rows > target_rows or cols > target_cols:
+            raise ValueError("Target shape must be larger than the input array.")
+        
+        # Calculate the padding required on each side
+        pad_rows = (target_rows - rows) // 2
+        pad_cols = (target_cols - cols) // 2
+        
+        # Create the new array filled with NaNs
+        padded_arr = np.full(target_shape, np.nan)
+        
+        # Put the actual contents of the input array in the middle
+        padded_arr[pad_rows:pad_rows + rows, pad_cols:pad_cols + cols] = arr
+        
+        return padded_arr
+
+
+
+    def add_noise_flux(self, psf_list, sky_level = 0.0, sky_std = 0.0):
+        #catalog = fits.open(self.catalog)
+        #data = Table(catalog[2].data)
+        data = self.data
+        #sky_level = sky_level
+        #sky_std = sky_std
+        #print(sky_level, sky_std)
         for psf in psf_list:
             for i in range(len(data['FLUX_AUTO'])):
                 noise = np.random.normal(loc = sky_level, scale = sky_std, size = data[psf.nameColumn()][i].shape)
                 data[psf.nameColumn()][i] *= data['FLUX_AUTO'][i]
-                data[psf.nameColumn()][i] = data[psf.nameColumn()][i]/np.nansum(data[psf.nameColumn()][i])
+                #data[psf.nameColumn()][i] = data[psf.nameColumn()][i]/np.nansum(data[psf.nameColumn()][i])
                 data[psf.nameColumn()][i] += noise
-        catalog.close()
+        #catalog.close()
         self.data = data 
 
         return
@@ -157,14 +207,14 @@ class catalog:
             vignets_sizes.append(catalog[2].data[colname].shape[1])
 
         min_dim = min(vignets_sizes)
-        print("Minimum dimension of vignets is", min_dim)
+        #print("Minimum dimension of vignets is", min_dim)
         data = Table(catalog[2].data)
         catalog.close()
 
         if vignet_size is not None:
             min_dim = vignet_size
         
-        print("Minimum dimension of vignets is", min_dim)
+        #print("Minimum dimension of vignets is", min_dim)
 
         for colname in vignets_colnames:
             new_column_data = []
@@ -186,7 +236,7 @@ class catalog:
                             except:
                                 data.remove_column(colname+'_CROPPED')
                                 data.add_column(new_column)
-                            print("Cropped column", colname)
+                            #print("Cropped column", colname)
         self.data = data
         return
     
@@ -201,18 +251,75 @@ class catalog:
             print("Error occurred:", e)
         return 
 
-    def concatenate_catalogs(self, catalog_new, outname='new_file.fits'):
-        catalog1 = fits.open(self.catalog)
-        catalog2 = fits.open(catalog_new.catalog)
-        data1 = Table(catalog1[2].data)
-        data2 = Table(catalog2[2].data)
-        data = vstack([data1, data2])
+    def concatenate_catalogs(self, catalog_new):
+        #catalog1 = fits.open(self.catalog)
+        #catalog2 = fits.open(catalog_new.catalog)
+        data1 = self.data
+        data2 = catalog_new.data
         
-        if set(data1.colnames) != set(data2.colnames):
+        def check_data_type_mismatch(data1, data2):
+            common_columns = ['VIGNET', 'VIGNET_PIFF', 'VIGNET_PSFEX', 'VIGNET_WEBBPSF', 'VIGNET_SHOPT', 'ERR_VIGNET', 'XWIN_IMAGE', 'YWIN_IMAGE', 'ALPHAWIN_J2000', 'DELTAWIN_J2000', 'FLUX_AUTO', 'SNR_WIN']
+            #common_columns = ['VIGNET']
+            common_columns = list(set(data1.colnames).intersection(data2.colnames).intersection(common_columns))
+
+            # Check data type for each common column
+            for column_name in common_columns:
+                dtype_data1 = data1[column_name].dtype
+                dtype_data2 = data2[column_name].dtype
+
+                if dtype_data1 != dtype_data2:
+                    print(f"Data type mismatch in column '{column_name}':")
+                    print(f"Data type in data1: {dtype_data1}")
+                    print(f"Data type in data2: {dtype_data2}")
+                    try:
+                        print("Attempting to convert data type...")
+                        data2[column_name] = data2[column_name].astype(data1[column_name].dtype)
+                    except:
+                        print("failed to convert data type")
+                    print("")
+
+        # Call the function to check for data type mismatch
+        check_data_type_mismatch(data1, data2)
+
+        common_columns = ['VIGNET', 'VIGNET_PIFF', 'VIGNET_PSFEX', 'VIGNET_WEBBPSF', 'VIGNET_SHOPT', 'ERR_VIGNET', 'XWIN_IMAGE', 'YWIN_IMAGE', 'ALPHAWIN_J2000', 'DELTAWIN_J2000', 'FLUX_AUTO', 'SNR_WIN']
+        #common_columns = ['VIGNET', 'VIGNET_PIFF', 'VIGNET_PSFEX']
+        common_columns = list(set(data1.colnames).intersection(data2.colnames).intersection(common_columns))
+        print("Common columns:", common_columns)
+        for col in common_columns:
+            try:
+                new_column_data = []
+                if data1[col][0].shape[1] < data2[col][0].shape[1]:
+                    for i in range(data1[col].shape[0]):
+                        new_column_data.append(self.pad_with_nans(data1[col][i], data2[col][0].shape))
+                        if i == range(len(data1[col]))[-1]:
+                            new_column = Column(new_column_data, name=col)
+                            try:
+                                data1.add_column(new_column)
+                            except:
+                                data1.remove_column(col)
+                                data1.add_column(new_column)
+                elif data1[col][0].shape[1] > data2[col][0].shape[1]:
+                    for i in range(data2[col].shape[0]):
+                        new_column_data.append(self.pad_with_nans(data2[col][i], data1[col][0].shape))
+                        if i == range(len(data2[col]))[-1]:
+                            new_column = Column(new_column_data, name=col)
+                            try:
+                                data2.add_column(new_column)
+                            except:
+                                data2.remove_column(col)
+                                data2.add_column(new_column)
+            except:
+                print("Column is not a 2D array")
+
+        for col in common_columns:
+            print(col, data1[col].shape, data2[col].shape)
+
+        data = vstack([data1[common_columns], data2[common_columns]])
+        
+        if set(data1[common_columns].colnames) != set(data2[common_columns].colnames):
+            print(data1.colnames, data2.colnames)
             raise ValueError("Columns in the two catalogs do not match.")
 
-        catalog1.close()
-        catalog2.close()
         self.data = data
 
         return
@@ -235,6 +342,9 @@ class psf:
     def render(self):
         pass
 
+    def set_psf_pix_scale(self, pixel_scale):
+        self.pixel_scale = pixel_scale
+        return
 
     def nameColumn(self):
         pass
@@ -245,7 +355,10 @@ class psf:
 class epsfex(psf):
     def __init__(self, psfFileName):
         super().__init__(psfFileName)
-        self.psfex = psfex.PSFEx(self.psfFileName)
+        try:
+            self.psfex = psfex.PSFEx(self.psfFileName)
+        except:
+            print("Warning: epsfex unable to load PSF file, method for naming columns and obtaining coordinates still available")
 
     def render(self, x, y, vignet_size = 75):
         psfex_model = self.psfex
@@ -287,7 +400,11 @@ class webb_psf(psf):
 class shopt(psf):
     def __init__(self, psfFileName):
         super().__init__(psfFileName)
-        self.polMatrix, self.degree = read_shopt(self.psfFileName)
+        try:
+            self.polMatrix, self.degree = read_shopt(self.psfFileName)
+        except:
+            print("Warning: shopt unable to load summary.shopt file, method for naming columns and obtaining coordinates still available")
+
 
     def render(self, u, v):
         return p(u, v, self.polMatrix, self.degree)
@@ -301,11 +418,16 @@ class shopt(psf):
 class piff_psf(psf):
     def __init__(self, psfFileName):
         super().__init__(psfFileName)
-        self.piff_psf = piff.read(self.psfFileName)
+        try:
+            self.piff_psf = piff.read(self.psfFileName)
+        except:
+            print("Warning: piff unable to load .piff file, method for naming columns and obtaining coordinates still available")
 
-    def render(self, u, v):
+    def render(self, u, v, shape=None):
         piff_psf = self.piff_psf
         piff_im = piff_psf.draw(u, v)
+        if shape is not None:
+            piff_im = piff_psf.draw(u, v, stamp_size=shape)
         return piff_im.array
 
     def coordinate_columns(self):
