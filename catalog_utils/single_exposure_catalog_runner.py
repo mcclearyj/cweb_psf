@@ -64,9 +64,10 @@ data_table = Table(names=columns, dtype=['S10', 'S10', 'f8', 'f8', 'f8', 'f8', '
 
 columns = ['Filter_Detector', 'WebbPSF_Mean', 'WebbPSF_SEM', 'PSFex_Mean', 'PSFex_SEM']
 df = pd.DataFrame(columns=columns)
-
+'''
 mean_abs_plot_psfex = ctp.mean_absolute_error_plot(ca.catalog('validation_thirty_visits/f277_a5_thirty_visits_valid_psf_starcat.fits'), ca.epsfex('epsfex_object_name'))
 mean_abs_plot_psfex.preprocessing()
+mean_abs_plot_psfex.calc_fwhm()
 avg_star_fwhm = np.nanmean(mean_abs_plot_psfex.return_fwhm_star())
 avg_psf_fwhm = np.nanmean(mean_abs_plot_psfex.return_fwhm_psf())
 mean_abs_plot_psfex.set_residuals()
@@ -88,11 +89,9 @@ sum_residuals_mre_psfex = mean_mre_plot_psfex.return_residuals_sum()
 mean_mre_plot_psfex.set_titles([f'Average Star\n Avg FWHM = {avg_star_fwhm}', f'Average PSF\n Avg FWHM = {avg_psf_fwhm}', f'Average Relative Error \n MRE = {round(sum_residuals_mre_psfex,3)}'])
 mean_mre_plot_psfex.save_figure(outname='test_mre.png')
 
-
-
-
 mean_abs_plot_webbpsf = ctp.mean_absolute_error_plot(ca.catalog('validation_thirty_visits/f277_a5_thirty_visits_valid_psf_starcat.fits'), ca.webb_psf('WebbPSF'))
 mean_abs_plot_webbpsf.preprocessing()
+mean_abs_plot_webbpsf.calc_fwhm()
 avg_star_fwhm = np.nanmean(mean_abs_plot_webbpsf.return_fwhm_star())
 avg_psf_fwhm = np.nanmean(mean_abs_plot_webbpsf.return_fwhm_psf())
 mean_abs_plot_webbpsf.set_residuals()
@@ -116,8 +115,8 @@ mean_mre_plot_webbpsf.set_residuals()
 sum_residuals_mre_webbpsf = mean_mre_plot_webbpsf.return_residuals_sum()
 mean_mre_plot_webbpsf.set_titles([f'Average Star\n Avg FWHM = {avg_star_fwhm}', f'Average PSF\n Avg FWHM = {avg_psf_fwhm}', f'Average Relative Error \n MRE = {round(sum_residuals_mre_webbpsf,3)}'])
 mean_mre_plot_webbpsf.save_figure(outname='test_webbpsf_mre.png')
-
 print("done")
+'''
 for file in file_list:
     try:
         if (extract_3_numbers(file)[0] != 444) and (extract_3_numbers(file)[0] != 277):
@@ -130,7 +129,7 @@ for file in file_list:
             mre_name = file.replace(".fits", "psfex_mre_resid.png")
             abs_name = file.replace(".fits", "psfex_abs_resid.png")
             err_name = file.replace(".fits", "psfex_err.png")
-            ''' 
+            
             mean_absolute_error_plot_psfex = ctp.mean_absolute_error_plot(ca.catalog(catalog_object_name), ca.epsfex(epsfex_object_name))
             mean_absolute_error_plot_psfex.preprocessing()
             mean_absolute_error_plot_psfex.set_residuals()
@@ -138,10 +137,12 @@ for file in file_list:
             mean_absolute_error_plot_psfex.calc_fwhm()
             avg_star_fwhm = np.nanmean(mean_absolute_error_plot_psfex.return_fwhm_star())
             avg_psf_fwhm = np.nanmean(mean_absolute_error_plot_psfex.return_fwhm_psf())
+            print(f'\n\t Mean PSFex MAE: {np.round(np.nanmean(sum_residuals_abs_psfex),decimals=2)} +- {np.round(mean_absolute_error_plot_psfex.return_sem(),decimals=3)}', file.replace('/home/eddieberman/research/mcclearygroup/cweb_psf/validation_thirty_visits/', ''))
             #mean_absolute_error_plot_psfex.set_titles([f'Average Star\n Avg FWHM = {avg_star_fwhm}', f'Average PSF\n Avg FWHM = {avg_psf_fwhm}', f'Average Absolute Error \n MAE = {round(sum_residuals_abs_psfex,3)}'])
             #mean_absolute_error_plot_psfex.save_figure(outname=abs_name)
-            psfex_fwhm_residual = np.nanmean(np.array(mean_absolute_error_plot_psfex.return_fwhm_star()) - np.array(mean_absolute_error_plot_psfex.return_fwhm_psf()))
+            #psfex_fwhm_residual = np.nanmean(np.array(mean_absolute_error_plot_psfex.return_fwhm_star()) - np.array(mean_absolute_error_plot_psfex.return_fwhm_psf()))
             '''
+           
             mean_chi2_plot_psfex = ctp.chi_2_error_plot(ca.catalog(catalog_object_name), ca.epsfex(epsfex_object_name))
             mean_chi2_plot_psfex.preprocessing(hsm_fit=True) #False for now
             mean_chi2_plot_psfex.set_residuals()
@@ -154,16 +155,18 @@ for file in file_list:
                     chi_square_filter_psfex_25_plus.append(re.findall(r'[A-Za-z]\d', file)[1])
                     chi_square_filter_psfex_25_plus.append('F'+extract_3_numbers(file)[0]+'W_')
                     chi_square_filter_psfex_25_plus.append(i)
-            mean_chi2_plot_psfex.set_titles([f'Average Star\n Avg FWHM = {avg_star_fwhm}', f'Average PSF\n Avg FWHM = {avg_psf_fwhm}', f'Average Chi2 Error \n Mean Reduced Chi2 = {round(reduced_chi2_psfex,3)}'])
-            mean_chi2_plot_psfex.save_figure(outname='chi2_name_cmap_test.png')
+            #mean_chi2_plot_psfex.set_titles([f'Average Star\n Avg FWHM = {avg_star_fwhm}', f'Average PSF\n Avg FWHM = {avg_psf_fwhm}', f'Average Chi2 Error \n Mean Reduced Chi2 = {round(reduced_chi2_psfex,3)}'])
+            #mean_chi2_plot_psfex.save_figure(outname='chi2_name_cmap_test.png')
+            
             #print(mean_chi2_plot_psfex.return_chi2_vals())
             #print(f'\n\t Median PSFex Chi2 Error: {round(median_reduced_chi2_psfex,2)}', file.replace('/home/eddieberman/research/mcclearygroup/cweb_psf/validation_thirty_visits/', ''))
             #print(f'\n\t Mean PSFex Chi2 Error: {round(reduced_chi2_psfex,2)} +- {round(sem_with_nans(mean_chi2_plot_psfex.return_chi2_vals()),2)}', file.replace('/home/eddieberman/research/mcclearygroup/cweb_psf/validation_thirty_visits/', ''))
-            '''
+            
             mean_mre_plot_psfex = ctp.mean_relative_error_plot(ca.catalog(catalog_object_name), ca.epsfex(epsfex_object_name))
             mean_mre_plot_psfex.preprocessing()
             mean_mre_plot_psfex.set_residuals()
             sum_residuals_mre_psfex = mean_mre_plot_psfex.return_residuals_sum()
+            print(f'\n\t Mean PSFex MRE: {np.round(sum_residuals_mre_psfex,decimals=2)} +- {np.round(mean_mre_plot_psfex.return_sem(),decimals=2)}', file.replace('/home/eddieberman/research/mcclearygroup/cweb_psf/validation_thirty_visits/', ''))
             #mean_mre_plot_psfex.set_titles([f'Average Star\n Avg FWHM = {avg_star_fwhm}', f'Average PSF\n Avg FWHM = {avg_psf_fwhm}', f'Average Relative Error \n MRE = {round(sum_residuals_mre_psfex,3)}'])
             #mean_mre_plot_psfex.save_figure(outname=mre_name)
 
@@ -173,14 +176,14 @@ for file in file_list:
             sum_residuals_err_psfex = mean_error_plot_psfex.return_residuals_sum()
             #mean_error_plot_psfex.set_titles([f'Average Star\n Avg FWHM = {avg_star_fwhm}', f'Average PSF\n Avg FWHM = {avg_psf_fwhm}', f'Average Error \n Sum Absolute Error = {sum_residuals_abs_psfex}'])
             #mean_error_plot_psfex.save_figure(outname=err_name)
-            ''' 
-            webbpsf_object_name = 'WebbPSF'
             '''
+            webbpsf_object_name = 'WebbPSF'
+            
             chi2_name = file.replace(".fits", "webb_chi2.png")
             mre_name = file.replace(".fits", "webb_mre_resid.png")
             abs_name = file.replace(".fits", "webb_abs_resid.png")
             err_name = file.replace(".fits", "webb_err.png")
-           
+            
             mean_absolute_error_plot_webbpsf = ctp.mean_absolute_error_plot(ca.catalog(catalog_object_name), ca.webb_psf(webbpsf_object_name))
             mean_absolute_error_plot_webbpsf.preprocessing()
             mean_absolute_error_plot_webbpsf.set_residuals()
@@ -188,10 +191,12 @@ for file in file_list:
             mean_absolute_error_plot_webbpsf.calc_fwhm()
             avg_star_fwhm = np.nanmean(mean_absolute_error_plot_webbpsf.return_fwhm_star())
             avg_psf_fwhm = np.nanmean(mean_absolute_error_plot_webbpsf.return_fwhm_psf())
+            print(f'\n\t Mean WebbPSF Absolute Error: {np.round(sum_residuals_abs_webb,decimals=2)} +- {np.round(mean_absolute_error_plot_webbpsf.return_sem(),decimals=3)}', file.replace('/home/eddieberman/research/mcclearygroup/cweb_psf/validation_thirty_visits/', ''))
             #mean_absolute_error_plot_webbpsf.set_titles([f'Average Star\n Avg FWHM = {avg_star_fwhm}', f'Average PSF\n Avg FWHM = {avg_psf_fwhm}', f'Average Absolute Error \n MAE = {round(sum_residuals_abs_webb,3)}'])
             #mean_absolute_error_plot_webbpsf.save_figure(outname=abs_name)
-            webbpsf_fwhm_residual = np.nanmean(np.array(mean_absolute_error_plot_webbpsf.return_fwhm_star()) - np.array(mean_absolute_error_plot_webbpsf.return_fwhm_psf()))
+            #webbpsf_fwhm_residual = np.nanmean(np.array(mean_absolute_error_plot_webbpsf.return_fwhm_star()) - np.array(mean_absolute_error_plot_webbpsf.return_fwhm_psf()))
             '''
+            
             mean_chi2_plot_webbpsf = ctp.chi_2_error_plot(ca.catalog(catalog_object_name), ca.webb_psf(webbpsf_object_name))
             mean_chi2_plot_webbpsf.preprocessing(hsm_fit=True) #hsm_fit=False for now
             mean_chi2_plot_webbpsf.set_residuals()
@@ -209,13 +214,15 @@ for file in file_list:
             
             #print(f'\tMedian WebbPSF Chi2 Error: {round(median_reduced_chi2_webb,3)}', file.replace('/home/eddieberman/research/mcclearygroup/cweb_psf/validation_thirty_visits/', ''))
             #print(f'\tMean WebbPSF Chi2 Error: {round(reduced_chi2_webb,2)}  +- {round(sem_with_nans(mean_chi2_plot_webbpsf.return_chi2_vals()),2)}', file.replace('/home/eddieberman/research/mcclearygroup/cweb_psf/validation_thirty_visits/', ''))
-            '''
+            
             mean_mre_plot_webbpsf = ctp.mean_relative_error_plot(ca.catalog(catalog_object_name), ca.webb_psf(webbpsf_object_name))
             mean_mre_plot_webbpsf.preprocessing()
             mean_mre_plot_webbpsf.set_residuals()
             sum_residuals_mre_webb = mean_mre_plot_webbpsf.return_residuals_sum()
+            print(f'\tMean WebbPSF MRE: {np.round(sum_residuals_mre_webb,decimals=2)}  +- {np.round(mean_mre_plot_webbpsf.return_sem(),decimals=2)}', file.replace('/home/eddieberman/research/mcclearygroup/cweb_psf/validation_thirty_visits/', ''))
             #mean_mre_plot_webbpsf.set_titles([f'Average Star\n Avg FWHM = {avg_star_fwhm}', f'Average PSF\n Avg FWHM = {avg_psf_fwhm}', f'Average Relative Error \n MRE = {round(sum_residuals_mre_webb,3)}'])
             #mean_mre_plot_webbpsf.save_figure(outname=mre_name)
+            '''
 
             mean_error_plot_webbpsf = ctp.mean_error_plot(ca.catalog(catalog_object_name), ca.webb_psf(webbpsf_object_name))
             mean_error_plot_webbpsf.preprocessing()
@@ -223,7 +230,6 @@ for file in file_list:
             sum_residuals_err_webb = mean_error_plot_webbpsf.return_residuals_sum()
             #mean_error_plot_webbpsf.set_titles([f'Average Star\n Avg FWHM = {avg_star_fwhm}', f'Average PSF\n Avg FWHM = {avg_psf_fwhm}', f'Average Error \n Sum Error = {sum_residuals_err_webb}'])
             #mean_error_plot_webbpsf.save_figure(outname=err_name)
-            '''
             #new_row = {'Filter_Detector': f'F{extract_3_numbers(file)[0]}W_'+re.findall(r"[A-Za-z]\d", file)[1], 'WebbPSF_Mean': round(reduced_chi2_webb,2), 'WebbPSF_SEM': round(sem_with_nans(mean_chi2_plot_webbpsf.return_chi2_vals()),2), 'PSFex_Mean': round(reduced_chi2_psfex,2), 'PSFex_SEM': round(sem_with_nans(mean_chi2_plot_psfex.return_chi2_vals()),2)}
             #df = df.append(new_row, ignore_index=True)
             #print(df)
@@ -232,7 +238,6 @@ for file in file_list:
             #data_table.add_row(['F'+extract_3_numbers(file)[0]+'W', letter_number_codes[1], round(sum_residuals_abs_psfex, 3), round(sum_residuals_abs_webb, 3), round(sum_residuals_err_psfex, 3), round(sum_residuals_err_webb, 3), round(sum_residuals_chi2_psfex, 3), round(sum_residuals_chi2_webb, 3), round(sum_residuals_mre_psfex, 3), round(sum_residuals_mre_webb, 3), psfex_fwhm_residual, webbpsf_fwhm_residual, round(reduced_chi2_psfex, 3), round(reduced_chi2_webb, 3), round(median_reduced_chi2_psfex, 3), round(median_reduced_chi2_webb, 3)])
     except Exception as e:
         print("An error occurred: ", e)
-
 '''
 newfig, newaxs = plt.subplots(1, 1, figsize=(10, 10))
 bins = np.logspace(np.log10(0.1), np.log10(100), 100) # Generates 50 bins between 0.1 and 25 on a log scale.
@@ -240,7 +245,7 @@ newaxs.hist(chi_square_visit_psfex, bins=bins, label='PSFex', alpha=0.25)
 newaxs.hist(chi_square_visit_webbpsf, bins=bins, label='WebbPSF', alpha=0.25)
 newaxs.set_xscale('log')
 # Set the limits for the x-axis
-newaxs.set_xlim(0.1, 25)
+newaxs.set_xlim(1, 25)
 newaxs.set_xlabel('Reduced Chi-Square')
 newaxs.set_ylabel('Number of Occurrences')
 greater_than_25_psfex = len([value for value in chi_square_visit_psfex if value > 25])
@@ -251,9 +256,7 @@ greater_than_100_webbpsf = len([value for value in chi_square_visit_webbpsf if v
 newaxs.set_title(f'30 Aggregated Visits Reduced Chi-Square Distribution\nNot shown are {greater_than_100_psfex} PSFex Reduced chi square values greater than 100\nand {greater_than_100_webbpsf} WebbPSF Reduced chi square values greater than 100')
 newaxs.legend()
 newfig.savefig('validation_thirty_visits/reduced_chi_square_distribution.png')
-'''
-
-'''
+print("done")
 df['Filter'] = df['Filter_Detector'].str.split('_').str[0]
 df['Detector'] = df['Filter_Detector'].str.split('_').str[1]
 
@@ -282,7 +285,7 @@ ax.legend()
 plt.grid(True, which='both', linestyle='--', linewidth=0.5)
 plt.tight_layout()
 fig.savefig('mean_comparison.png')
-'''
+
 copy_data_table = data_table.copy()
 #columns = ['Detector', 'Filter', 'PSFex: Absolute Error', 'WebbPSF: Absolute Error', 'PSFex: Error', 'WebbPSF: Error','PSFex: Chi-Square', 'WebbPSF: Chi-Square','PSFex: Relative Error', 'WebbPSF: Relative Error', 'PSFex: SSIM ', 'WebbPSF: SSIM ', 'PSFex: FWHM Residual', 'WebbPSF: FWHM Residual', 'PSFex: Reduced Chi Square', 'WebbPSF: Reduced Chi Square']
 #'PSFex: Reduced Chi Square (avg)', 'WebbPSF: Reduced Chi Square(avg)'
@@ -308,7 +311,6 @@ hdu = fits.PrimaryHDU()
 table_hdu = fits.table_to_hdu(table)
 hdu = fits.HDUList([hdu, table_hdu])
 hdu.writeto('output_statistics.fits', overwrite=True)
-'''
 newfig, newaxs = plt.subplots(1, 1, figsize=(10, 10))
 bins = np.logspace(np.log10(0.1), np.log10(100), 100) # Generates 50 bins between 0.1 and 25 on a log scale.
 newaxs.hist(chi_square_visit_psfex, bins=bins, label='PSFex', alpha=0.25)

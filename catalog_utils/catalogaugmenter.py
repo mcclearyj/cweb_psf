@@ -33,6 +33,7 @@ def read_shopt(shoptFile):
         degree = f[1].data['polynomial degree'][0]
     except:
         degree = f[1].data['POLYNOMIAL_DEGREE'][0]
+    f.close()
     return polyMatrix, degree
 
 def p(u,v, polMatrix, degree):
@@ -52,7 +53,9 @@ class catalog:
         self.catalog = catalog
         self.sky_level = 0.0 
         self.sky_std = 0.0
-        self.data = Table(fits.open(self.catalog)[2].data)
+        temp = fits.open(self.catalog)
+        self.data = Table(temp[2].data)
+        temp.close()
         self.pixel_scale = 0.03
         self.hsm_sig = []
         self.hsm_g1 = []
@@ -90,8 +93,6 @@ class catalog:
         self.pixel_scale = pixel_scale
         return
     
-    import numpy as np
-
     def pad_with_nans(self, arr, target_shape):
         if not isinstance(arr, np.ndarray):
             raise ValueError("Input 'arr' must be a NumPy array.")
@@ -389,6 +390,7 @@ class webb_psf(psf):
         except:
             single_im = single_psf[ext].data
         print(x,y)
+        single_psf.close()
         return single_im
 
     def nameColumn(self):
@@ -436,52 +438,3 @@ class piff_psf(psf):
     def nameColumn(self):
         return 'VIGNET_PIFF'
 
-'''
-Test Code by Iteratively Adding Columns for rendering PSF stamps of different fitters.
-
-Note: You should always augment before calling the cropping or noise flux methods, otherwise you will be adding noise flux to stamps that don't yet exist. 
-I would also recommend specifying the optional outcame arguments so that you don't overwrite your original catalog file, incase you make a mistake 
-(or find a mistake in my code).
-'''
-
-'''
-In general:
-
-catalog_object = catalog('current_file.fits')
-
-psfex_obect = epsfex('/path/model.psf')
-piff_object = piff_psf('/path/model.piff')
-shopt_object = shopt('/path/summary.shopt')
-webb_object = webb_psf('/path/model.fits')
-
-# Set outname to current name to overwrite your existing file instead of creating a new catalog
-catalog_object.augment(psfex_object, outname='current_file.fits')  
-catalog_object.augment(piff_object, outname='current_file.fits')
-catalog_object.augment(shopt_object, outname='current_file.fits') 
-catalog_object.augment(webb_object, outname='current_file.fits') 
-'''
-
-'''
-Here is some of my testing: 
-
-catalog_object = catalog('new_file.fits')
-psfex_object = epsfex('working/psfex-output/jw01727116001_04101_00001_nrca3_cal/jw01727116001_04101_00001_nrca3_cal_starcat.psf')
-piff_object = piff_psf('/home/eddieberman/research/mcclearygroup/mock_data/mosaics/COSMOS2020_sims/piff-output/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci/mosaic_nircam_f115w_COSMOS-Web_30mas_v0_1_sci.piff')
-shopt_object = shopt('/home/eddieberman/research/mcclearygroup/shopt/outdir/2023-07-20T11:42:39.026/summary.shopt')
-webb_object = webb_psf('/home/eddieberman/research/mcclearygroup/cweb_psf/single_exposures/jw01727116001_02101_00004_nrcb4_cal_WebbPSF.fits')
-
-#catalog_object.augment(piff_object) 
-#catalog_object.augment(psfex_object)
-#catalog_object.augment(shopt_object)
-catalog_object.augment(webb_object)
-
-catalog_object.crop([psfex_object, piff_object, shopt_object, webb_object])
-
-catalog_object.add_noise_flux([psfex_object, piff_object, shopt_object, webb_object], outname='new_newest_file.fits')
-
-catalog_object.concatenate_catalogs(catalog_object, outname='newest_file.fits') #concatenates with itself
-
-boxcut = BoxCutter(config_file='/home/eddieberman/research/mcclearygroup/cweb_psf/configs/box_cutter.yaml')
-catalog_object.add_err_cutout(config='/home/eddieberman/research/mcclearygroup/cweb_psf/configs/box_cutter.yaml', boxcut=boxcut, image_file='single_exposures/jw01727116001_04101_00001_nrca3_cal.fits', cat_file='working/psfex-output/jw01727116001_04101_00001_nrca3_cal/jw01727116001_04101_00001_nrca3_cal_starcat.fits', outname='Added_err.fits')
-'''
-#print(catalog('new_file.fits').data['VIGNET'])

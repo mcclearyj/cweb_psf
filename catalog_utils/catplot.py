@@ -70,6 +70,8 @@ class resid_plot(plot):
         self.cropped_psfs = psfs
         #self.avg_psf = np.nanmean(self.cropped_psfs, axis=0)
         self.avg_psf = np.nanmean(psfs, axis=0)
+        #self.psf_std = np.nanstd(psfs, axis=0)
+        self.sem = 0.0
         self.avg_residual = np.zeros(self.avg_star.shape)
         set_rc_params(fontsize=16)
         self.titles = []
@@ -224,7 +226,7 @@ class resid_plot(plot):
         cmap=plt.cm.turbo
         #cmap=plt.cm.BrBG
         #cmap = plt.cm.inferno
-        cmap2=plt.cm.Blues
+        cmap2=plt.cm.bwr_r
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True, figsize=[15,7], tight_layout=True)
         
         im = axs[0].imshow(self.avg_star, norm=norm, cmap=cmap)
@@ -277,7 +279,11 @@ class mean_relative_error_plot(resid_plot):
                     if (resids[i][j,k] > 50) or (resids[i][j,k] < -50):
                         resids[i][j,k] = np.nan
         self.avg_residual = np.nanmean(resids, axis=0)
+        self.sem = np.nanstd(self.avg_residual) #num pixels or stars?
         self.set_residuals_sum()
+
+    def return_sem(self):
+        return self.sem
 
 class mean_absolute_error_plot(resid_plot):
     def __init__(self, catalog_object, psf_object):
@@ -299,7 +305,11 @@ class mean_absolute_error_plot(resid_plot):
                     if (resids[i][j,k] > 50) or (resids[i][j,k] < -50):
                         resids[i][j,k] = np.nan
         self.avg_residual = np.nanmean(resids, axis=0)
+        self.sem = np.nanstd(self.avg_residual)
         self.set_residuals_sum()
+    
+    def return_sem(self):
+        return self.sem
     
     def save_figure(self, outname):
         #vmin = -0.1 #np.nanmin(self.avg_psf)
