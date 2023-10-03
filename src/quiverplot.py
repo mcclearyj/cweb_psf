@@ -131,27 +131,27 @@ class QuiverPlot:
         self.resid_dict = self._make_resid_dict(self.star_dict, self.psf_dict)
 
 
-    def _make_quiver_dict(self, vc1, vc2=0, scale=1):
+    def _make_quiver_dict(self, vc1, vc2, scale):
         '''
         Set up quiverplot plot dictionary a la PIFF
         Inputs
-                sig1: center for star & PSF norms
-                sig2: center for residplot norms
+                vc1: center for star & PSF norms
+                vc2: center for residplot norms
         Returns
                 q_dict:  dict for quiverplot params
                 qkey_dict:  dict for quiverkey params
         '''
 
         scale_units = 'width' # For quiver plots
-        norm = colors.CenteredNorm(vcenter=vc1, halfrange=0.06)
-        div_norm = colors.CenteredNorm(vcenter=vc2, halfrange=0.05)
+        norm = colors.CenteredNorm(vcenter=vc1, halfrange=0.1)
+        div_norm = colors.CenteredNorm(vcenter=vc2, halfrange=0.1)
 
-        qkey_scale = 0.05
+        qkey_scale = 0.1
         qkey_label = r'$e_{HSM} = {%.2f}$' % qkey_scale
         fontprops = {'size':14, 'weight':'bold'}
 
-        q_dict = dict(cmap='cividis',
-                        width=90,
+        q_dict = dict(cmap='coolwarm',
+                        width=40,
                         units='xy',
                         pivot='mid',
                         headaxislength=0,
@@ -180,25 +180,25 @@ class QuiverPlot:
         rd = self.resid_dict
 
         star_title = \
-            'median $\sigma^{*}_{HSM} = %.2f$ mas; $e^{*}_{HSM} = %.5f$'\
-                        % (sd.median_sigma*1000, sd.median_e)
+            'median $\sigma^{*}_{HSM} = %.2f\prime\prime$; $e^{*}_{HSM} = %.5f$'\
+                        % (sd.median_sigma, sd.median_e)
         psf_title = \
-            'median $\sigma^{PSF}_{HSM} = %.2f$ mas; $e^{PSF}_{HSM} = %.5f$'\
-                        % (pd.median_sigma*1000, pd.median_e)
+            'median $\sigma^{PSF}_{HSM} = %.2f\prime\prime$; $e^{PSF}_{HSM} = %.5f$'\
+                        % (pd.median_sigma, pd.median_e)
         resid_title = \
-            'median $\sigma^{resid}_{HSM} = %.2f$ mas; $e^{resid}_{HSM} = %.5f$'\
-                        % (rd.median_sigma*1000, rd.median_e)
+            'median $\sigma^{resid}_{HSM} = %.2f\prime\prime$; $e^{resid}_{HSM} = %.5f$'\
+                        % (rd.median_sigma, rd.median_e)
 
         return [star_title, psf_title, resid_title]
 
 
-    def _make_plot(self, dicts, quiver_dict, qkey_dict, titles, scale):
+    def _make_plot(self, dicts, quiver_dict, qkey_dict, titles):
         '''
         Make quiverplots, first making quiver_dicts
         '''
 
         # First things first
-        set_rc_params(fontsize=14)
+        set_rc_params(fontsize=16)
 
         # Custom settings for quiverplot
         plt.rcParams.update({'xtick.direction': 'out'})
@@ -213,6 +213,11 @@ class QuiverPlot:
 
             # Set up masks for really circular objects
             min_ellip = 0.01
+            if i == 2:
+                div_norm = colors.CenteredNorm(
+                           vcenter=np.median(dc.sigma[mask]),
+                           halfrange=0.1)
+                quiver_dict['norm'] = div_norm
 
             # Define the minimum ellipse size and create a mask of circles
             mask = dc.e <= min_ellip
@@ -222,13 +227,13 @@ class QuiverPlot:
             mask = dc.e > min_ellip
             q = axs[i].quiver(self.x[mask], self.y[mask],
                                 dc.e1[mask], dc.e2[mask], dc.sigma[mask],
-                                angles=np.rad2deg(dc.theta[mask]), **quiver_dict
-                                )
+                                angles=np.rad2deg(dc.theta[mask]),
+                                **quiver_dict)
             # adjust x, y limits
             lx, rx = axs[i].get_xlim()
-            axs[i].set_xlim(lx-1000, rx+1000)
+            #axs[i].set_xlim(lx-500, rx+500)
             ly, ry = axs[i].get_ylim()
-            axs[i].set_ylim(ly-600, ry+400)
+            #axs[i].set_ylim(ly-400, ry+400)
             key = axs[i].quiverkey(q, **qkey_dict)
             ax_divider = make_axes_locatable(axs[i])
             cax = ax_divider.append_axes("bottom", size="5%", pad="7%")
@@ -247,7 +252,7 @@ class QuiverPlot:
         set_rc_params(fontsize=16)
 
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
-                                    figsize=[17,6], tight_layout=True)
+                                    figsize=[17,5], tight_layout=True)
 
         # First do the e1 map
         titles = ['Stars $e_1$',
@@ -255,6 +260,11 @@ class QuiverPlot:
         for i, dc in enumerate(dicts):
             im = axs[i].hexbin(self.x, self.y, C=dc.e1,
                 gridsize=(8, 6), cmap=plt.cm.RdYlBu_r)
+            # adjust x, y limits
+            lx, rx = axs[i].get_xlim()
+            axs[i].set_xlim(lx-200, rx+200)
+            ly, ry = axs[i].get_ylim()
+            #axs[i].set_ylim(ly-400, ry+400)
             axs[i].set_title(titles[i])
             divider = make_axes_locatable(axs[i])
             cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -263,12 +273,17 @@ class QuiverPlot:
 
         # Then do e2 map
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
-                                figsize=[17,6], tight_layout=True)
+                                figsize=[17,5], tight_layout=True)
         titles = ['Stars $e_2$',
             'PSF model $e_2$', 'Star-model residuals $e_2$']
         for i, dc in enumerate(dicts):
             im = axs[i].hexbin(self.x, self.y, C=dc.e2,
                 gridsize=(8, 6), cmap=plt.cm.RdYlBu_r)
+            # adjust x, y limits
+            lx, rx = axs[i].get_xlim()
+            axs[i].set_xlim(lx-200, rx+200)
+            ly, ry = axs[i].get_ylim()
+            #axs[i].set_ylim(ly-400, ry+400)
             axs[i].set_title(titles[i])
             divider = make_axes_locatable(axs[i])
             cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -277,24 +292,27 @@ class QuiverPlot:
 
         # Then sigma map
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
-                                    figsize=[17,6], tight_layout=True)
+                                    figsize=[17,5], tight_layout=True)
         titles = ['Stars $\sigma_{HSM}$',
             'PSF model $\sigma_{HSM}$', 'Star-model residuals $\sigma_{HSM}$']
         for i, dc in enumerate(dicts):
 
-            if i==0:
-                vmin = 0.8*np.mean(dc.sigma)
-                vmax = 1.1*np.mean(dc.sigma)
-            else:
-                vmin = np.min(dc.sigma); vmax = np.max(dc.sigma)
+            vmin = np.median(dc.sigma) - np.std(dc.sigma)
+            vmax = np.median(dc.sigma) +  np.std(dc.sigma)
 
             im = axs[i].hexbin(self.x, self.y, C=dc.sigma, gridsize=(8, 6),
                 cmap=plt.cm.RdYlBu_r, vmin=vmin, vmax=vmax)
+            # adjust x, y limits
+            lx, rx = axs[i].get_xlim()
+            axs[i].set_xlim(lx-200, rx+200)
+            ly, ry = axs[i].get_ylim()
+            #axs[i].set_ylim(ly-400, ry+400)
             axs[i].set_title(titles[i])
             divider = make_axes_locatable(axs[i])
             cax = divider.append_axes("right", size="5%", pad=0.05)
             fig.colorbar(im, cax=cax)
-        fig.savefig(outname.split('hex')[0]+'sigma_hex.'+outname.split('hex')[1])
+        fig.savefig(outname.split('hex')[0] + 'sigma_hex.' + \
+                    outname.split('hex')[1])
 
 
     def run(self, scale=1, outname='quiverplot.png'):
@@ -314,16 +332,13 @@ class QuiverPlot:
 
         # Get quiver dicts
         vc1 = self.star_dict.median_sigma
-        quiver_dict, qkey_dict = self._make_quiver_dict(vc1, scale)
-
+        quiver_dict, qkey_dict = self._make_quiver_dict(vc1=vc1,
+                                 vc2=0, scale=scale)
         # Make plot
-        fig = self._make_plot(dicts, quiver_dict, qkey_dict, titles, scale)
+        fig = self._make_plot(dicts, quiver_dict, qkey_dict, titles)
 
         # Save to file
         fig.savefig(outname)
-
-        # Close figure
-
 
         # Bonus round make hexplots!
         self.make_hex_plots(outname.replace('quiver', 'hexgrid'))

@@ -196,7 +196,7 @@ def make_starcat(image_file, config, star_params=None, thresh=0.55, cat_file=Non
 
     train_star_cat = star_cat[train_indices]
     valid_star_cat = star_cat[valid_indices]
-    
+
     # derive training and validation catalog names
     train_starcat_name = os.path.join(
                 outdir, img_basename.replace('.fits','_train_starcat.fits')
@@ -280,7 +280,7 @@ def split_extension2_into_training_validation(input_file, training_fraction=0.9)
         # Split the extension 2 data into training and validation data
         training_extension2_data = extension2_data[random_indices[:training_rows]]
         validation_extension2_data = extension2_data[random_indices[training_rows:]]
-        
+
         # Create new FITS tables for training and validation catalogs
         training_hdul = fits.HDUList([fits.PrimaryHDU(), extension1, fits.BinTableHDU(training_extension2_data, header=extension2_header, name='LDAC_OBJECT')])
         validation_hdul = fits.HDUList([fits.PrimaryHDU(), extension1, fits.BinTableHDU(validation_extension2_data, header=extension2_header, name='LDAC_OBJECT')])
@@ -383,13 +383,13 @@ def main(args):
 
     i2d_images = args.images
 
-    config_yml = read_yaml(args.config)
+    config = read_yaml(args.config)
 
-    # Adds an outdir parameter to config if it was missing
-    config = make_outdir(config_yml)
-    configdir = config['configdir']
+    make_outdir(config)
 
     # Get astromatic configs
+    configdir = config['configdir']
+
     if configdir is None:
         config['configdir'] = 'astro_config/'
 
@@ -427,9 +427,9 @@ def main(args):
         add_err_cutout(config=config, boxcut=boxcut, image_file=image_file, cat_file=starcat_file)
         add_err_cutout(config=config, boxcut=boxcut, image_file=image_file, cat_file=valid_file)
 
-        run_piffy(image_file, starcat_file=starcat_file, config=config, echo=False)
+        #run_piffy(image_file, starcat_file=starcat_file, config=config, echo=False)
         run_psfex(image_file, starcat_file=starcat_file, config=config)
-        
+
         #run_psfex(image_file, starcat_file=starcat_file.replace('.fits', '_training.fits'), config=config)
         if make_webb_psf is True:
             run_webb_psf(image_file, oversample_lw)

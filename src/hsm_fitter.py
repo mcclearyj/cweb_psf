@@ -34,6 +34,7 @@ def do_hsm_fit(maker, verbose=False):
             maker.hsm_g1.append(HSM_fit.observed_shape.g1)
             maker.hsm_g2.append(HSM_fit.observed_shape.g2)
         except:
+            '''
             print("HSM fit for stamp #%d failed, using robust mode" % i)
             try:
                 gs_object = galsim.Image(model+abs(np.min(model)),
@@ -47,6 +48,13 @@ def do_hsm_fit(maker, verbose=False):
                 maker.hsm_sig.append(-9999)
                 maker.hsm_g1.append(-9999)
                 maker.hsm_g2.append(-9999)
+            '''
+
+            print("Robust-mode HSM fit for stamp #%d failed, skipping" % i)
+            #pdb.set_trace()
+            maker.hsm_sig.append(-9999)
+            maker.hsm_g1.append(-9999)
+            maker.hsm_g2.append(-9999)
 
         try:
             maker.fwhm.append(gs_object.calculateFWHM())
@@ -58,7 +66,7 @@ def do_hsm_fit(maker, verbose=False):
             except:
                 print("FWHM fit for stamp #%d failed, skipping" % i)
                 maker.fwhm.append(-9999)
-
+                pdb.set_trace()
 
     maker.hsm_sig = np.array(maker.hsm_sig)
     maker.hsm_g1 = np.array(maker.hsm_g1)

@@ -58,6 +58,9 @@ def match_coords(cat1, cat2, ratag1=None, dectag1=None, ratag2=None, dectag2=Non
     '''
 
     # Either 'ra/dec' or 'ALPHAWIN_J2000/DELTAWIN_J2000'!
+    ##
+    ## A little sanity check
+    ##
 
     try:
         if (ratag1 is not None) and (dectag1 is not None):
@@ -73,11 +76,11 @@ def match_coords(cat1, cat2, ratag1=None, dectag1=None, ratag2=None, dectag2=Non
             raise KeyError('cat1: no "ra,dec" or "{ALPHA,DELTA}WIN_J2000" columns')
     except:
         print("Couldn't load catalog 1 RA & Dec")
-
+        pdb.set_trace()
     try:
         if (ratag2 is not None) and (dectag2 is not None):
-            cat2_ra = cat2[ratag1]
-            cat2_dec =  cat2[dectag1]
+            cat2_ra = cat2[ratag2]
+            cat2_dec =  cat2[dectag2]
         elif 'ra' in cat2.colnames:
             cat2_ra = cat2['ra']
             cat2_dec =  cat2['dec']
@@ -88,6 +91,7 @@ def match_coords(cat1, cat2, ratag1=None, dectag1=None, ratag2=None, dectag2=Non
             raise KeyError('cat2: no "ra,dec" or "{ALPHA,DELTA}WIN_J2000" columns')
     except:
         print("Couldn't load catalog 2 RA & Dec")
+        pdb.set_trace()
 
     cat1_matcher = htm.Matcher(16, ra=cat1_ra, dec=cat1_dec)
 

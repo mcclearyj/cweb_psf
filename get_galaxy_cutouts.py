@@ -317,7 +317,6 @@ def main(args):
         add_err_cutout(image_file=image_file, cat_file=cat_file,
                         boxcut=boxcut, run_config=run_config)
 
-
         cat_file = os.path.join(run_config['outdir'],
                     os.path.basename(image_file).replace('.fits', '.cat.fits'))
 

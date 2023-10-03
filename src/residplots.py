@@ -214,7 +214,8 @@ class ResidPlots:
                         % (xd.reduced_chi_square, xd.mean_reduced_chi_sq)
             xd.title = chi2_title
         except:
-            pdb.set_trace()
+            #pdb.set_trace()
+            pass
 
         sd.title = star_title; pd.title = psf_title; rd.title = resid_title
 
@@ -230,7 +231,7 @@ class ResidPlots:
         set_rc_params(fontsize=16)
 
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
-                                    figsize=[15,7], tight_layout=True)
+                                    figsize=[15,6], tight_layout=True)
         for i, dc in enumerate(dicts):
             im = axs[i].imshow(dc.avg_im, **mpl_dicts[i])
             axs[i].set_title(dc.title)
@@ -374,7 +375,7 @@ class ResidPlots:
         self._populate_dicts()
 
         # Make chi-square residuals;
-        self.make_chi2(polydeg=polydeg, outname=chi2_name)
+        #self.make_chi2(polydeg=polydeg, outname=chi2_name)
 
         # Get titles (they're defined here!)
         self._get_plot_titles()
@@ -383,7 +384,7 @@ class ResidPlots:
         self.make_flux_resid_plot(resid_name)
 
         # And make the chi squared plot
-        self.make_chi2_plot(chi2_name)
+        #self.make_chi2_plot(chi2_name)
 
         # Bonus, do the SSIM figure
         self.make_ssim_ims(resid_name)

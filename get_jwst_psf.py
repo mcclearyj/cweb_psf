@@ -327,13 +327,13 @@ def main(args):
 
     i2d_images = args.images
 
-    config_yml = read_yaml(args.config)
+    config = read_yaml(args.config)
 
     # Adds an outdir parameter to config if it was missing
-    config = make_outdir(config_yml)
-    configdir = config['configdir']
+    make_outdir(config)
 
     # Get astromatic configs
+    configdir = config['configdir']
     if configdir is None:
         config['configdir'] = 'astro_config/'
 

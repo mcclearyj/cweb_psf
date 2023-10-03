@@ -120,7 +120,7 @@ class PSFMaker:
 
         else:
             allowed=['piff','epsfex','gpsfex', 'single', 'webbpsf']
-            print("PSF not one of ['piff', 'epsfex', 'gpsfex', 'single', 'webbpsf']")
+            print(f'PSF not one of {allowed}')
 
         return psf_im
 
@@ -454,13 +454,17 @@ class PSFMaker:
         do_hsm_fit(maker=self, verbose=vb)
 
         # Make output quiverplot
-        quiv_name = os.path.join(outdir, '_'.join([self.psf_type,'quiverplot.png']))
+        quiv_name = os.path.join(
+                    outdir, '_'.join([self.psf_type,'quiverplot.png'])
+                    )
         quiverplot = QuiverPlot(starmaker=stars, psfmaker=self)
-        quiverplot.run(scale=1, outname=quiv_name)
+        quiverplot.run(scale=2.5, outname=quiv_name)
 
         # Make output star-psf residuals plot
-        resid_name = os.path.join(outdir,'_'.join([self.psf_type,'flux_resid.png']))
-        chi2_name = os.path.join(outdir,'_'.join([self.psf_type,'chi2.png']))
+        resid_name = os.path.join(
+                     outdir, '_'.join([self.psf_type,'flux_resid.png']))
+        chi2_name  = os.path.join(
+                     outdir, '_'.join([self.psf_type,'chi2.png']))
         resid_plot = ResidPlots(starmaker=stars, psfmaker=self)
         resid_plot.run(resid_name=resid_name, chi2_name=chi2_name)
 
@@ -469,7 +473,7 @@ class PSFMaker:
         if rho_params == None:
             rho_params={'min_sep':200,'max_sep':5000,'nbins':10}
 
-        self.run_rho_stats(stars=stars,rho_params=rho_params,vb=vb,outdir=outdir)
+        self.run_rho_stats(stars=stars, rho_params=rho_params,
+                           vb=vb, outdir=outdir)
 
         print("finished running PSFMaker()")
-        return
