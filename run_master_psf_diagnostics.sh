@@ -3,9 +3,9 @@
 # Set up some environmental variables
 
 
-export TARGET='MACSJ1931'
+#export TARGET='MACSJ1931'
 
-#export TARGET='Abell3827'
+export TARGET='Abell3827'
 export band='b'
 export USERDIR="/Users/j.mccleary/Research"
 export BASEDIR="${USERDIR}/SuperBIT/real_data"
@@ -26,7 +26,7 @@ fi
 ## The parentheses define a bash array -- necessary for expanding the wildcard.
 ## The braces around TARGET show we are accessing that variable (disambiguation)
 
-IM_CATS=(${DATADIR}/${TARGET}*_clean_starcat.fits)
+IM_CATS=(${DATADIR}/${TARGET}*_cal_starcat.fits)
 COADD_IM_NAME="${COADDDIR}/${TARGET}_coadd_${band}_starcat.fits"
 
 #IM_CATS+=(${COADD_IM_NAME})

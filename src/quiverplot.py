@@ -180,13 +180,13 @@ class QuiverPlot:
         rd = self.resid_dict
 
         star_title = \
-            'median $\sigma^{*}_{HSM} = %.2f\prime\prime$; $e^{*}_{HSM} = %.5f$'\
+            'median $\sigma^{*}_{HSM} = %.2f^{\prime\prime}$; $e^{*}_{HSM} = %.5f$'\
                         % (sd.median_sigma, sd.median_e)
         psf_title = \
-            'median $\sigma^{PSF}_{HSM} = %.2f\prime\prime$; $e^{PSF}_{HSM} = %.5f$'\
+            'median $\sigma^{PSF}_{HSM} = %.2f^{\prime\prime}$; $e^{PSF}_{HSM} = %.5f$'\
                         % (pd.median_sigma, pd.median_e)
         resid_title = \
-            'median $\sigma^{resid}_{HSM} = %.2f\prime\prime$; $e^{resid}_{HSM} = %.5f$'\
+            'median $\sigma^{resid}_{HSM} = %.2f^{\prime\prime}$; $e^{resid}_{HSM} = %.5f$'\
                         % (rd.median_sigma, rd.median_e)
 
         return [star_title, psf_title, resid_title]
