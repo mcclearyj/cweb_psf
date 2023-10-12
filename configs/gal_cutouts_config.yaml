@@ -10,7 +10,7 @@ input_catalog:
   dec_units: 'deg'
 
 # Box size for all images
-box_size: 261
+box_size: 131
 
 # For mosaic i2d structure
 weight_image:
@@ -27,9 +27,8 @@ sci_image:
 # Location of SEx/PIFF/PSFEx config files
 astro_config_dir: 'astro_config/'
 
-# Output directory
+# Output directory (will be created within image directory)
 outdir: 'gal_cutout_working/'
-
 
 # Reference an external star catalog or parameters
 star_param_file: 'configs/star_params.yaml'
