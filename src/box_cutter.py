@@ -1,114 +1,111 @@
 import numpy as np
-from astropy.table import Table, vstack
-import pdb
-import glob
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
-import astropy.units as u
-from src.utils import read_yaml
+from astropy.nddata import Cutout2D
 import fitsio
-import astropy.nddata as nd
+import pdb
 
 class BoxCutter:
-    def __init__(self, config_file, image_file=None,
-                        box_size=None, x=None, y=None):
-        '''
-        Busted cookie-cutter
-        '''
-        self.config_file = config_file
+    """ TO DO: ADD A CONFIG_FILE CHECKER """
+
+    def __init__(self, config_file, image_file=None, box_size=None,
+                 x=None, y=None, vignet_size=None):
+        """Busted cookie-cutter."""
+        self.config = config_file
         self.image_file = image_file
         self.x = x
         self.y = y
+        self.vignet_size = vignet_size
+        self.imcat = []
         self.image = []
-        self.error = []
 
-        self.config = read_yaml(self.config_file)
-
-        # We refer to box size a lot so read it in, w/e
+        # We refer to box size a lot so read it in
         self.box_size = np.int32(self.config['box_size'])
 
-
     def _grab_wcs_box(self, obj):
-        '''
-        Placeholder for what might be a good RA/Dec matcher
-        '''
-        ra_tag = self.config['input_catalog']['ra_tag']
-        dec_tag = self.config['input_catalog']['dec_tag']
+        """Placeholder for what might be a good RA/Dec matcher."""
+        ra_key = self.config['input_catalog']['ra_key']
+        dec_key = self.config['input_catalog']['dec_key']
         ra_unit = self.config['input_catalog']['ra_unit']
         dec_unit = self.config['input_catalog']['dec_unit']
 
-        coord = SkyCoord(ra=obj[ra_tag]*ra_unit,
-                            dec=obj[dec_tag]*dec_unit
-                            )
-        #c = SkyCoord([1, 2, 3], [-30, 45, 8], frame="icrs", unit="deg")
+        coord = SkyCoord(ra=obj[ra_key] * ra_unit,
+                         dec=obj[dec_key] * dec_unit
+                         )
+
         wcs = WCS(fits.getheader(self.image_file))
-
         x, y = wcs.all_world2pix(coord.ra.value, coord.dec.value, 0)
-
         object_pos_in_image = [x.item(), y.item()]
-
         return
 
-
     def _grab_box(self, x, y):
-        '''
-        WHAT'S IN THE BAAAHHX:
-            im: should be array-like format
-            x, y: location of star from catalog
-            box_size: vignet size to cut around star
+        """Grab a region of the image.
+
+        Parameters:
+            x, y : float
+                location of star from catalog
+            im : array-like
+                image data
+            box_size : int
+                vignet size to cut around star
+
         Returns:
-            WHAT'S IN THE BAAAAHX
-        '''
-
+            box.data
+                Cutout box from the image.
+        """
         bs = np.int32(self.box_size)
-        bb = self.box_size/2
-        im = self.image
-        j1 = int(np.floor(x-bb))
-        j2 = int(np.floor(x+bb))
-        k1 = int(np.floor(y-bb))
-        k2 = int(np.floor(y+bb))
-
-        '''
+        bb = self.box_size / 2
+        im = self.image * 1.0 # For floats
+        j1 = int(np.floor(x - bb))  # minimum x coord of box
+        j2 = int(np.floor(x + bb))  # maximum x coord of box
+        k1 = int(np.floor(y - bb))  # minimum y coord of box
+        k2 = int(np.floor(y + bb))  # maximum y coord of box
         try:
-            box = im[k1:k2, j1:j2]
+            box = Cutout2D(data=im, position=(x, y),
+                       size=self.box_size, copy=True, mode='partial')
         except:
             pdb.set_trace()
-        if np.shape(box) != (bs, bs):
-            box = np.zeros([bs, bs])
-        '''
-
-        # No one told me I could just use this
-        box = nd.Cutout2D(data=im, position=(x,y),
-                    size=self.box_size, copy=True, mode='partial')
-
         return box.data
 
+    def _check_boxsize(self):
+        """Check box size and update if needed."""
+        if self.vignet_size is None:
+            self.vignet_size = self.imcat['VIGNET'][0].shape[0]
+
+        if self.box_size != self.vignet_size:
+            print(f'\nrun_config box_size={self.box_size} and catalog',
+                  f'vignet size={self.vignet_size} differ')
+            print(f'Overriding run_config box_size to {self.vignet_size}\n')
+            self.box_size = self.vignet_size
 
     def grab_boxes(self, image_file, cat_file, ext='ERR'):
-        '''
-        Load image files, call box grabber
-        '''
-        config = self.config
-        cat_hdu = config['input_catalog']['hdu']
-        x_tag = config['input_catalog']['x_tag']
-        y_tag = config['input_catalog']['y_tag']
+        """Load image files, call box grabber."""
+        x_key = self.config['input_catalog']['x_key']
+        y_key = self.config['input_catalog']['y_key']
 
-        hdu = config[f'{ext.lower()}_image']['hdu']
-        box_size = config['box_size']
-
-        if type(image_file) is str:
+        if isinstance(image_file, str):
+            hdu = self.config[f'{ext.lower()}_image']['hdu'] # FITS extension in which the image to cut out is located
             imf = fitsio.FITS(image_file, 'r')[hdu]
             self.image = imf.read()
         else:
             self.image = image_file
 
-        if type(cat_file) is str:
-            starcat_fits = fitsio.FITS(cat_file, 'rw')
-            starcat = starcat_fits[cat_hdu].read()
+        if isinstance(cat_file, str):
+            imcat_fits = fitsio.FITS(cat_file, 'rw')
+            cat_hdu = self.config['input_catalog']['hdu']
+            self.imcat = imcat_fits[cat_hdu].read()
         else:
-            starcat = cat_file
+            self.imcat = cat_file
 
-        x = starcat[x_tag]; y = starcat[y_tag]
+        self._check_boxsize()
+
+        x = self.imcat[x_key]
+        y = self.imcat[y_key]
         new_boxes = list(map(self._grab_box, x, y))
 
         return new_boxes
+
+    def add_boxes_to_imcat(self, imcat, new_boxes, ext):
+        """Convenience function that adds new_boxes to imcat as
+        a column called {ext}_VIGNET. Should finish this later"""
+        pass
