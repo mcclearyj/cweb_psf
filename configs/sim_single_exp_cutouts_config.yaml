@@ -1,0 +1,42 @@
+###
+### Box cutter parameters
+input_catalog:
+  hdu: 2
+  x_key: 'XWIN_IMAGE'
+  y_key: 'YWIN_IMAGE'
+  ra_key: 'ALPHAWIN_J2000'
+  dec_key: 'DELTAWIN_J2000'
+  ra_units: 'deg'
+  dec_units: 'deg'
+
+# Box size for all images
+box_size: 151
+
+# For mosaic i2d structure
+weight_image:
+  hdu: 5
+
+# For i2d structure
+err_image:
+  hdu: 2
+
+# Science exposure is usually 0th or 1th extension
+sci_image:
+  hdu: 1
+
+# What kind of PSFs to use?
+psf_models:
+  psfex: True
+  webbpsf: False
+  #piff: False
+  mirage: True
+
+
+# Location of SEx/PIFF/PSFEx config files
+astro_config_dir: 'astro_config/'
+
+# Output directory
+outdir: 'gal_cutout_working/'
+
+# Reference an external star catalog or parameters
+star_param_file: 'configs/sim_single_exp_star_params.yaml'

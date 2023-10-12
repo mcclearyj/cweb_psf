@@ -12,13 +12,12 @@ from astropy.table import Table, Column
 import glob
 from esutil import htm
 from argparse import ArgumentParser
-import ipdb, pdb
 import psfex
+import fitsio
 from src.plotter import size_mag_plots
 from src.utils import read_yaml, make_outdir
 from src.box_cutter import BoxCutter
-
-import fitsio
+from src.psf_renderer import PSFRenderer
 
 
 def parse_args():
@@ -35,8 +34,8 @@ def parse_args():
     return parser.parse_args()
 
 
-def run_sextractor(image_file, weight_file, star_params, run_config):
-    '''
+def run_sextractor(image_file, weight_file, star_config, run_config):
+    """
     Run Source Extractor, including the appropriate star FWHM for
     preliminary star identification.
 
@@ -45,7 +44,7 @@ def run_sextractor(image_file, weight_file, star_params, run_config):
         weight_file: weight file for SExtractor
         star_params: table with appx. size of stars in image
         run_config: configuration file with config parameters for this run
-    '''
+    """
 
     sci = run_config['sci_image']['hdu']
     wht = run_config['weight_image']['hdu']
@@ -53,7 +52,7 @@ def run_sextractor(image_file, weight_file, star_params, run_config):
     configdir = run_config['astro_config_dir']
 
     filter_name = fits.getval(image_file, 'FILTER', ext=0)
-    filter_params = star_params['filter_params']
+    filter_params = star_config['filter_params']
     star_fwhm = filter_params[filter_name]['fwhm']
 
     img_basename = os.path.basename(image_file)
@@ -75,7 +74,7 @@ def run_sextractor(image_file, weight_file, star_params, run_config):
     check_arg  = f'-CHECKIMAGE_NAME  {bkg_sub},{sgm_name}'
     param_arg  = '-PARAMETERS_NAME ' + os.path.join(configdir, 'sextractor.param')
     nnw_arg    = '-STARNNW_NAME ' + os.path.join(configdir,'default.nnw')
-    filter_arg = '-FILTER_NAME ' +  os.path.join(configdir,'gauss_3.0_5x5.conv')
+    filter_arg = '-FILTER_NAME ' +  os.path.join(configdir,'gauss_2.5_5x5.conv')
     config_arg = '-c ' + os.path.join(configdir, 'sextractor_hiSN.config')
 
     cmd = ' '.join([
@@ -88,117 +87,146 @@ def run_sextractor(image_file, weight_file, star_params, run_config):
 
     return cat_name
 
+def _select_stars_for_psf(imcat, star_config, run_config, filter_name):
+    """
+    Method to obtain stars from SExtractor catalog using the truth catalog
+    Inputs
+        imcat: input catalog from which to select stars. Should be a file
+        star_config: star configuration file
+    """
 
-def make_starcat(image_file, cat_file, star_params, run_config):
-    '''
+    if filter_name not in star_config['filter_names']:
+        raise Exception('No stellar locus parameters defined ',
+                        f'for filter {filter_name}')
+    else:
+        filt_params = star_config['filter_params'][filter_name]
+
+    # Are we using a reference star catalog?
+    if star_config['truthcat']['use'] == True:
+        truth_config = star_config['truthcat']
+        print('using truth catalog %s' % truth_config['filename'])
+
+        try:
+            ref_stars = Table.read(truth_config['filename'],
+                        format='fits', hdu=truth_config['hdu'])
+        except:
+            ref_stars = Table.read(truth_config['filename'],
+                        format=truth_config['format'])
+
+        # match imcat against truth star catalog
+        print(f'Selecting stars from ref star cat {truth_config["filename"]} ',
+              f'containing {len(ref_stars)} stars')
+
+        star_matcher = htm.Matcher(16,
+                       ra=ref_stars[truth_config['ra_key']],
+                       dec=ref_stars[truth_config['dec_key']]
+                       )
+
+        catind, starind, dist = star_matcher.match(
+                                ra=imcat[run_config['input_catalog']['ra_key']],
+                                dec=imcat[run_config['input_catalog']['dec_key']],
+                                radius=2/3600., maxmatch=1
+                                )
+
+        og_len = len(imcat); imcat = imcat[catind]
+        wg_stars = (imcat['SNR_WIN'] > filt_params['min_snr'])
+
+        print(f'{len(dist)}/{og_len} objects ' +
+              'matched to reference (truth) star catalog \n' +
+               f'{len(imcat[wg_stars])} stars passed MIN_SNR threshold')
+    else:
+        # Do more standard stellar locus selection
+        print("Selecting stars on CLASS_STAR, SIZE and MAG...")
+        wg_stars = \
+            (imcat['CLASS_STAR'] > star_config['class_star_thresh']) & \
+            (imcat[star_config['size_key']] > filt_params['min_size']) & \
+            (imcat[star_config['size_key']] < filt_params['max_size']) & \
+            (imcat[star_config['size_key']] < filt_params['min_mag']) & \
+            (imcat[star_config['size_key']] > filt_params['max_mag'])
+
+    # Return good stars
+    return imcat[wg_stars]
+
+def make_starcat(image_file, cat_file, star_config, run_config):
+    """
     Create a star catalog from the SExtractor image catalog using cuts on
     the SExtractor CLASS_STAR parameter and the supplied table of star properties.
     Also plot size-magnitude diagram for image and star catalogs.
 
-    Inputs:
-        image_file : image file
-        star_params : table with stellar locus parameters
-        thresh : CLASS_STAR threshold for accepting a star candidate
-        cat_file : input sextractor catalog
+    Inputs
+        image_file: image file
+        star_config: table with stellar locus parameters
+        run_config: the overall config file
+        cat_file: input sextractor catalog
 
-    Outputs:
+    Returns
         star_cat_file: name of the star catalog (saved to file)
-
-    '''
+    """
 
     img_basename = os.path.basename(image_file)
     outdir = run_config['outdir']
-    imcat_name = cat_file
     filter_name = fits.getval(image_file, 'FILTER', ext=0)
 
     starcat_name = os.path.join(
-                outdir, img_basename.replace('.fits','_starcat.fits')
-                )
+                   outdir, img_basename.replace('.fits','_starcat.fits')
+                   )
     plot_name = os.path.join(
                 outdir, img_basename.replace('.fits','_sizemag.pdf')
                 )
 
-    if not os.path.exists(imcat_name):
-        raise Exception(f'\n\ncould not find im_cat file {imcat_name}\n\n')
+    if not os.path.exists(cat_file):
+        raise Exception(f'\n\ncould not find im_cat file {cat_file}\n\n')
     else:
-        im_cat_fits = fits.open(imcat_name)
-        im_cat = im_cat_fits['LDAC_OBJECTS'].data
+        imcat_fits = fits.open(cat_file)
+        imcat = imcat_fits['LDAC_OBJECTS'].data
 
-    if filter_name not in star_params['filter_names']:
-        raise Exception(f'No stellar locus parameters defined for filter {filter_name}')
+    # Get a star catalog!
+    star_cat = _select_stars_for_psf(
+               imcat=imcat,
+               star_config=star_config,
+               run_config=run_config,
+               filter_name = filter_name
+               )
 
-    filter_params = star_params['filter_params']
-
-    min_size = filter_params[filter_name]['min_size']
-    max_size = filter_params[filter_name]['max_size']
-    max_mag = filter_params[filter_name]['max_mag']
-    min_mag = filter_params[filter_name]['min_mag']
-    thresh = star_params['class_star_thresh']
-
-    star_selec = (im_cat['CLASS_STAR'] > thresh) \
-                    & (im_cat['MAG_AUTO'] < max_mag) \
-                    & (im_cat['MAG_AUTO'] > min_mag) \
-                    & (im_cat['FLUX_RADIUS'] > min_size) \
-                    & (im_cat['FLUX_RADIUS'] < max_size)
-
-    cat_ind = np.arange(len(star_selec))[star_selec]
-
-    star_cat = im_cat[cat_ind]
-
-    im_cat_fits['LDAC_OBJECTS'].data = star_cat
-    im_cat_fits.writeto(starcat_name, overwrite=True)
+    imcat_fits['LDAC_OBJECTS'].data = star_cat
+    imcat_fits.writeto(starcat_name, overwrite=True)
 
     # Make size-mag plot
-    size_mag_plots(im_cat, star_cat, plot_name, filter_name)
+    size_mag_plots(imcat, star_cat, plot_name, filter_name)
 
     return starcat_name
 
-
-def add_err_cutout(image_file, cat_file, boxcut, run_config, ext='ERR'):
+def add_cutout(image_file, cat_file, boxcut, run_config, ext='ERR'):
     '''
     Wrapper to call BoxCutter.grab_boxes and add an extra ERR stamp (or other!)
     for chi2 calculations. Adding the extra column to the FITS HDU List is
     roundabout, but I couldn't figure out a better way to do it.
 
     Inputs
-        grabber: should be a BoxCutter instance
         image_file: the error file to add to catalog
         cat_file: catalog that's going to get an extra vignet/stamp
+        boxcut: should be a BoxCutter instance
         ext: what extension are we reading in?
     '''
 
-    cat_hdu = run_config['input_catalog']['hdu']
-    box_size = run_config['box_size']
-
     # Read in the fits file so that we can add the column ourselves
     sc_fits = fitsio.FITS(cat_file, 'rw')
+    cat_hdu = run_config['input_catalog']['hdu']
     imcat = sc_fits[cat_hdu].read()
-
-    # We need box_size to be same as star size for chi2 calc
-    if (box_size != imcat['VIGNET'][0].shape[0]):
-        print(f'supplied box_size={box_size} and vignet size={imcat["VIGNET"][0].shape[0]} differ!!')
-        print(f'overriding supplied box_size to {imcat["VIGNET"][0].shape[0]}')
-        box_size = imcat['VIGNET'][0].shape[0]
-        boxcut.box_size = box_size
 
     # Call to grab_boxes method
     boxes = boxcut.grab_boxes(image_file=image_file, cat_file=imcat)
 
     data = np.zeros(len(boxes), dtype=[(f'{ext}_VIGNET', \
-                        'f4', (box_size, box_size))])
+                        'f4', (boxcut.box_size, boxcut.box_size))])
     for i, box in enumerate(boxes):
         data[f'{ext}_VIGNET'][i] = box
     sc_fits[cat_hdu].insert_column(f'{ext}_VIGNET', data[f'{ext}_VIGNET'])
     sc_fits.close()
 
-    return
-
-
 def run_psfex(image_file, starcat_file, run_config):
-    '''
-    Run PSFEx, creating an output directory if one doesn't already exist.
-    Default is to create one directory per exposure.
-    '''
+    """ Run PSFEx, creating an output directory if one doesn't already exist.
+    Default is to create one directory per exposure. """
 
     astro_config_dir = run_config['astro_config_dir']
     base_name = os.path.basename(image_file)
@@ -215,6 +243,7 @@ def run_psfex(image_file, starcat_file, run_config):
     cmd = ' '.join(['psfex',
                 starcat_file, psfex_config_arg, outcat_arg, outdir_arg]
             )
+    #autoselect_arg = '-SAMPLE_AUTOSELECT N'
 
     print(f'psfex cmd is {cmd}')
     os.system(cmd)
@@ -239,50 +268,6 @@ def run_psfex(image_file, starcat_file, run_config):
     return
 
 
-def render_psf(image_file, cat_file, run_config):
-    '''
-    Place a PSFEx rendering into the galaxy catalog
-    '''
-
-    # Preliminaries
-    basename = os.path.basename(image_file)
-    psf_name = basename.replace('.fits', '_starcat.psf')
-    psfex_outdir = os.path.join(run_config['outdir'], \
-        'psfex-output', basename.split('.')[0])
-    psf_path = os.path.join(psfex_outdir, psf_name)
-
-    # Load in the PSF
-    psf = psfex.PSFEx(psf_path)
-
-    # Read in the fits file so that we can add the column ourselves
-    gc_fits = fitsio.FITS(cat_file, 'rw')
-    hdu = run_config['input_catalog']['hdu']
-    gal_catalog = gc_fits[hdu].read()
-
-    # Grab X and Y arrays
-    x = gal_catalog[run_config['input_catalog']['x_tag']]
-    y = gal_catalog[run_config['input_catalog']['y_tag']]
-
-    # Create empty list that will hold the PSF renderings
-    psf_images = []
-
-    # Loop prevents weird memory overflow errors for very large catalogs
-    for xi,yi in zip(x, y):
-        psf_images.append(psf.get_rec(yi, xi))
-
-    # Create PSF image array and add to catalog
-    psf_im_arr = np.zeros(len(psf_images),
-                    dtype=[('PSF_VIGNET', 'f4', (psf_images[0].shape))])
-
-    for i, psf_im in enumerate(psf_images): psf_im_arr['PSF_VIGNET'][i] = psf_im
-
-    # Add new column to galaxy catalog, save to file
-    gc_fits[hdu].insert_column('PSF_VIGNET', psf_im_arr['PSF_VIGNET'])
-    gc_fits.close()
-
-    return
-
-
 def main(args):
 
     i2d_images = args.images
@@ -296,10 +281,10 @@ def main(args):
     astro_config_dir = run_config['astro_config_dir']
 
     # Stellar locus parameters
-    star_params = read_yaml(run_config['star_param_file'])
+    star_config = read_yaml(run_config['star_param_file'])
 
     # Create a BoxCutter instance
-    boxcut = BoxCutter(config_file=args.config)
+    boxcut = BoxCutter(config_file=run_config)
 
     # Process exposures
     for j, i2d in enumerate(i2d_images):
@@ -309,26 +294,31 @@ def main(args):
         image_file = i2d
         weight_file = i2d
 
-
         cat_file = run_sextractor(image_file=image_file,
-                        weight_file=weight_file, star_params=star_params,
-                        run_config=run_config)
+                   weight_file=weight_file, star_config=star_config,
+                   run_config=run_config
+                   )
 
-        add_err_cutout(image_file=image_file, cat_file=cat_file,
-                        boxcut=boxcut, run_config=run_config)
-
+        add_cutout(image_file=image_file, cat_file=cat_file,
+                   boxcut=boxcut, run_config=run_config)
 
         cat_file = os.path.join(run_config['outdir'],
-                    os.path.basename(image_file).replace('.fits', '.cat.fits'))
+                   os.path.basename(image_file).replace('.fits', '.cat.fits'))
 
         starcat_file = make_starcat(image_file=image_file, cat_file=cat_file,
-                        star_params=star_params, run_config=run_config)
+                       star_config=star_config, run_config=run_config)
 
-        run_psfex(image_file=image_file, starcat_file=starcat_file,
-                        run_config=run_config)
+        try:
+            run_psfex(image_file=image_file, starcat_file=starcat_file,
+                      run_config=run_config)
 
-        render_psf(image_file=image_file, cat_file=cat_file,
-                        run_config=run_config)
+            renderer = PSFRenderer(image_file=image_file, cat_file=cat_file,
+                                   run_config=run_config)
+
+            renderer.render()
+        except:
+            print("\nPSFEx probably failed for {image_file}, skipping...\n")
+            pass
 
     return 0
 
