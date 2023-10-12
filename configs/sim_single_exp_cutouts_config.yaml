@@ -33,7 +33,7 @@ psf_models:
 
 
 # Location of SEx/PIFF/PSFEx config files
-astro_config_dir: 'astro_config/'
+astro_config_dir: 'src/astro_config/'
 
 # Output directory
 outdir: 'gal_cutout_working/'

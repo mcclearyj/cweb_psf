@@ -317,7 +317,7 @@ def main(args):
 
             renderer.render()
         except:
-            print("\nPSFEx probably failed for {image_file}, skipping...\n")
+            print(f"\nPSFEx probably failed for {image_file}, skipping...\n")
             pass
 
     return 0
