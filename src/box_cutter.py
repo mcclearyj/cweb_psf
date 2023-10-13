@@ -50,22 +50,23 @@ class BoxCutter:
                 vignet size to cut around star
 
         Returns:
-            box.data
+            box
                 Cutout box from the image.
         """
-        bs = np.int32(self.box_size)
-        bb = self.box_size / 2
-        im = self.image * 1.0 # For floats
-        j1 = int(np.floor(x - bb))  # minimum x coord of box
-        j2 = int(np.floor(x + bb))  # maximum x coord of box
-        k1 = int(np.floor(y - bb))  # minimum y coord of box
-        k2 = int(np.floor(y + bb))  # maximum y coord of box
-        try:
-            box = Cutout2D(data=im, position=(x, y),
-                       size=self.box_size, copy=True, mode='partial')
-        except:
-            pdb.set_trace()
-        return box.data
+        bs = np.int(self.box_size)
+        bb = self.box_size/2
+        im = self.image * 1.0
+        j1 = int(np.floor(x-bb))
+        j2 = int(np.floor(x+bb))
+        k1 = int(np.floor(y-bb))
+        k2 = int(np.floor(y+bb))
+
+        box = im[k1:k2, j1:j2]
+
+        if np.shape(box) != (bs, bs):
+            box = np.zeros([bs, bs])
+
+        return box
 
     def _check_boxsize(self):
         """Check box size and update if needed."""
