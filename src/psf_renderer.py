@@ -106,9 +106,10 @@ class PSFRenderer:
 
         # Create "image_file" for boxcutter
         try:
-            mirf = fits.open(mirage_file)[1].data
+            mirf = fits.open(mirage_file)
+            mirage_im = mirf['DATA'].data
         except FileNotFoundError as fnf:
-            print(f'Could not find a MIRAGE point source image at {mirage_im}',
+            print(f'Could not find a MIRAGE point source image at {mirage_name}',
             fnf)
 
         # Start by create a BoxCutter instance
@@ -116,7 +117,7 @@ class PSFRenderer:
                            vignet_size=self.vignet_size)
 
         # Call to grab_boxes method
-        psf_images = boxcut.grab_boxes(image_file=mirage_file,
+        psf_images = boxcut.grab_boxes(image_file=mirage_im,
                                        cat_file=self.gal_catalog)
 
         # Add psf images to catalog

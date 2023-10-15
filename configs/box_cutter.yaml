@@ -10,7 +10,7 @@ input_catalog:
   dec_units: 'deg'
 
 # Box size for all images
-box_size: 261
+box_size: 101
 
 # For mosaic i2d structure
 weight_image:

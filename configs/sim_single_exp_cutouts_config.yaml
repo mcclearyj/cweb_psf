@@ -2,8 +2,8 @@
 ### Box cutter parameters
 input_catalog:
   hdu: 2
-  x_key: 'XWIN_IMAGE'
-  y_key: 'YWIN_IMAGE'
+  x_key: 'X_IMAGE'
+  y_key: 'Y_IMAGE'
   ra_key: 'ALPHAWIN_J2000'
   dec_key: 'DELTAWIN_J2000'
   ra_units: 'deg'
@@ -14,7 +14,8 @@ box_size: 151
 
 # For mosaic i2d structure
 weight_image:
-  hdu: 5
+  hdu: 2
+  type: "MAP_WEIGHT"
 
 # For i2d structure
 err_image:

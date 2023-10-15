@@ -125,11 +125,11 @@ class ResidPlots:
         chi2_vals = []
 
         for i, psf_stamp in enumerate(np.array(psf.stamps)[wg]):
-
             # Make image-model chi2 map and append it to list
             noise_map = star.err_stamps[i]
             star_stamp = star.stamps[i]
-            chi2_map = np.divide(np.square(star_stamp-psf_stamp), np.square(noise_map))
+            chi2_map = np.divide(np.square(star_stamp-psf_stamp),
+                                 np.square(noise_map))
             chi2_maps.append(chi2_map)
 
             # Also compute total reduced chi2 for image-model
@@ -168,7 +168,6 @@ class ResidPlots:
         im.writeto(outname.replace('.png', '.fits'), overwrite=True)
 
         return
-
 
     def _make_mpl_dict(self, index, vmin=None, vmax=None, avg_im=None):
         '''

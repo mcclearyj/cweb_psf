@@ -48,6 +48,7 @@ def run_sextractor(image_file, weight_file, star_config, run_config):
 
     sci = run_config['sci_image']['hdu']
     wht = run_config['weight_image']['hdu']
+    wht_type = run_config['weight_image']['type']
     outdir = run_config['outdir']
     configdir = run_config['astro_config_dir']
 
@@ -63,15 +64,15 @@ def run_sextractor(image_file, weight_file, star_config, run_config):
     bkg_sub  = os.path.join(
                     outdir, img_basename.replace('.fits','.sub.fits')
                     )
-    sgm_name = os.path.join(
-                outdir, img_basename.replace('.fits','.sgm.fits')
+    aper_name = os.path.join(
+                outdir, img_basename.replace('.fits','.aper.fits')
                 )
 
     image_arg  = f'"{image_file}[{sci}]"'
     seeing_arg = f'-SEEING_FWHM {star_fwhm}'
-    weight_arg = f'-WEIGHT_IMAGE "{weight_file}[{wht}]"'
+    weight_arg = f'-WEIGHT_IMAGE "{weight_file}[{wht}]" -WEIGHT_TYPE {wht_type}'
     name_arg   = f'-CATALOG_NAME {cat_name}'
-    check_arg  = f'-CHECKIMAGE_NAME  {bkg_sub},{sgm_name}'
+    check_arg  = f'-CHECKIMAGE_NAME  {bkg_sub},{aper_name}'
     param_arg  = '-PARAMETERS_NAME ' + os.path.join(configdir, 'sextractor.param')
     nnw_arg    = '-STARNNW_NAME ' + os.path.join(configdir,'default.nnw')
     filter_arg = '-FILTER_NAME ' +  os.path.join(configdir,'gauss_2.5_5x5.conv')
@@ -125,7 +126,7 @@ def _select_stars_for_psf(imcat, star_config, run_config, filter_name):
         catind, starind, dist = star_matcher.match(
                                 ra=imcat[run_config['input_catalog']['ra_key']],
                                 dec=imcat[run_config['input_catalog']['dec_key']],
-                                radius=2/3600., maxmatch=1
+                                radius=0.5/3600., maxmatch=1
                                 )
 
         og_len = len(imcat); imcat = imcat[catind]
@@ -224,7 +225,7 @@ def add_cutout(image_file, cat_file, boxcut, run_config, ext='ERR'):
     sc_fits[cat_hdu].insert_column(f'{ext}_VIGNET', data[f'{ext}_VIGNET'])
     sc_fits.close()
 
-def run_psfex(image_file, starcat_file, run_config):
+def run_psfex(image_file, starcat_file, run_config, star_config):
     """ Run PSFEx, creating an output directory if one doesn't already exist.
     Default is to create one directory per exposure. """
 
@@ -235,15 +236,19 @@ def run_psfex(image_file, starcat_file, run_config):
         'psfex-output', base_name.split('.')[0])
     if not os.path.isdir(psfex_outdir):
         os.system(f'mkdir -p {psfex_outdir}')
+    if star_config['truthcat']['use'] == True:
+        autoselect_arg = '-SAMPLE_AUTOSELECT N'
+    else:
+        autoselect_arg = '-SAMPLE_AUTOSELECT Y'
 
     psfex_config_arg = '-c ' + os.path.join(astro_config_dir,'psfex.config')
     outcat_arg = f'-OUTCAT_NAME {outcat_name}'
     outdir_arg = f'-PSF_DIR {psfex_outdir}'
 
     cmd = ' '.join(['psfex',
-                starcat_file, psfex_config_arg, outcat_arg, outdir_arg]
-            )
-    #autoselect_arg = '-SAMPLE_AUTOSELECT N'
+                starcat_file, psfex_config_arg, outcat_arg,
+                outdir_arg, autoselect_arg]
+                )
 
     print(f'psfex cmd is {cmd}')
     os.system(cmd)
@@ -310,9 +315,9 @@ def main(args):
 
         try:
             run_psfex(image_file=image_file, starcat_file=starcat_file,
-                      run_config=run_config)
+                      run_config=run_config, star_config=star_config)
 
-            renderer = PSFRenderer(image_file=image_file, cat_file=cat_file,
+            renderer = PSFRenderer(image_file=image_file, cat_file=starcat_file,
                                    run_config=run_config)
 
             renderer.render()
