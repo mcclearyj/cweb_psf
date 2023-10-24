@@ -20,8 +20,12 @@ class PSFRenderer:
         self.gal_catalog = self.gc_fits[self.hdu].read()
 
         # Set x, y values of objects
-        self.x = self.gal_catalog[run_config['input_catalog']['x_key']]
-        self.y = self.gal_catalog[run_config['input_catalog']['y_key']]
+        if run_config['input_catalog'].get('psf_x_key') != None:
+            self.x = self.gal_catalog[run_config['input_catalog']['psf_x_key']]
+            self.y = self.gal_catalog[run_config['input_catalog']['psf_y_key']]
+        else:
+            self.x = self.gal_catalog[run_config['input_catalog']['x_key']]
+            self.y = self.gal_catalog[run_config['input_catalog']['y_key']]
 
         # Set the baseline image/vignet size
         self.vignet_size = self.gal_catalog['VIGNET'][0].shape[0]
@@ -131,6 +135,7 @@ class PSFRenderer:
         for model, render_method in self.model_map.items():
             if self.run_config['psf_models'].get(model, False):
                 render_method()
+
         self.gc_fits.close()
 
 # Usage

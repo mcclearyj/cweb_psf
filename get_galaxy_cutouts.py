@@ -76,7 +76,7 @@ def run_sextractor(image_file, weight_file, star_config, run_config):
     param_arg  = '-PARAMETERS_NAME ' + os.path.join(configdir, 'sextractor.param')
     nnw_arg    = '-STARNNW_NAME ' + os.path.join(configdir,'default.nnw')
     filter_arg = '-FILTER_NAME ' +  os.path.join(configdir,'gauss_2.5_5x5.conv')
-    config_arg = '-c ' + os.path.join(configdir, 'sextractor_hiSN.config')
+    config_arg = '-c ' + os.path.join(configdir, 'sextractor.config')
 
     cmd = ' '.join([
             'sex', image_arg, weight_arg, name_arg, check_arg, param_arg,
@@ -317,12 +317,17 @@ def main(args):
             run_psfex(image_file=image_file, starcat_file=starcat_file,
                       run_config=run_config, star_config=star_config)
 
+            # N.B. this adds MIRAGE, PIFF, WebbPSF... too, not just PSFEx models
             renderer = PSFRenderer(image_file=image_file, cat_file=starcat_file,
                                    run_config=run_config)
-
             renderer.render()
+
         except:
-            print(f"\nPSFEx probably failed for {image_file}, skipping...\n")
+            # For the sake of paper analyses, if the PSFEx fitting failed,
+            # exclude it from star/galaxy catalog
+            print("\nWarning:")
+            print(f"PSFEx probably failed for {image_file},",
+                  "skipping analysis of this star...\n")
             pass
 
     return 0

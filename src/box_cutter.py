@@ -85,7 +85,8 @@ class BoxCutter:
         y_key = self.config['input_catalog']['y_key']
 
         if isinstance(image_file, str):
-            hdu = self.config[f'{ext.lower()}_image']['hdu'] # FITS extension in which the image to cut out is located
+            # FITS extension in which the image to cut out is located
+            hdu = self.config[f'{ext.lower()}_image']['hdu']
             imf = fitsio.FITS(image_file, 'r')[hdu]
             self.image = imf.read()
         else:

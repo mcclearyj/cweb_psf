@@ -251,8 +251,10 @@ class StampBackground():
 
         for cutout in cutouts:
             cutout[cutout<= -999] = np.nan
-            self.substamps.append(cutout[-j:,-j:])
-            self.substamps.append(cutout[0:j,0:j])
+            self.substamps.append(cutout[-j:, -j:])
+            self.substamps.append(cutout[0:j, 0:j])
+            self.substamps.append(cutout[0:j, -j:])
+            self.substamps.append(cutout[-j:, 0:j])
 
         sky_level = np.nanmean(self.substamps)
         sky_std = np.nanstd(self.substamps)
