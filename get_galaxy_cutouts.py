@@ -18,7 +18,7 @@ from src.plotter import size_mag_plots
 from src.utils import read_yaml, make_outdir
 from src.box_cutter import BoxCutter
 from src.psf_renderer import PSFRenderer
-
+import copy
 
 def parse_args():
 
@@ -148,6 +148,61 @@ def _select_stars_for_psf(imcat, star_config, run_config, filter_name):
     # Return good stars
     return imcat[wg_stars]
 
+def _exclude_satpix(starcat, ext='DQ_VIGNET', sentinel=[1, 2]):
+    """ Little utility script to exclude stars with saturated pixels.
+    There are a several extensions, e.g., DQ and VAR_READNOISE that can be used.
+    These values might be good for the star config? Also, subselect so that
+    only the center of the star gets used.
+    TO DO: this should probably be integrated into BoxCutter. Also, remove loop
+    """
+
+    if len(starcat) == 0:
+        print("exclude_satpix: no matched stars, returning empty")
+        return starcat
+    else:
+        stars = starcat[ext]
+
+    # We only care about center of star, say 31 x 31 pixels
+    bs = size = stars[0].shape[0]//2
+    n = bs - 15
+    substars = stars[:, n:-n, n:-n]
+
+    all_good = np.full(len(stars), True)
+    for i,substar in enumerate(substars):
+        is_sat = np.size(np.intersect1d(substar, sentinel)) == 0
+        all_good[i] *= is_sat
+    print(f'Removed {len(all_good)-np.count_nonzero(all_good)} entries',
+          'for having value in {sentinel}')
+
+    return starcat[all_good]
+
+def split_starcat_into_training_validation(starcat, training_fraction=0.9):
+    """ For PSF validation analysis, split star catalog into training and
+    validation samples. For real analysis, you will want to use all stars
+    when PSF fitting.
+    Input
+        starcat: array-like catalog of "good" stars
+        training fraction: what fraction of stars to reserve for training
+    Returns
+        training_stars: subset of input star catalog to use for PSF fitting
+        validation_stars: subset of input star catalog to use for PSF validation
+    """
+
+    # Determine the number of rows for the training and validation catalogs
+    total_rows = len(starcat)
+    training_rows = int(total_rows * training_fraction)
+    validation_rows = total_rows - training_rows
+
+    # Generate random indices to shuffle the extension 2 rows
+    random_indices = np.random.permutation(total_rows)
+
+    # Split the extension 2 data into training and validation data
+    training_data = starcat[random_indices[:training_rows]]
+    validation_data = starcat[random_indices[training_rows:]]
+
+    return training_data, validation_data
+
+
 def make_starcat(image_file, cat_file, star_config, run_config):
     """
     Create a star catalog from the SExtractor image catalog using cuts on
@@ -182,22 +237,59 @@ def make_starcat(image_file, cat_file, star_config, run_config):
         imcat = imcat_fits['LDAC_OBJECTS'].data
 
     # Get a star catalog!
-    star_cat = _select_stars_for_psf(
-               imcat=imcat,
-               star_config=star_config,
-               run_config=run_config,
-               filter_name = filter_name
-               )
-
-    imcat_fits['LDAC_OBJECTS'].data = star_cat
-    imcat_fits.writeto(starcat_name, overwrite=True)
-
+    selected_stars = _select_stars_for_psf(
+                     imcat=imcat,
+                     star_config=star_config,
+                     run_config=run_config,
+                     filter_name = filter_name
+                     )
+    # Filter out saturated stars
+    selected_stars = _exclude_satpix(selected_stars,
+                                     ext='DQ_VIGNET',
+                                     sentinel=[1, 2]
+                                     )
     # Make size-mag plot
-    size_mag_plots(imcat, star_cat, plot_name, filter_name)
+    size_mag_plots(imcat, selected_stars, plot_name, filter_name)
 
-    return starcat_name
+    if run_config['split_stars_validation_training'] == True:
 
-def add_cutout(image_file, cat_file, boxcut, run_config, ext='ERR'):
+        #train_name = starcat_name.replace('starcat', 'train_starcat')
+        valid_name = starcat_name.replace('starcat', 'valid_starcat')
+        full_ind = range(len(selected_stars))
+
+        rng = np.random.default_rng()
+        train_ind = rng.choice(full_ind,
+                               int(0.9*len(full_ind)),
+                               replace=False
+                               )
+        valid_ind = np.setdiff1d(full_ind, train_ind)
+        print(f"train ind is {train_ind}")
+        print(f"valid ind is {valid_ind}")
+
+        # Save training
+        imcat_fits['LDAC_OBJECTS'].data = selected_stars[train_ind]
+        print(f"saving training imcat to {starcat_name}")
+        imcat_fits.writeto(starcat_name, overwrite=True)
+
+        # Save validation
+        validation_fits = copy.deepcopy(imcat_fits)
+        validation_fits['LDAC_OBJECTS'].data = selected_stars[valid_ind]
+        validation_fits.writeto(valid_name, overwrite=True)
+
+        # Return the name of training catalog
+        print(f'Returning training catalog')
+        return starcat_name
+
+    else:
+        # Save to file
+        imcat_fits['LDAC_OBJECTS'].data = selected_stars
+        imcat_fits.writeto(starcat_name, overwrite=True)
+
+        # Return default star catalaog name
+        print(f'Returning full star catalog')
+        return starcat_name
+
+def add_cutouts(image_file, cat_file, boxcut, run_config, ext='ERR'):
     '''
     Wrapper to call BoxCutter.grab_boxes and add an extra ERR stamp (or other!)
     for chi2 calculations. Adding the extra column to the FITS HDU List is
@@ -215,14 +307,23 @@ def add_cutout(image_file, cat_file, boxcut, run_config, ext='ERR'):
     cat_hdu = run_config['input_catalog']['hdu']
     imcat = sc_fits[cat_hdu].read()
 
-    # Call to grab_boxes method
-    boxes = boxcut.grab_boxes(image_file=image_file, cat_file=imcat)
+    # This is not my favorite but here is a loop
+    cutout_list = run_config['cutout_list']
 
-    data = np.zeros(len(boxes), dtype=[(f'{ext}_VIGNET', \
+    for hdu, ext in zip(cutout_list['hdu'], cutout_list['extname']):
+        # Call to grab_boxes method
+        print(f"WORKING ON {hdu}, {ext}")
+        boxes = boxcut.grab_boxes(image_file=image_file,
+                                  cat_file=imcat,
+                                  ext=ext, hdu=hdu)
+        data = np.zeros(len(boxes), dtype=[(f'{ext}_VIGNET', \
                         'f4', (boxcut.box_size, boxcut.box_size))])
-    for i, box in enumerate(boxes):
-        data[f'{ext}_VIGNET'][i] = box
-    sc_fits[cat_hdu].insert_column(f'{ext}_VIGNET', data[f'{ext}_VIGNET'])
+        # Reformat column
+        for i, box in enumerate(boxes):
+            data[f'{ext}_VIGNET'][i] = box
+        # Add column to catalog
+        sc_fits[cat_hdu].insert_column(f'{ext}_VIGNET',
+                                       data[f'{ext}_VIGNET'])
     sc_fits.close()
 
 def run_psfex(image_file, starcat_file, run_config, star_config):
@@ -304,7 +405,7 @@ def main(args):
                    run_config=run_config
                    )
 
-        add_cutout(image_file=image_file, cat_file=cat_file,
+        add_cutouts(image_file=image_file, cat_file=cat_file,
                    boxcut=boxcut, run_config=run_config)
 
         cat_file = os.path.join(run_config['outdir'],
@@ -326,7 +427,7 @@ def main(args):
             # For the sake of paper analyses, if the PSFEx fitting failed,
             # exclude it from star/galaxy catalog
             print("\nWarning:")
-            print(f"PSFEx probably failed for {image_file},",
+            print(f"PSFEx and/or rendering failed for {image_file},",
                   "skipping analysis of this star...\n")
             pass
 

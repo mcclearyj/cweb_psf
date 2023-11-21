@@ -1,5 +1,5 @@
 ###
-### Box cutter & PSF fitting parameters 
+### Box cutter & PSF fitting parameters
 input_catalog:
   hdu: 2
   x_key: 'X_IMAGE'
@@ -14,14 +14,15 @@ input_catalog:
 # Box size for all images
 box_size: 151
 
+# Cutouts to add to output mosaic
+cutout_list:
+  hdu: [2, 3]
+  extname: ["ERR", "DQ"]
+
 # For mosaic i2d structure
 weight_image:
   hdu: 2
   type: "MAP_WEIGHT"
-
-# For i2d structure
-err_image:
-  hdu: 2
 
 # Science exposure is usually 0th or 1th extension
 sci_image:
@@ -34,6 +35,8 @@ psf_models:
   #piff: False
   mirage: True
 
+# Split stars into training and validation sub-samples for PSF fitting?
+split_stars_validation_training: True
 
 # Location of SEx/PIFF/PSFEx config files
 astro_config_dir: 'src/astro_config/'

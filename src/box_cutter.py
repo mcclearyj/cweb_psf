@@ -79,14 +79,18 @@ class BoxCutter:
             print(f'Overriding run_config box_size to {self.vignet_size}\n')
             self.box_size = self.vignet_size
 
-    def grab_boxes(self, image_file, cat_file, ext='ERR'):
+    def grab_boxes(self, image_file, cat_file, ext='ERR', hdu=None):
         """Load image files, call box grabber."""
         x_key = self.config['input_catalog']['x_key']
         y_key = self.config['input_catalog']['y_key']
 
         if isinstance(image_file, str):
             # FITS extension in which the image to cut out is located
-            hdu = self.config[f'{ext.lower()}_image']['hdu']
+            if hdu == None:
+                hdu = self.config[f'{ext.lower()}_image']['hdu']
+            else:
+                print("reading supplied hdu") # Probably using an HDU supplied as an argument
+            print(f'reading image extension {ext} at hdu {hdu}')
             imf = fitsio.FITS(image_file, 'r')[hdu]
             self.image = imf.read()
         else:
