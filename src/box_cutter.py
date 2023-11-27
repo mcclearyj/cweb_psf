@@ -53,7 +53,7 @@ class BoxCutter:
             box
                 Cutout box from the image.
         """
-        bs = np.int(self.box_size)
+        bs = int(self.box_size)
         bb = self.box_size/2
         im = self.image * 1.0
         j1 = int(np.floor(x-bb))
