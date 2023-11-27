@@ -7,7 +7,7 @@ import glob
 import psfex
 import fitsio
 from src.box_cutter import BoxCutter
-
+import re
 
 class PSFRenderer:
     def __init__(self, image_file, cat_file, run_config):
@@ -97,22 +97,48 @@ class PSFRenderer:
         # Code for rendering WebbPSF goes here
         pass
 
+    def _locate_mirage_file(self):
+        """
+        Utility method to extract the path to a MIRAGE point source image for
+        simulated data. Returns the absolute path of the point source image.
+        """
+
+        basename = os.path.basename(self.image_file)
+        dirname = os.path.dirname(self.image_file)
+        try:
+            # This saves a few seconds, but will break for different file orgs
+            filter_name = re.search(r"f(\d){3}w", dirname).group()
+            filter_name = filter_name.upper()
+        except:
+            filter_name=''
+
+        mirage_path = os.path.join(self.run_config.get('mirage_dir'),
+                      filter_name,
+                      basename.replace('cal.fits', '*CLEAR_ptsrc_seed_image.fits')
+                      )
+
+        return mirage_path
+
     def _grab_mirage(self, ext='MIRAGE'):
         """ This is specific to single-exposure sims, as noiseless,
         perfect point source images aren't usually available for real data!
         Note: MIRAGE PSF models (aka point source seed images) are assumed to
         live in the image directory"""
 
-        # OK, first: define MIRAGE point source name. Bit of a hack.
-        mirage_name = self.image_file.replace('cal.fits',
-                      '*CLEAR_ptsrc_seed_image.fits')
-        mirage_file = glob.glob(mirage_name)[0]
+        if self.run_config.get('mirage_dir') != None:
+            mirage_path = self._locate_mirage_file()
+        else:
+            mirage_path = self.image_file.replace('cal.fits',
+                          '*CLEAR_ptsrc_seed_image.fits')
+
+        mirage_file = glob.glob(mirage_path)[0]
 
         # Create "image_file" for boxcutter
         try:
             mirf = fits.open(mirage_file)
             mirage_im = mirf['DATA'].data
         except FileNotFoundError as fnf:
+            pdb.set_trace()
             print(f'Could not find a MIRAGE point source image at {mirage_name}',
             fnf)
 
@@ -127,9 +153,9 @@ class PSFRenderer:
         # Add psf images to catalog
         self._add_to_cat(psf_images, ext="MIRAGE")
 
-    # Uncomment if you have PIFF rendering method
-    # def _render_piff(self):
-    #     # Code for rendering PIFF goes here
+    def _render_piff(self):
+         # Code for rendering PIFF goes here
+         pass
 
     def render(self):
         for model, render_method in self.model_map.items():
