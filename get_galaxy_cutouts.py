@@ -26,7 +26,7 @@ def parse_args():
 
     parser.add_argument('images', nargs='+',
                         help = 'Images to process (wildcards OK)')
-    parser.add_argument('-config', default=None,
+    parser.add_argument('--config', default=None,
                         help = 'Configuration file for this script')
     parser.add_argument('--vb', action='store_true', default=True,
                         help = 'Print detailed messages [does nothing for now]')
@@ -171,8 +171,9 @@ def _exclude_satpix(starcat, ext='DQ_VIGNET', sentinel=[1, 2]):
     for i,substar in enumerate(substars):
         is_sat = np.size(np.intersect1d(substar, sentinel)) == 0
         all_good[i] *= is_sat
+
     print(f'Removed {len(all_good)-np.count_nonzero(all_good)} entries',
-          'for having value in {sentinel}')
+          f'for having value in {sentinel}')
 
     return starcat[all_good]
 
@@ -263,8 +264,8 @@ def make_starcat(image_file, cat_file, star_config, run_config):
                                replace=False
                                )
         valid_ind = np.setdiff1d(full_ind, train_ind)
-        print(f"train ind is {train_ind}")
-        print(f"valid ind is {valid_ind}")
+        print(f'train ind is {train_ind}')
+        print(f'valid ind is {valid_ind}')
 
         # Save training
         imcat_fits['LDAC_OBJECTS'].data = selected_stars[train_ind]
@@ -418,10 +419,21 @@ def main(args):
             run_psfex(image_file=image_file, starcat_file=starcat_file,
                       run_config=run_config, star_config=star_config)
 
-            # N.B. this adds MIRAGE, PIFF, WebbPSF... too, not just PSFEx models
-            renderer = PSFRenderer(image_file=image_file, cat_file=starcat_file,
+            # Add MIRAGE, PIFF, WebbPSF, PSFEx, ... models to star catalog
+            renderer = PSFRenderer(image_file=image_file,
+                                   cat_file=starcat_file,
                                    run_config=run_config)
             renderer.render()
+
+            # Add MIRAGE, PIFF, WebbPSF, PSFEx, ... models to validation cat
+            if run_config['split_stars_validation_training'] == True:
+
+                validcat_file = starcat_file.replace('starcat', 'valid_starcat')
+                val_renderer = PSFRenderer(image_file=image_file,
+                                           cat_file=validcat_file,
+                                           run_config=run_config)
+                val_renderer.render()
+
 
         except:
             # For the sake of paper analyses, if the PSFEx fitting failed,
