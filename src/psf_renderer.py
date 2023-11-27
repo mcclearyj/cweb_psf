@@ -108,7 +108,6 @@ class PSFRenderer:
         try:
             # This saves a few seconds, but will break for different file orgs
             filter_name = re.search(r"f(\d){3}w", dirname).group()
-            filter_name = filter_name.upper()
         except:
             filter_name=''
 
@@ -130,7 +129,7 @@ class PSFRenderer:
         else:
             mirage_path = self.image_file.replace('cal.fits',
                           '*CLEAR_ptsrc_seed_image.fits')
-
+        
         mirage_file = glob.glob(mirage_path)[0]
 
         # Create "image_file" for boxcutter
@@ -138,7 +137,6 @@ class PSFRenderer:
             mirf = fits.open(mirage_file)
             mirage_im = mirf['DATA'].data
         except FileNotFoundError as fnf:
-            pdb.set_trace()
             print(f'Could not find a MIRAGE point source image at {mirage_name}',
             fnf)
 
