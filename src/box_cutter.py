@@ -56,17 +56,40 @@ class BoxCutter:
         bs = int(self.box_size)
         bb = self.box_size/2
         im = self.image * 1.0
-        j1 = int(np.floor(x-bb))
-        j2 = int(np.floor(x+bb))
-        k1 = int(np.floor(y-bb))
-        k2 = int(np.floor(y+bb))
+        y_max, x_max = self.image.shape[0], self.image.shape[1]
+        j1 = max(0, int(np.floor(x-bb)))
+        j2 = min(x_max, int(np.floor(x+bb)))
+        k1 = max(0, int(np.floor(y-bb)))
+        k2 = min(y_max, int(np.floor(y+bb)))
 
         box = im[k1:k2, j1:j2]
 
-        if np.shape(box) != (bs, bs):
-            box = np.zeros([bs, bs])
+        if box.shape != (bs, bs):
 
-        return box
+            a1 = None; a2 = None; b1 = None; b2 = None
+            big_box = np.zeros([bs, bs])
+
+            # the y dimension of box doesn't fit inside image
+            if box.shape[0] != bs:
+                if int(np.floor(y-bb)) < 0:
+                    b1 = int(-1*np.floor(y-bb))
+                else:
+                    b2 = int(y_max - np.floor(y+bb))
+
+            # the x dimension of box doesn't fit inside image
+            if box.shape[1] != bs:
+                if int(np.floor(x-bb)) < 0:
+                    a1 = int(-1*np.floor(x-bb))
+                else:
+                    a2 = int(x_max - np.floor(x+bb))
+
+            # inscribe box inside big_box & return as cutout
+            big_box[b1:b2, a1:a2] += box
+            return big_box
+
+        else:
+            # Box was fine
+            return box
 
     def _check_boxsize(self):
         """Check box size and update if needed."""
