@@ -126,7 +126,7 @@ def _select_stars_for_psf(imcat, star_config, run_config, filter_name):
         catind, starind, dist = star_matcher.match(
                                 ra=imcat[run_config['input_catalog']['ra_key']],
                                 dec=imcat[run_config['input_catalog']['dec_key']],
-                                radius=0.5/3600., maxmatch=1
+                                radius=2./3600., maxmatch=1
                                 )
 
         og_len = len(imcat); imcat = imcat[catind]
@@ -142,8 +142,8 @@ def _select_stars_for_psf(imcat, star_config, run_config, filter_name):
             (imcat['CLASS_STAR'] > star_config['class_star_thresh']) & \
             (imcat[star_config['size_key']] > filt_params['min_size']) & \
             (imcat[star_config['size_key']] < filt_params['max_size']) & \
-            (imcat[star_config['size_key']] < filt_params['min_mag']) & \
-            (imcat[star_config['size_key']] > filt_params['max_mag'])
+            (imcat[star_config['mag_key']] > filt_params['min_mag']) & \
+            (imcat[star_config['mag_key']] < filt_params['max_mag'])
 
     # Return good stars
     return imcat[wg_stars]
@@ -249,14 +249,17 @@ def make_starcat(image_file, cat_file, star_config, run_config):
                                      ext='DQ_VIGNET',
                                      sentinel=[1, 2]
                                      )
+
+    if len(selected_stars) == 0:
+        raise ValueError("make_starcat: No good stars found!")
+        
     # Make size-mag plot
     size_mag_plots(imcat, selected_stars, plot_name, filter_name)
 
     if run_config['split_stars_validation_training'] == True:
 
-        #train_name = starcat_name.replace('starcat', 'train_starcat')
         valid_name = starcat_name.replace('starcat', 'valid_starcat')
-        full_ind = range(len(selected_stars))
+        full_ind = np.arange(len(selected_stars))
 
         rng = np.random.default_rng()
         train_ind = rng.choice(full_ind,
@@ -412,10 +415,10 @@ def main(args):
         cat_file = os.path.join(run_config['outdir'],
                    os.path.basename(image_file).replace('.fits', '.cat.fits'))
 
-        starcat_file = make_starcat(image_file=image_file, cat_file=cat_file,
+        try:
+            starcat_file = make_starcat(image_file=image_file, cat_file=cat_file,
                        star_config=star_config, run_config=run_config)
 
-        try:
             run_psfex(image_file=image_file, starcat_file=starcat_file,
                       run_config=run_config, star_config=star_config)
 
