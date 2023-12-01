@@ -19,6 +19,7 @@ from src.utils import read_yaml, make_outdir
 from src.box_cutter import BoxCutter
 from src.psf_renderer import PSFRenderer
 import copy
+from astropy.wcs import WCS
 
 def parse_args():
 
@@ -118,15 +119,15 @@ def _select_stars_for_psf(imcat, star_config, run_config, filter_name):
         print(f'Selecting stars from ref star cat {truth_config["filename"]} ',
               f'containing {len(ref_stars)} stars')
 
-        star_matcher = htm.Matcher(16,
-                       ra=ref_stars[truth_config['ra_key']],
-                       dec=ref_stars[truth_config['dec_key']]
+        cat_matcher = htm.Matcher(17,
+                       ra=imcat['ra_corr'],
+                       dec=imcat['dec_corr']
                        )
 
-        catind, starind, dist = star_matcher.match(
-                                ra=imcat[run_config['input_catalog']['ra_key']],
-                                dec=imcat[run_config['input_catalog']['dec_key']],
-                                radius=2./3600., maxmatch=1
+        starind, catind, dist = cat_matcher.match(
+                                ra=ref_stars[truth_config['ra_key']],
+                                dec=ref_stars[truth_config['dec_key']],
+                                radius=1./3600., maxmatch=1
                                 )
 
         og_len = len(imcat); imcat = imcat[catind]
@@ -162,9 +163,9 @@ def _exclude_satpix(starcat, ext='DQ_VIGNET', sentinel=[1, 2]):
     else:
         stars = starcat[ext]
 
-    # We only care about center of star, say 31 x 31 pixels
+    # We only care about center of star, say 25 x 25 pixels
     bs = size = stars[0].shape[0]//2
-    n = bs - 15
+    n = bs - 11
     substars = stars[:, n:-n, n:-n]
 
     all_good = np.full(len(stars), True)
@@ -177,32 +178,32 @@ def _exclude_satpix(starcat, ext='DQ_VIGNET', sentinel=[1, 2]):
 
     return starcat[all_good]
 
-def split_starcat_into_training_validation(starcat, training_fraction=0.9):
-    """ For PSF validation analysis, split star catalog into training and
-    validation samples. For real analysis, you will want to use all stars
-    when PSF fitting.
-    Input
-        starcat: array-like catalog of "good" stars
-        training fraction: what fraction of stars to reserve for training
-    Returns
-        training_stars: subset of input star catalog to use for PSF fitting
-        validation_stars: subset of input star catalog to use for PSF validation
-    """
+def _convert_pix2wcs(imfile, imcat_fits, run_config):
+        """ SExtractor's astrometry doesn't seem to handle JWST cal file
+        astrometry, so use astropy.wcs to convert X, Y to RA, Dec. """
 
-    # Determine the number of rows for the training and validation catalogs
-    total_rows = len(starcat)
-    training_rows = int(total_rows * training_fraction)
-    validation_rows = total_rows - training_rows
+        # Get header & build a WCS from it
+        hdr = fits.getheader(imfile, ext=run_config['sci_image']['hdu'])
+        w = WCS(hdr)
 
-    # Generate random indices to shuffle the extension 2 rows
-    random_indices = np.random.permutation(total_rows)
+        # Load in catalog
+        cat_hdu = run_config['input_catalog']['hdu']
+        imcat = imcat_fits[cat_hdu].read()
 
-    # Split the extension 2 data into training and validation data
-    training_data = starcat[random_indices[:training_rows]]
-    validation_data = starcat[random_indices[training_rows:]]
+        # identify X & Y keys and convert to astrometric coordinates
+        x_col = run_config['input_catalog']['psf_x_key']
+        y_col = run_config['input_catalog']['psf_y_key']
 
-    return training_data, validation_data
+        coords = w.all_pix2world(
+                 np.array([imcat[x_col], imcat[y_col]]).T, 1
+                 )
 
+        # Add corrected RA & Dec to catalog
+        print(f'Adding corrected RA/Dec columns to catalog')
+        imcat_fits[cat_hdu].insert_column('ra_corr', coords[:, 0])
+        imcat_fits[cat_hdu].insert_column('dec_corr', coords[:, 1])
+
+        return imcat_fits
 
 def make_starcat(image_file, cat_file, star_config, run_config):
     """
@@ -234,16 +235,20 @@ def make_starcat(image_file, cat_file, star_config, run_config):
     if not os.path.exists(cat_file):
         raise Exception(f'\n\ncould not find im_cat file {cat_file}\n\n')
     else:
-        imcat_fits = fits.open(cat_file)
-        imcat = imcat_fits['LDAC_OBJECTS'].data
+        imcat_fits = fitsio.FITS(cat_file, 'rw')
+        cat_hdu = run_config['input_catalog']['hdu']
 
-    # Get a star catalog!
+    imcat_fits = _convert_pix2wcs(image_file, imcat_fits, run_config)
+    imcat = imcat_fits[cat_hdu].read()
+
+        # Get a star catalog!
     selected_stars = _select_stars_for_psf(
                      imcat=imcat,
                      star_config=star_config,
                      run_config=run_config,
                      filter_name = filter_name
                      )
+
     # Filter out saturated stars
     selected_stars = _exclude_satpix(selected_stars,
                                      ext='DQ_VIGNET',
@@ -252,7 +257,7 @@ def make_starcat(image_file, cat_file, star_config, run_config):
 
     if len(selected_stars) == 0:
         raise ValueError("make_starcat: No good stars found!")
-        
+
     # Make size-mag plot
     size_mag_plots(imcat, selected_stars, plot_name, filter_name)
 
@@ -271,14 +276,28 @@ def make_starcat(image_file, cat_file, star_config, run_config):
         print(f'valid ind is {valid_ind}')
 
         # Save training
-        imcat_fits['LDAC_OBJECTS'].data = selected_stars[train_ind]
-        print(f"saving training imcat to {starcat_name}")
-        imcat_fits.writeto(starcat_name, overwrite=True)
+        with fitsio.FITS(starcat_name, 'rw', clobber=True) as fc:
+            #fc.write_table(data=imcat_fits[0].read())
+            fc.write_table(data=imcat_fits[1].read(),
+                             extname='LDAC_IMHEAD')
+            fc.write_table(data=selected_stars[train_ind],
+                             extname='LDAC_OBJECTS')
+        fc.close()
 
-        # Save validation
-        validation_fits = copy.deepcopy(imcat_fits)
-        validation_fits['LDAC_OBJECTS'].data = selected_stars[valid_ind]
-        validation_fits.writeto(valid_name, overwrite=True)
+        with fitsio.FITS(valid_name, 'rw', clobber=True) as fc:
+            #fc.write_table(data=imcat_fits[0].read())
+            fc.write_table(data=imcat_fits[1].read(),
+                             extname='LDAC_IMHEAD')
+            fc.write_table(data=selected_stars[valid_ind],
+                             extname='LDAC_OBJECTS')
+        fc.close()
+
+        # Save a votable for the sake of it
+        Table(selected_stars[train_ind]).write(
+            starcat_name.replace('.fits', '.vot'),
+            format='votable',
+            overwrite=True
+            )
 
         # Return the name of training catalog
         print(f'Returning training catalog')
@@ -287,7 +306,7 @@ def make_starcat(image_file, cat_file, star_config, run_config):
     else:
         # Save to file
         imcat_fits['LDAC_OBJECTS'].data = selected_stars
-        imcat_fits.writeto(starcat_name, overwrite=True)
+        imcat_fits.close()
 
         # Return default star catalaog name
         print(f'Returning full star catalog')
