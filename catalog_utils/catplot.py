@@ -23,7 +23,7 @@ from astropy.table import Table, vstack, hstack, Column
 import pandas as pd
 
 class plot():
-    def __init__(self, catalog_object, psf_object):
+    def __init__(self, catalog_object, psf_object): #mirage == false
         self.catalog_obj = catalog_object
         self.psf_obj = psf_object
         
@@ -39,7 +39,7 @@ class plot():
         
         #catalog_object.add_noise_flux([psf_object], sky_level=self.sky_level, sky_std=self.sky_std)
         self.stars = catalog_object.data['VIGNET'] #formerly starmaker
-        self.psfs  = catalog_object.data[psf_object.nameColumn()] #formerly psfmaker
+        self.psfs  = catalog_object.data[psf_object.nameColumn()] #formerly psfmaker #try except with name for PSFEX_VIGNET
         self.err_stamps = catalog_object.data['ERR_VIGNET']
         catalog_object.crop([psf_object], vignet_size=75)
         catalog_object.save_new(outname=catalog_object.catalog)
@@ -258,8 +258,23 @@ class resid_plot(plot):
         plt.savefig(outname)
 
 class mean_relative_error_plot(resid_plot):
-    def __init__(self, catalog_object, psf_object):
+    def __init__(self, catalog_object, psf_object, Mirage=None): #special_arg=None | if special arg is not none, make self.avg_stars middle 75 by 75 of mirage cutouts
         super().__init__(catalog_object, psf_object)
+        if Mirage is not None:
+            def get_middle_pixels(array_2d, n):    
+                row_start = (len(array_2d) - n) // 2
+                row_end = row_start + n
+                col_start = (len(array_2d[0]) - n) // 2
+                col_end = col_start + n
+                middle_pixels = [row[col_start:col_end] for row in array_2d[row_start:row_end]]
+                return middle_pixels 
+            def list_of_arrays_to_3d_array(list_of_2d_arrays):
+                return np.array(list_of_2d_arrays)
+            print(self.cropped_stars[0].shape)
+            #self.cropped_stars = [self.catalog_obj.data['MIRAGE_VIGNET'][i] for i in range(len(self.catalog_obj.data['MIRAGE_VIGNET']))]
+            self.cropped_stars = [get_middle_pixels(self.catalog_obj.data['MIRAGE_VIGNET'][i], 75) for i in range(len(self.catalog_obj.data['MIRAGE_VIGNET']))]
+            self.cropped_stars = list_of_arrays_to_3d_array(self.cropped_stars)
+            print(self.cropped_stars[0].shape)
         #print(self.sky_level, self.sky_std)
 
     def set_residuals(self):
