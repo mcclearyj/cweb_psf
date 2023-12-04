@@ -42,7 +42,7 @@ def p(u,v, polMatrix, degree):
     for i in range(polMatrix.shape[0]):
         for j in range(polMatrix.shape[1]):
             psf[i,j] = objective_function(polMatrix[i,j,:], u, v, degree)
-    return psf/np.sum(psf)
+    return psf
 
 '''
 Define a class for catalog. This seems intuitive as catalogs are databases structures 
@@ -189,7 +189,7 @@ class catalog:
         
         for psf in psf_list:
             vignets_colnames.append(psf.nameColumn())
-
+        #edge case for mirage
         def get_middle_pixels(array_2d, n):
             if len(array_2d) != len(array_2d[0]):
                 raise ValueError("The input array must be square (n x n)")
@@ -259,7 +259,7 @@ class catalog:
         data2 = catalog_new.data
         
         def check_data_type_mismatch(data1, data2):
-            common_columns = ['VIGNET', 'VIGNET_PIFF', 'VIGNET_PSFEX', 'VIGNET_WEBBPSF', 'VIGNET_SHOPT', 'ERR_VIGNET', 'XWIN_IMAGE', 'YWIN_IMAGE', 'ALPHAWIN_J2000', 'DELTAWIN_J2000', 'FLUX_AUTO', 'SNR_WIN']
+            common_columns = ['VIGNET', 'VIGNET_PIFF', 'VIGNET_PSFEX', 'VIGNET_WEBBPSF', 'VIGNET_SHOPT', 'ERR_VIGNET', 'XWIN_IMAGE', 'YWIN_IMAGE', 'ALPHAWIN_J2000', 'DELTAWIN_J2000', 'FLUX_AUTO', 'SNR_WIN', 'MIRAGE_VIGNET']
             #common_columns = ['VIGNET']
             common_columns = list(set(data1.colnames).intersection(data2.colnames).intersection(common_columns))
 
@@ -282,7 +282,7 @@ class catalog:
         # Call the function to check for data type mismatch
         check_data_type_mismatch(data1, data2)
 
-        common_columns = ['VIGNET', 'VIGNET_PIFF', 'VIGNET_PSFEX', 'VIGNET_WEBBPSF', 'VIGNET_SHOPT', 'ERR_VIGNET', 'XWIN_IMAGE', 'YWIN_IMAGE', 'ALPHAWIN_J2000', 'DELTAWIN_J2000', 'FLUX_AUTO', 'SNR_WIN']
+        common_columns = ['VIGNET', 'VIGNET_PIFF', 'VIGNET_PSFEX', 'VIGNET_WEBBPSF', 'VIGNET_SHOPT', 'ERR_VIGNET', 'XWIN_IMAGE', 'YWIN_IMAGE', 'ALPHAWIN_J2000', 'DELTAWIN_J2000', 'FLUX_AUTO', 'SNR_WIN', 'MIRAGE_VIGNET']
         #common_columns = ['VIGNET', 'VIGNET_PIFF', 'VIGNET_PSFEX']
         common_columns = list(set(data1.colnames).intersection(data2.colnames).intersection(common_columns))
         print("Common columns:", common_columns)
