@@ -48,9 +48,9 @@ filter_params:
   #
   F444W:
     fwhm: 0.165
-    min_size: 2.33
-    max_size: 3.1
-    max_mag: 26.
+    min_size: 1
+    max_size: 2
+    max_mag: 27.
     min_mag: 19.
     min_snr: 5.
 
@@ -58,7 +58,8 @@ filter_params:
 truthcat:
   use: True
   # Name of star catalog to use
-  filename: '/Users/j.mccleary/Research/jwst_cosmos/mock_data/COSMOS2020_sims/DEC2022_v0.0.4/ptsrc_DEC_2022_input.cat'
+  #filename: '/Users/j.mccleary/Research/jwst_cosmos/mock_data/COSMOS2020_sims/DEC2022_v0.0.4/ptsrc_DEC_2022_input.cat'
+  filename: '/n23data1/mfranco/jwst/COSMOS-Web/DEC2022_v.0.0.1/catalogs/ptsrc_DEC_2022_input.cat'
   # RA & Dec column names of truthcat
   ra_key: 'x_or_RA'
   dec_key: 'y_or_Dec'

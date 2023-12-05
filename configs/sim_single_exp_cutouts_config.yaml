@@ -35,18 +35,16 @@ psf_models:
   piff: False
   mirage: True
 
-# I don't love this: directory for MIRAGE images. Uncomment if different
-# from image location
-mirage_dir: '/Users/j.mccleary/Research/jwst_cosmos/mock_data/COSMOS2020_sims/DEC2022_v0.0.4'
+mirage_dir: '/n23data1/mfranco/jwst/COSMOS-Web/DEC2022_v.0.0.4/data/'
 
 # Split stars into training and validation sub-samples for PSF fitting?
 split_stars_validation_training: True
 
 # Location of SEx/PIFF/PSFEx config files
-astro_config_dir: 'src/astro_config/'
+astro_config_dir: '/n23data1/mccleary/cweb_psf/src/astro_config/'
 
 # Output directory
-outdir: 'gal_cutout_working/'
+outdir: '/n23data1/mccleary/mock_images/gal_cutout_working/'
 
 # Reference an external star catalog or parameters
-star_param_file: 'configs/sim_single_exp_star_params.yaml'
+star_param_file: '/n23data1/mccleary/cweb_psf/configs/sim_single_exp_star_params.yaml'
