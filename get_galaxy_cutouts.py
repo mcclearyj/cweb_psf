@@ -155,6 +155,11 @@ def _exclude_satpix(starcat, ext='DQ_VIGNET', sentinel=[1, 2]):
     These values might be good for the star config? Also, subselect so that
     only the center of the star gets used.
     TO DO: this should probably be integrated into BoxCutter. Also, remove loop
+
+    Inputs
+        starcat: star catalog
+        ext: vignet in starcat that acts as bad pixel mask
+        sentinel: value(s) of bad pixel mask that mark pixels as bad
     """
 
     if len(starcat) == 0:
@@ -170,6 +175,8 @@ def _exclude_satpix(starcat, ext='DQ_VIGNET', sentinel=[1, 2]):
 
     all_good = np.full(len(stars), True)
     for i,substar in enumerate(substars):
+        # This line picks out "good" star vignets whose (unraveled) intersection
+        # with the sentinel values is empty, so the length of the list is 0
         is_sat = np.size(np.intersect1d(substar, sentinel)) == 0
         all_good[i] *= is_sat
 
@@ -250,9 +257,12 @@ def make_starcat(image_file, cat_file, star_config, run_config):
                      )
 
     # Filter out saturated stars
+    badstar_ext = 'ERR_VIGNET'; sentinel = 0
+    #badstar_ext = 'DQ_VIGNET'; sentinel = [1, 2]
+
     selected_stars = _exclude_satpix(selected_stars,
-                                     ext='DQ_VIGNET',
-                                     sentinel=[1, 2]
+                                     ext=badstar_ext,
+                                     sentinel=sentinel
                                      )
 
     if len(selected_stars) == 0:

@@ -41,87 +41,131 @@ def concatenate_catalogs(catnames, outname=None):
     return combined_table
 
 class PSFDiagnostics:
-    """ Calculate star stamp sky bkg stats, add to PSF images, make figures """
+    """Calculate star stamp sky bkg stats, add to PSF images, make figures"""
 
-    def __init__(self, catalog, config, type=None):
+    def __init__(self, catalog, config, psf_type=None, vignet_size=None):
         self.config = config # Should already have been read in
-        self.type = type
+        self.psf_type = psf_type
+        self.vignet_size = vignet_size
+        self.stars = []
+        self.psfs = []
+        self.sky_level = []
+        self.sky_std = []
 
-        # open if file, else go
+        # open if file, else set catalog to catalog
         if type(catalog) == str:
             self.cat_fits = fits.open(catalog, 'rw')
             hdu = config['input_catalog']['hdu']
             self.catalog = self.cat_fits[hdu].read()
         else:
             self.catalog = catalog
-        self.stars = self.catalog['VIGNET']
+
+        # load stamps, also trim to vignet_size
+        self._load_stamps()
 
 
-        self.psfs = self.catalog[f'{type}_VIGNET']
+    def _load_stamps(self):
+        """ Load star and PSF stamps, trimming to VIGNET size if needed """
+
+        # Stars are easy
+        stars = self.catalog['VIGNET']
+
+        # Load PSFs too
+        psf_key = f'{self.psf_type.upper()}_VIGNET'
+        if psf_key in self.catalog.colnames:
+            psfs = self.catalog[f'{psf_type.upper()}_VIGNET']
+        else:
+            raise KeyError(f'No PSF of type {psf_type.upper()}_VIGNET} found')
+
+        # This should be a list/map thing, which would mean it makes MORE
+        # sense to have that boxcutter trim boxes method be generic
+        self.trim_stamps(stars, psfs)
 
 
-def _calc_bkg(im_stamp):
-    """This will loop over objects in catalog, sample the corners. Normally,
-    only needed for stars but technically any image will work"""
+    def trim_stamps(self, stars, psfs):
+        """ Trim stamps to be vignet size; in the absence of a supplied vignet
+        size argument, just take the smaller of the PSF and star image """
 
-    # Take outer 10% of stamps or 4x4 pixel box, whichever is larger
-    j = max(star_stamp.shape[0]//10, 5)
+        star_dim = stars[0].shape[0]; psf_dim = psfs[0].shape[0]
 
-    # Fill an array with these corners, take median and std to get an
-    # sky background and variance for the stamp.
-    substamps = []
-    starstamp[starstamp<= -999] = np.nan
-    substamps.append(cutout[-j:, -j:])
-    substamps.append(cutout[0:j, 0:j])
-    substamps.append(cutout[0:j, -j:])
-    substamps.append(cutout[-j:, 0:j])
-    substamps = np.array(substamps)
+        if self.vignet_size == None:
+            self.vignet_size = np.min(star_dim, psf_dim)
 
-    # Save as attribute of class (?)
-    sky_med = np.nanmedian(substamps)
-    sky_std = np.nanstd(substamps)
+        # Trim stars?
+        if star_dim > self.vignet_size:
+            ns = (star_dim-self.vignet_size) // 2
+            ks = ns; js = -ns
+        else:
+            ks = 0; js = None
 
-    return sky_med, sky_std
+        # Trim PSFs?
+        if psf_dim > self.vignet_size:
+            np = (psf_dim-self.vignet_size) // 2
+            kp = np; jp = -np
+        else:
+            kp = 0; jp = None
 
-def calc_bkg(stamp_list):
-    """Call _calc_bkg for a (list of) (star) stamps"""
+        for star_im, psf_im
 
-    sky_bkg_stats = list(map(_calc_bkg,))
 
-def _add_flux(psf_stamp, star_flux, sky_med, sky_std):
-    """Placeholder for a method to add flux!
-    If I adopt some kind of a Plotter class, as Eddie does, I may instead
-    make all of these attributes.
-    """
+    def _calc_bkg(self, im_stamp):
+        """This will sample the corners to get median/std dev of sky background in
+        the supplied image stamp ('im_stamp'). Returns median and std dev"""
 
-    # Still not sure whether it makes more sense to normalize a PSF stamp
-    # to one before adding flux; I want to say yes, otherwise it will have more
-    # flux than the star stamps, which seems bad. I guess I could try both?
+        # Take outer 10% of stamps or 4x4 pixel box, whichever is larger
+        j = max(im_stamp.shape[0]//10, 5)
 
-    # Normalize PSF stamp to one and add (ok, multiply by) star flux
-    psf_stamp = psf_stamp/np.sum(psf_stamp)
-    psf_stamp *= star_flux
+        # Fill an array with these corners, take median and std to get an
+        # sky background and variance for the stamp.
+        im_stamp[im_stamp<= -999] = np.nan
+        substamps = []
+        substamps.append(im_stamp[-j:, -j:])
+        substamps.append(im_stamp[0:j, 0:j])
+        substamps.append(im_stamp[0:j, -j:])
+        substamps.append(im_stamp[-j:, 0:j])
+        substamps = np.array(substamps)
 
-    # Add noise; empirically, sky level is better than sex bkg for large vignets
-    noise = np.random.normal(loc=sky_level,
-                                scale=sky_std,
-                                size=psf_stamp.shape
-                                )
-    psf_stamp+=noise
+        # Save as attribute of class (?)
+        sky_med = np.nanmean(substamps)
+        sky_std = np.nanstd(substamps)
 
-    if (np.abs(psf_stamp.sum() - star_flux)/star_flux) > 0.03:
-        pdb.set_trace()
+        return sky_med, sky_std
 
-    return psf_stamp
+    def calc_bkg(self, psf_vignets):
+        """Call _calc_bkg for a (list of) (star) stamps"""
 
-def add_flux(catalog):
+        sky_bkg_stats = np.array(list(map(_calc_bkg,self.psfs)))
+        self.sky_level = sky_bkg_stats[:, 0]
+        self.sky_std = sky_bkg_stats[:, 1]
 
-    x = self.imcat[x_key]
-    y = self.imcat[y_key]
+    def _add_flux(self, psf_stamp, star_flux, sky_level, sky_std):
+        """Placeholder for a method to add flux!
+        If I adopt some kind of a Plotter class, as Eddie does, I may instead
+        make all of these attributes.
+        """
 
-    #
-    psf_flux_images = list(map(self._add_flux, x, y))
+        # There may be a nicer way to do this to ensure that the total flux
+        # in the PSF stamp matches the total star flux. Perhaps multiply by the
+        # sum of the stamp? Don't want to add background pre-emptively.
+        psf_stamp *= star_flux
 
+        # Add noise; empirically, sky level is better than sex bkg
+        # for large vignets. Maybe.
+        noise = np.random.normal(loc=sky_level,
+                                    scale=sky_std,
+                                    size=psf_stamp.shape
+                                    )
+        psf_stamp+=noise
+
+        return psf_stamp
+
+    def add_flux(self):
+        """ Add flux to PSF stamps """
+        psf_flux_images = list(map(self._add_flux,
+                          self.sky_level, self.sky_std)
+                          )
+        psf_flux_images = list(map(_add_flux, psf_vignets, sky_level, sky_std)
+        self.psfs = psf_flux_images
 
 
 def run_all(self, stars, vb=False, outdir='./psf_diagnostics'):

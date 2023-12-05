@@ -55,7 +55,7 @@ class BoxCutter:
         """
         bs = int(self.box_size)
         bb = self.box_size/2
-        im = self.image * 1.0
+        im = self.image
         y_max, x_max = self.image.shape[0], self.image.shape[1]
         j1 = max(0, int(np.floor(x-bb)))
         j2 = min(x_max, int(np.floor(x+bb)))

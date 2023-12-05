@@ -12,7 +12,7 @@ input_catalog:
   dec_units: 'deg'
 
 # Box size for all images
-box_size: 151
+box_size: 101
 
 # Cutouts to add to output mosaic
 cutout_list:
@@ -32,8 +32,12 @@ sci_image:
 psf_models:
   psfex: True
   webbpsf: False
-  #piff: False
+  piff: False
   mirage: True
+
+# I don't love this: directory for MIRAGE images. Uncomment if different
+# from image location
+mirage_dir: '/Users/j.mccleary/Research/jwst_cosmos/mock_data/COSMOS2020_sims/DEC2022_v0.0.4'
 
 # Split stars into training and validation sub-samples for PSF fitting?
 split_stars_validation_training: True
