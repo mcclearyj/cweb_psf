@@ -273,7 +273,11 @@ class mean_relative_error_plot(resid_plot):
             print(self.cropped_stars[0].shape)
             #self.cropped_stars = [self.catalog_obj.data['MIRAGE_VIGNET'][i] for i in range(len(self.catalog_obj.data['MIRAGE_VIGNET']))]
             self.cropped_stars = [get_middle_pixels(self.catalog_obj.data['MIRAGE_VIGNET'][i], 75) for i in range(len(self.catalog_obj.data['MIRAGE_VIGNET']))]
+            flux = self.catalog_obj.data['MIRAGE_VIGNET'] 
+            self.cropped_psfs = [get_middle_pixels(self.catalog_obj.data[psf_object.nameColumn()][i]*np.sum(get_middle_pixels(flux[i], 75)),75) for i in range(len(self.catalog_obj.data[psf_object.nameColumn()]))]
+            #self.cropped_psfs = [psf_object.nameColumn()][i]*flux[i] for i in range(len(self.catalog_obj.data[psf_object.nameColumn()]))]
             self.cropped_stars = list_of_arrays_to_3d_array(self.cropped_stars)
+            self.cropped_psfs = list_of_arrays_to_3d_array(self.cropped_psfs)
             print(self.cropped_stars[0].shape)
         #print(self.sky_level, self.sky_std)
 
