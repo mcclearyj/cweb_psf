@@ -230,7 +230,7 @@ class resid_plot(plot):
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True, figsize=[15,7], tight_layout=True)
         
         im = axs[0].imshow(self.avg_star, norm=norm, cmap=cmap)
-        axs[0].set_title(self.titles[0])
+        axs[0].set_title(self.titles[0], fontsize=100)
         divider = make_axes_locatable(axs[0])
         cax = divider.append_axes("right", size="5%", pad=0.05)
         fig.colorbar(im, cax=cax)
@@ -238,7 +238,7 @@ class resid_plot(plot):
         axs[0].axhline((self.avg_star.shape[1]-1)*0.5,color='black')
         
         im = axs[1].imshow(self.avg_psf, norm=norm, cmap=cmap)
-        axs[1].set_title(self.titles[1])
+        axs[1].set_title(self.titles[1], fontsize=100)
         divider = make_axes_locatable(axs[1])
         cax = divider.append_axes("right", size="5%", pad=0.05)
         fig.colorbar(im, cax=cax)
@@ -246,7 +246,7 @@ class resid_plot(plot):
         axs[1].axhline((self.avg_psf.shape[1]-1)*0.5,color='black')
         
         im = axs[2].imshow(self.avg_residual, norm=norm2, cmap=cmap2)
-        axs[2].set_title(self.titles[2])
+        axs[2].set_title(self.titles[2], fontsize=100)
         divider = make_axes_locatable(axs[2])
         cax = divider.append_axes("right", size="5%", pad=0.05)
         fig.colorbar(im, cax=cax)
