@@ -32,10 +32,10 @@ def extract_3_numbers(filename):
     return matches
 
 #mirage_catalog = catalog('f115w_sse_combined_catalog.fits')
-mirage_catalog = catalog('f150w_sse_combined_catalog.fits')
+mirage_catalog = catalog('new_f444_sse_combined_catalog.fits')
 
 #mre_name = "f115w_sse_psfex.png"
-mre_name = "f150w_sse_psfex.png"
+mre_name = "f444w_sse_psfex.png"
 
 '''
 mean_absolute_error_plot_psfex = ctp.mean_absolute_error_plot(catalog(f115w_cat_name), epsfex(''))
@@ -52,8 +52,75 @@ mean_relative_error_plot_psfex.preprocessing(hsm_fit=True)
 mean_relative_error_plot_psfex.set_residuals()
 sum_residuals_mre_psfex = mean_relative_error_plot_psfex.return_residuals_sum()
 std_mr_psfex = mean_relative_error_plot_psfex.return_sem()
+mean_relative_error_plot_psfex.set_titles([f'Average Mirage Cutout', f'Average PSFex PSF F444w', f'MRE = {round(sum_residuals_mre_psfex,2)} +/- {round(std_mr_psfex,2)}'])
+mean_relative_error_plot_psfex.save_figure(outname=mre_name)
+
+mre_name = "f444w_sse_shopt.png"
+mean_relative_error_plot_psfex = ctp.mean_relative_error_plot(mirage_catalog, shopt(''), Mirage=True)
+mean_relative_error_plot_psfex.preprocessing(hsm_fit=True)
+mean_relative_error_plot_psfex.set_residuals()
+sum_residuals_mre_psfex = mean_relative_error_plot_psfex.return_residuals_sum()
+std_mr_psfex = mean_relative_error_plot_psfex.return_sem()
+mean_relative_error_plot_psfex.set_titles([f'Average Mirage Cutout', f'Average ShOpt PSF F444w', f'MRE = {round(sum_residuals_mre_psfex,2)} +/- {round(std_mr_psfex,2)}'])
+mean_relative_error_plot_psfex.save_figure(outname=mre_name)
+
+mirage_catalog = catalog('new_f115_sse_combined_catalog.fits')
+mre_name = "f115w_sse_psfex.png"
+mean_relative_error_plot_psfex = ctp.mean_relative_error_plot(mirage_catalog, epsfex(''), Mirage=True)
+mean_relative_error_plot_psfex.preprocessing(hsm_fit=True)
+mean_relative_error_plot_psfex.set_residuals()
+sum_residuals_mre_psfex = mean_relative_error_plot_psfex.return_residuals_sum()
+std_mr_psfex = mean_relative_error_plot_psfex.return_sem()
+mean_relative_error_plot_psfex.set_titles([f'Average Mirage Cutout', f'Average PSFex PSF F115w', f'MRE = {round(sum_residuals_mre_psfex,2)} +/- {round(std_mr_psfex,2)}'])
+mean_relative_error_plot_psfex.save_figure(outname=mre_name)
+
+mre_name = "f115w_sse_shopt.png"
+mean_relative_error_plot_psfex = ctp.mean_relative_error_plot(mirage_catalog, shopt(''), Mirage=True)
+mean_relative_error_plot_psfex.preprocessing(hsm_fit=True)
+mean_relative_error_plot_psfex.set_residuals()
+sum_residuals_mre_psfex = mean_relative_error_plot_psfex.return_residuals_sum()
+std_mr_psfex = mean_relative_error_plot_psfex.return_sem()
+mean_relative_error_plot_psfex.set_titles([f'Average Mirage Cutout', f'Average ShOpt PSF F115w', f'MRE = {round(sum_residuals_mre_psfex,2)} +/- {round(std_mr_psfex,2)}'])
+mean_relative_error_plot_psfex.save_figure(outname=mre_name)
+
+mirage_catalog = catalog('new_f150_sse_combined_catalog.fits')
+mre_name = "f150w_sse_psfex.png"
+mean_relative_error_plot_psfex = ctp.mean_relative_error_plot(mirage_catalog, epsfex(''), Mirage=True)
+mean_relative_error_plot_psfex.preprocessing(hsm_fit=True)
+mean_relative_error_plot_psfex.set_residuals()
+sum_residuals_mre_psfex = mean_relative_error_plot_psfex.return_residuals_sum()
+std_mr_psfex = mean_relative_error_plot_psfex.return_sem()
 mean_relative_error_plot_psfex.set_titles([f'Average Mirage Cutout', f'Average PSFex PSF F150w', f'MRE = {round(sum_residuals_mre_psfex,2)} +/- {round(std_mr_psfex,2)}'])
 mean_relative_error_plot_psfex.save_figure(outname=mre_name)
+
+mre_name = "f150w_sse_shopt.png"
+mean_relative_error_plot_psfex = ctp.mean_relative_error_plot(mirage_catalog, shopt(''), Mirage=True)
+mean_relative_error_plot_psfex.preprocessing(hsm_fit=True)
+mean_relative_error_plot_psfex.set_residuals()
+sum_residuals_mre_psfex = mean_relative_error_plot_psfex.return_residuals_sum()
+std_mr_psfex = mean_relative_error_plot_psfex.return_sem()
+mean_relative_error_plot_psfex.set_titles([f'Average Mirage Cutout', f'Average ShOpt PSF F150w', f'MRE = {round(sum_residuals_mre_psfex,2)} +/- {round(std_mr_psfex,2)}'])
+mean_relative_error_plot_psfex.save_figure(outname=mre_name)
+
+mirage_catalog = catalog('new_f277_sse_combined_catalog.fits')
+mre_name = "f277w_sse_psfex.png"
+mean_relative_error_plot_psfex = ctp.mean_relative_error_plot(mirage_catalog, epsfex(''), Mirage=True)
+mean_relative_error_plot_psfex.preprocessing(hsm_fit=True)
+mean_relative_error_plot_psfex.set_residuals()
+sum_residuals_mre_psfex = mean_relative_error_plot_psfex.return_residuals_sum()
+std_mr_psfex = mean_relative_error_plot_psfex.return_sem()
+mean_relative_error_plot_psfex.set_titles([f'Average Mirage Cutout', f'Average PSFex PSF F277w', f'MRE = {round(sum_residuals_mre_psfex,2)} +/- {round(std_mr_psfex,2)}'])
+mean_relative_error_plot_psfex.save_figure(outname=mre_name)
+
+mre_name = "f277w_sse_shopt.png"
+mean_relative_error_plot_psfex = ctp.mean_relative_error_plot(mirage_catalog, shopt(''), Mirage=True)
+mean_relative_error_plot_psfex.preprocessing(hsm_fit=True)
+mean_relative_error_plot_psfex.set_residuals()
+sum_residuals_mre_psfex = mean_relative_error_plot_psfex.return_residuals_sum()
+std_mr_psfex = mean_relative_error_plot_psfex.return_sem()
+mean_relative_error_plot_psfex.set_titles([f'Average Mirage Cutout', f'Average ShOpt PSF F277w', f'MRE = {round(sum_residuals_mre_psfex,2)} +/- {round(std_mr_psfex,2)}'])
+mean_relative_error_plot_psfex.save_figure(outname=mre_name)
+
 
 '''
 mean_chi2_plot_psfex = ctp.chi_2_error_plot(catalog(f115w_cat_name), epsfex(''))
