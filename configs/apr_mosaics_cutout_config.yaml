@@ -1,5 +1,9 @@
 ###
 ### Box cutter & PSF fitting parameters
+
+# Output directory
+outdir: "/n23data1/mccleary/mock_images/apr_mosaics_working"
+
 input_catalog:
   hdu: 2
   x_key: 'X_IMAGE'
@@ -37,16 +41,13 @@ psf_models:
 
 # I don't love this: directory for MIRAGE images. Uncomment if different
 # from image location
-mirage_dir: '/Users/j.mccleary/Research/jwst_cosmos/mock_data/COSMOS2020_sims/DEC2022_v0.0.4'
+# mirage_dir: '/Users/j.mccleary/Research/jwst_cosmos/mock_data/COSMOS2020_sims/DEC2022_v0.0.4'
 
 # Split stars into training and validation sub-samples for PSF fitting?
 split_stars_validation_training: True
 
 # Location of SEx/PIFF/PSFEx config files
-astro_config_dir: 'src/astro_config/'
-
-# Output directory
-outdir: 'gal_cutout_working/'
+astro_config_dir: '/n23data1/mccleary/cweb_psf/src/astro_config/'
 
 # Reference an external star catalog or parameters
-star_param_file: '/Users/j.mccleary/Research/jwst_cosmos/cweb_psf/configs/apr_mosaics_star_params.yaml'
+star_param_file: '/n23data1/mccleary/cweb_psf/configs/apr_mosaics_star_params.yaml'
