@@ -35,7 +35,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def run_sextractor(image_file, weight_file, star_config, run_config):
+def run_sextractor(image_file, star_config, run_config):
     """
     Run Source Extractor, including the appropriate star FWHM for
     preliminary star identification.
@@ -71,7 +71,7 @@ def run_sextractor(image_file, weight_file, star_config, run_config):
 
     image_arg  = f'"{image_file}[{sci}]"'
     seeing_arg = f'-SEEING_FWHM {star_fwhm}'
-    weight_arg = f'-WEIGHT_IMAGE "{weight_file}[{wht}]" -WEIGHT_TYPE {wht_type}'
+    weight_arg = f'-WEIGHT_IMAGE "{image_file}[{wht}]" -WEIGHT_TYPE {wht_type}'
     name_arg   = f'-CATALOG_NAME {cat_name}'
     check_arg  = f'-CHECKIMAGE_NAME  {bkg_sub},{aper_name}'
     param_arg  = '-PARAMETERS_NAME ' + os.path.join(configdir, 'sextractor.param')
@@ -380,21 +380,19 @@ def run_psfex(image_file, starcat_file, run_config, star_config):
     outdir_arg = f'-PSF_DIR {psfex_outdir}'
 
     cmd = ' '.join(['psfex',
-                starcat_file, psfex_config_arg, outcat_arg,
-                outdir_arg, autoselect_arg]
-                )
-
+                    starcat_file, psfex_config_arg, outcat_arg,
+                    outdir_arg, autoselect_arg])
     print(f'psfex cmd is {cmd}')
     os.system(cmd)
 
     # Again, if there's a better way to do this, I don't know it.
     cleanup_cmd = ' '.join([f'mv *_{os.path.basename(starcat_file)}',
-        f'*_{os.path.basename(starcat_file).replace(".fits", ".pdf")} *.xml',
-        psfex_outdir])
-
+                    f'*_{os.path.basename(starcat_file).replace(".fits", ".pdf")}',
+                    '*.xml', psfex_outdir])
     os.system(cleanup_cmd)
 
     # And for convenience... save a PSFEx stars-only file
+
     pexcat = Table.read(outcat_name, hdu=2)
     starcat = Table.read(starcat_file, hdu=2)
 
@@ -404,12 +402,58 @@ def run_psfex(image_file, starcat_file, run_config, star_config):
     pex_stars = pexcat['FLAGS_PSF']==0
     starcat[pex_stars].write(pexstar_name, format='fits', overwrite=True)
 
+
     return
 
+def run_piffy(image_file, starcat_file, run_config, echo=True):
+    '''
+    Run PIFF using supplied im_file and star catalog!
+
+    Inputs:
+        im_file : the exposure to characterize
+        star_cat_file : catalog of stars for PSF fitting
+        run_config : the run config
+    '''
+    sci = run_config['sci_image']['hdu']
+
+    astro_config_dir = run_config['astro_config_dir']
+
+    # Get the image filename root to name outputs
+    base_name   = os.path.basename(image_file)
+
+    output_name = base_name.replace('.fits','.piff')
+
+    piff_outdir = os.path.join(run_config['outdir'], \
+                    'piff-output', base_name.split('.')[0])
+
+    # PIFF wants central RA in hours, not degrees
+    ra = fits.getval(image_file, 'CRVAL1', ext=sci)/15.0
+    dec = fits.getval(image_file, 'CRVAL2', ext=sci)
+
+    # Load PIFF configuration file
+    piff_config_arg = os.path.join(astro_config_dir, 'piff.config')
+
+    # Now run PIFF on that image and accompanying catalog
+    image_arg   = f'input.image_file_name={image_file}'
+    weight_arg  = f'input.weight_hdu={run_config["weight_image"]["hdu"]}'
+    coord_arg   = f'input.ra={ra} input.dec={dec}'
+    psfcat_arg  = f'input.cat_file_name={starcat_file}'
+    output_arg  = f'output.file_name={output_name} output.dir={piff_outdir}'
+
+    cmd = ' '.join(['piffify', piff_config_arg,
+                    image_arg, weight_arg,
+                    coord_arg, psfcat_arg, output_arg
+                    ])
+    print('piff cmd is ' + cmd)
+
+    if echo == False:
+        os.system(cmd)
+
+    return
 
 def main(args):
 
-    i2d_images = args.images
+    images = args.images
 
     run_config = read_yaml(args.config)
 
@@ -426,31 +470,39 @@ def main(args):
     boxcut = BoxCutter(config_file=run_config)
 
     # Process exposures
-    for j, i2d in enumerate(i2d_images):
+    for j, image_file in enumerate(images):
 
-        print(f'Working on file {i2d}...\n\n')
-
-        image_file = i2d
-        weight_file = i2d
-
+        print(f'Working on file {image_file}...\n\n')
+        """
         cat_file = run_sextractor(image_file=image_file,
-                   weight_file=weight_file, star_config=star_config,
+                   star_config=star_config,
                    run_config=run_config
                    )
 
         add_cutouts(image_file=image_file, cat_file=cat_file,
-                   boxcut=boxcut, run_config=run_config)
+                    boxcut=boxcut, run_config=run_config)
 
         cat_file = os.path.join(run_config['outdir'],
                    os.path.basename(image_file).replace('.fits', '.cat.fits'))
-
+        """
         try:
-            starcat_file = make_starcat(image_file=image_file, cat_file=cat_file,
-                       star_config=star_config, run_config=run_config)
+            """
+            starcat_file = make_starcat(image_file=image_file,
+                           cat_file=cat_file, star_config=star_config,
+                           run_config=run_config
+                           )
+            """
+            starcat_file = os.path.join(run_config['outdir'],
+                os.path.basename(image_file).replace('.fits', '_starcat.fits'))
 
-            run_psfex(image_file=image_file, starcat_file=starcat_file,
-                      run_config=run_config, star_config=star_config)
+            #run_psfex(image_file=image_file, starcat_file=starcat_file,
+            #          run_config=run_config, star_config=star_config)
 
+            run_piffy(image_file=image_file,
+                      starcat_file=starcat_file,
+                      run_config=run_config,
+                      echo=True)
+            
             # Add MIRAGE, PIFF, WebbPSF, PSFEx, ... models to star catalog
             renderer = PSFRenderer(image_file=image_file,
                                    cat_file=starcat_file,
