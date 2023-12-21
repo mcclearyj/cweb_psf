@@ -6,3 +6,4 @@ gal_cutout_working*/
 __pycache__/
 .DS_Store
 .ipynb_checkpoints/
+local_catalog_utils/
