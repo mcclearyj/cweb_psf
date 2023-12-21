@@ -44,15 +44,28 @@ def sem_with_nans(data):
 #ims = glob.glob('/home/eddieberman/research/mcclearygroup/cweb_psf/test_two_single_exposures/jw0*cal.fits')
 
 #f115w_cat_name = '/home/eddieberman/research/mcclearygroup/cweb_psf/working/mosaic_nircam_f115w_COSMOS-Web_i2d_valid_starcat.fits'
-f115w_cat_name = '/home/eddieberman/research/mcclearygroup/cweb_psf/mock_data_outputs_and_cats/mosaic_nircam_f115w_COSMOS-Web_i2d_valid_starcat.fits'
+f115w_cat_name = 'renamed_augmented_sim_mosaics_f115w_final/mosaic_nircam_f115w_COSMOS-Web_i2d_valid_starcat.fits'
 f115w_catalog = catalog(f115w_cat_name)
+
+f150w_cat_name = 'renamed_augmented_sim_mosaics_f150w_final/mosaic_nircam_f150w_COSMOS-Web_i2d_valid_starcat.fits'
+f150w_catalog = catalog(f150w_cat_name)
+
+f277w_cat_name = 'renamed_augmented_sim_mosaics_f277w_final/mosaic_nircam_f277w_COSMOS-Web_i2d_valid_starcat.fits'
+f277w_catalog = catalog(f277w_cat_name)
+
+f444w_cat_name = 'renamed_augmented_sim_mosaics_f444w_final/mosaic_nircam_f444w_COSMOS-Web_i2d_valid_starcat.fits'
+f444w_catalog = catalog(f444w_cat_name)
+
+'''
 f150w_cat_name = '/home/eddieberman/research/mcclearygroup/cweb_psf/mock_data_outputs_and_cats/mosaic_nircam_f150w_COSMOS-Web_i2d_75_valid_starcat.fits'
 f150w_catalog = catalog(f150w_cat_name)
 f277w_cat_name = '/home/eddieberman/research/mcclearygroup/cweb_psf/mock_data_outputs_and_cats/mosaic_nircam_f277w_COSMOS-Web_i2d_75_valid_starcat.fits'
 f277w_catalog = catalog(f277w_cat_name)
 f444w_cat_name = '/home/eddieberman/research/mcclearygroup/cweb_psf/mock_data_outputs_and_cats/mosaic_nircam_f444w_COSMOS-Web_i2d_75_valid_starcat.fits'
 f444w_catalog = catalog(f444w_cat_name)
+'''
 
+'''
 f115w_epsfex_name = '/home/eddieberman/research/mcclearygroup/cweb_psf/mock_data_outputs_and_cats/mosaic_nircam_f115w_COSMOS-Web_i2d_train_starcat.psf'
 epsfex_f115w_object = epsfex(f115w_epsfex_name)
 f150w_epsfex_name = '/home/eddieberman/research/mcclearygroup/cweb_psf/mock_data_outputs_and_cats/mosaic_nircam_f150w_COSMOS-Web_i2d_75_train_starcat.psf'
@@ -105,6 +118,7 @@ f444w_catalog.augment(shopt_object_f444w)
 f444w_catalog.augment(piff_object_f444w, size=75)
 f444w_catalog.save_new(outname='f444w_catalog_mosaics_mock_data.fits')
 f444w_cat_name = 'f444w_catalog_mosaics_mock_data.fits'
+''' 
 
 def extract_3_numbers(filename):
     pattern = r'\d{3}'
@@ -116,58 +130,28 @@ chi_square_visit_shopt = []
 chi_square_visit_piff = []
  #columns = ['Detector', 'Filter', 'PSFex: SSIM ', 'PSFex: Chi-Square', 'PSFex: Absolute Error', 'PSFex: Relative Error','WebbPSF: SSIM ', 'WebbPSF: Chi-Square', 'WebbPSF: Absolute Error', 'WebbPSF: Relative Error']
 columns = ['Filter', 'PIFF_Avg_Reduced_Chisq', 'PIFF_STD_Reduced_Chisq', 'PIFF_Median_Reduced_Chisq', 'PIFF_MAE', 'PIFF_MAE_STD', 'PIFF_MRE' , 'PIFF_MRE_STD','PSFex_Avg_Reduced_Chisq', 'PSFex_STD_Reduced_Chisq', 'PSFex_Median_Reduced_Chisq', 'PSFex_MAE', 'PSFex_MAE_STD', 'PSFex_MRE' , 'PSFex_MRE_STD','ShOpt_Avg_Reduced_Chisq', 'ShOpt_STD_Reduced_Chisq', 'ShOpt_Median_Reduced_Chisq', 'ShOpt_MAE', 'ShOpt_MAE_STD', 'ShOpt_MRE' , 'ShOpt_MRE_STD']
+
+# Columns without PIFF 
+columns = ['Filter', 'PSFex_Avg_Reduced_Chisq', 'PSFex_STD_Reduced_Chisq', 'PSFex_Median_Reduced_Chisq', 'PSFex_MAE', 'PSFex_MAE_STD', 'PSFex_MRE' , 'PSFex_MRE_STD','ShOpt_Avg_Reduced_Chisq', 'ShOpt_STD_Reduced_Chisq', 'ShOpt_Median_Reduced_Chisq', 'ShOpt_MAE', 'ShOpt_MAE_STD', 'ShOpt_MRE' , 'ShOpt_MRE_STD']
+
 df = pd.DataFrame(columns=columns)
 
-
-'''
-mre_name = "new_f277w_mosaic_mock_mre_shopt.png"
-mean_relative_error_plot_shopt = ctp.mean_relative_error_plot(catalog(f277w_cat_name), shopt(f277w_shopt_name))
-mean_relative_error_plot_shopt.preprocessing()
-mean_relative_error_plot_shopt.set_residuals()
-sum_residuals_mre_shopt = mean_relative_error_plot_shopt.return_residuals_sum()
-std_mr_shopt = mean_relative_error_plot_shopt.return_sem()
-mean_relative_error_plot_shopt.set_titles([f'Average Star F277W', f'Average ShOpt PSF', f'MRE = {round(sum_residuals_mre_shopt,2)} +/- {round(std_mr_shopt,2)}'])
-mean_relative_error_plot_shopt.save_figure(outname=mre_name)
-
-abs_name = "new_f277w_mosaic_mock_abs_shopt.png"
-mean_absolute_error_plot_shopt = ctp.mean_absolute_error_plot(catalog(f277w_cat_name), shopt(f277w_shopt_name))
-mean_absolute_error_plot_shopt.preprocessing()
-mean_absolute_error_plot_shopt.set_residuals()
-sum_residuals_abs_shopt = mean_absolute_error_plot_shopt.return_residuals_sum()
-std_abs_shopt = mean_absolute_error_plot_shopt.return_sem()
-mean_absolute_error_plot_shopt.set_titles([f'Average Star F150W', 'Average ShOpt PSF', f'MAE = {round(sum_residuals_abs_shopt,2)} +/- {round(std_abs_shopt,2)}'])
-mean_absolute_error_plot_shopt.save_figure(outname=abs_name)
-
-chi2_name = "new_f277w_mosaic_mock_chi2_shopt.png"
-mean_chi2_plot_shopt = ctp.chi_2_error_plot(catalog(f277w_cat_name), shopt(f277w_shopt_name))
-mean_chi2_plot_shopt.preprocessing(hsm_fit=True)
-mean_chi2_plot_shopt.set_residuals()
-sum_residuals_chi2_shopt = mean_chi2_plot_shopt.return_residuals_sum()
-reduced_chi2_shopt = np.nanmean(mean_chi2_plot_shopt.return_chi2_vals())
-median_reduced_chi2_shopt = np.nanmedian(mean_chi2_plot_shopt.return_chi2_vals())
-std_chi_shopt = np.nanstd(mean_chi2_plot_shopt.return_chi2_vals())
-mean_chi2_plot_shopt.set_titles([f'Average Star F277W', f'Average ShOpt PSF', r'$\overline{\chi^2}$' + f' = {round(reduced_chi2_shopt, 2)} +/- {round(std_chi_shopt,2)}'])
-mean_chi2_plot_shopt.save_figure(outname=chi2_name)
-
-print(round(median_reduced_chi2_shopt, 2))
-print("quit")
-
-'''
 
 chi2_name = "f115w_mosaic_mock_chi2_psfex.png"
 mre_name = "f115w_mosaic_mock_mre_psfex.png"
 abs_name = "f115w_mosaic_mock_abs_psfex.png"
 
-mean_absolute_error_plot_psfex = ctp.mean_absolute_error_plot(catalog(f115w_cat_name), epsfex(f115w_epsfex_name))
+mean_absolute_error_plot_psfex = ctp.mean_absolute_error_plot(catalog(f115w_cat_name), epsfex(''))
 mean_absolute_error_plot_psfex.preprocessing()
 mean_absolute_error_plot_psfex.set_residuals()
 sum_residuals_abs_psfex = mean_absolute_error_plot_psfex.return_residuals_sum()
-std_abs_psfex = mean_absolute_error_plot_psfex.return_residuals_sum()
+std_abs_psfex = mean_absolute_error_plot_psfex.return_sem()
 mean_absolute_error_plot_psfex.set_titles(['Average Star F115W', 'Average PSFex PSF', f'MAE = {round(sum_residuals_abs_psfex,2)} +/- {round(std_abs_psfex,2)}'])
 mean_absolute_error_plot_psfex.save_figure(outname=abs_name)
 
+'''
 abs_name='f115w_mosaic_mock_abs_piff.png'
-mean_absolute_error_plot_piff = ctp.mean_absolute_error_plot(catalog(f115w_cat_name), piff_psf(f115w_piff_name))
+mean_absolute_error_plot_piff = ctp.mean_absolute_error_plot(catalog(f115w_cat_name), piff_psf(''))
 mean_absolute_error_plot_piff.preprocessing()
 mean_absolute_error_plot_piff.set_residuals()
 sum_residuals_abs_piff = mean_absolute_error_plot_piff.return_residuals_sum()
@@ -175,9 +159,10 @@ std_abs_piff = mean_absolute_error_plot_piff.return_sem()
 mean_absolute_error_plot_piff.set_titles(['Average Star F115W', 'Average PIFF PSF', f'MAE = {sum_residuals_abs_piff} +/- {round(std_abs_piff,2)}'])
 mean_absolute_error_plot_piff.save_figure(outname=abs_name)
 print(f'Average Normalized Absolute Error = {round(sum_residuals_abs_piff,2)} +/- {round(std_abs_piff,2)}')
+'''
 
 abs_name = "f115w_mosaic_mock_abs_shopt.png"
-mean_absolute_error_plot_shopt = ctp.mean_absolute_error_plot(catalog(f115w_cat_name), shopt(f115w_shopt_name))
+mean_absolute_error_plot_shopt = ctp.mean_absolute_error_plot(catalog(f115w_cat_name), shopt(''))
 mean_absolute_error_plot_shopt.preprocessing()
 mean_absolute_error_plot_shopt.set_residuals()
 sum_residuals_abs_shopt = mean_absolute_error_plot_shopt.return_residuals_sum()
@@ -186,7 +171,7 @@ mean_absolute_error_plot_shopt.set_titles([f'Average Star F115W', 'Average ShOpt
 mean_absolute_error_plot_shopt.save_figure(outname=abs_name)
 
 
-mean_relative_error_plot_psfex = ctp.mean_relative_error_plot(catalog(f115w_cat_name), epsfex(f115w_epsfex_name))
+mean_relative_error_plot_psfex = ctp.mean_relative_error_plot(catalog(f115w_cat_name), epsfex(''))
 mean_relative_error_plot_psfex.preprocessing()
 mean_relative_error_plot_psfex.set_residuals()
 sum_residuals_mre_psfex = mean_relative_error_plot_psfex.return_residuals_sum()
@@ -194,6 +179,7 @@ std_mr_psfex = mean_relative_error_plot_psfex.return_sem()
 mean_relative_error_plot_psfex.set_titles([f'Average Star F115W', f'Average PSFex PSF', f'MRE = {round(sum_residuals_mre_psfex,2)} +/- {round(std_mr_psfex,2)}'])
 mean_relative_error_plot_psfex.save_figure(outname=mre_name)
 
+'''
 mre_name = "f115w_mosaic_mock_mre_piff.png"
 mean_relative_error_plot_piff = ctp.mean_relative_error_plot(catalog(f115w_cat_name), piff_psf(f115w_piff_name))
 mean_relative_error_plot_piff.preprocessing()
@@ -202,9 +188,11 @@ sum_residuals_mre_piff = mean_relative_error_plot_piff.return_residuals_sum()
 std_mr_piff = mean_relative_error_plot_piff.return_sem()
 mean_relative_error_plot_piff.set_titles([f'Average Star F115W', f'Average PIFF PSF', f'MRE = {round(sum_residuals_mre_piff,2)} +/- {round(std_mr_piff,2)}'])
 mean_relative_error_plot_piff.save_figure(outname=mre_name)
+'''
+
 
 mre_name = "f115w_mosaic_mock_mre_shopt.png"
-mean_relative_error_plot_shopt = ctp.mean_relative_error_plot(catalog(f115w_cat_name), shopt(f115w_shopt_name))
+mean_relative_error_plot_shopt = ctp.mean_relative_error_plot(catalog(f115w_cat_name), shopt(''))
 mean_relative_error_plot_shopt.preprocessing()
 mean_relative_error_plot_shopt.set_residuals()
 sum_residuals_mre_shopt = mean_relative_error_plot_shopt.return_residuals_sum()
@@ -214,7 +202,7 @@ mean_relative_error_plot_shopt.save_figure(outname=mre_name)
 
 #+- {round(sem_with_nans(mean_chi2_plot_psfex.return_chi2_vals()),2)}
 chi2_name =  "f115w_mosaic_mock_chi2_psfex.png"
-mean_chi2_plot_psfex = ctp.chi_2_error_plot(catalog(f115w_cat_name), epsfex(f115w_epsfex_name))
+mean_chi2_plot_psfex = ctp.chi_2_error_plot(catalog(f115w_cat_name), epsfex(''))
 mean_chi2_plot_psfex.preprocessing(hsm_fit=True)
 mean_chi2_plot_psfex.set_residuals()
 sum_residuals_chi2_psfex = mean_chi2_plot_psfex.return_residuals_sum()
@@ -227,7 +215,7 @@ chi_square_visit_psfex += [element for element in mean_chi2_plot_psfex.return_ch
 
 
 chi2_name = "f115w_mosaic_mock_chi2_shopt.png"
-mean_chi2_plot_shopt = ctp.chi_2_error_plot(catalog(f115w_cat_name), shopt(f115w_shopt_name))
+mean_chi2_plot_shopt = ctp.chi_2_error_plot(catalog(f115w_cat_name), shopt(''))
 mean_chi2_plot_shopt.preprocessing(hsm_fit=True)
 mean_chi2_plot_shopt.set_residuals()
 sum_residuals_chi2_shopt = mean_chi2_plot_shopt.return_residuals_sum()
@@ -238,6 +226,7 @@ mean_chi2_plot_shopt.set_titles([f'Average Star F115W', f'Average ShOpt PSF', r'
 mean_chi2_plot_shopt.save_figure(outname=chi2_name)
 chi_square_visit_shopt += [element for element in mean_chi2_plot_shopt.return_chi2_vals()]
 
+'''
 chi2_name = "f115w_mosaic_mock_chi2_piff.png"
 mean_chi2_plot_piff = ctp.chi_2_error_plot(catalog(f115w_cat_name), piff_psf(f115w_piff_name))
 mean_chi2_plot_piff.preprocessing(hsm_fit=True)
@@ -249,8 +238,33 @@ std_chi_piff = sem_with_nans(mean_chi2_plot_piff.return_chi2_vals())
 mean_chi2_plot_piff.set_titles([f'Average Star F115W', f'Average PIFF PSF', r'$\overline{\chi^2}$' + f' = {round(reduced_chi2_piff, 2)} +/- {round(std_chi_piff,2)}'])
 mean_chi2_plot_piff.save_figure(outname=chi2_name)
 chi_square_visit_piff += [element for element in mean_chi2_plot_piff.return_chi2_vals()]
+''' 
 
 #{round(sum_residuals_abs_psfex,2)} +/- {round(std_abs_psfex,2)}']
+
+print('F115W')
+print(f' PSFex Avg Reduced Chi2 = {round(reduced_chi2_psfex, 2)} +/- {round(std_chi_psfex, 2)}, PSFex Median Reduced Chi2 = {round(median_reduced_chi2_psfex, 2)}, PSFex MAE = {round(sum_residuals_abs_psfex, 2)} +/- {round(std_abs_psfex, 2)}, PSFex MRE = {round(sum_residuals_mre_psfex, 2)} +/- {round(std_mr_psfex, 2)}, ShOpt Avg Reduced Chi2 = {round(reduced_chi2_shopt, 2)} +/- {round(std_chi_shopt, 2)}, ShOpt Median Reduced Chi2 = {round(median_reduced_chi2_shopt, 2)}, ShOpt MAE = {round(sum_residuals_abs_shopt, 2)} +/- {round(std_abs_shopt, 2)}, ShOpt MRE = {round(sum_residuals_mre_shopt, 2)} +/- {round(std_mr_shopt, 2)}')
+new_row = {
+    'Filter': 'F115W',
+    'PSFex_Avg_Reduced_Chisq': round(reduced_chi2_psfex, 2),
+    'PSFex_STD_Reduced_Chisq': round(std_chi_psfex, 2),
+    'PSFex_Median_Reduced_Chisq': round(median_reduced_chi2_psfex, 2),
+    'PSFex_MAE': round(sum_residuals_abs_psfex, 2),
+    'PSFex_MAE_STD': round(std_abs_psfex, 2),
+    'PSFex_MRE': round(sum_residuals_mre_psfex, 2),
+    'PSFex_MRE_STD': round(std_mr_psfex, 2),
+    'ShOpt_Avg_Reduced_Chisq': round(reduced_chi2_shopt, 2),
+    'ShOpt_STD_Reduced_Chisq': round(std_chi_shopt, 2),
+    'ShOpt_Median_Reduced_Chisq': round(median_reduced_chi2_shopt, 2),
+    'ShOpt_MAE': round(sum_residuals_abs_shopt, 2),
+    'ShOpt_MAE_STD': round(std_abs_shopt, 2),
+    'ShOpt_MRE': round(sum_residuals_mre_shopt, 2),
+    'ShOpt_MRE_STD': round(std_mr_shopt, 2)
+}
+
+df = df.append(new_row, ignore_index=True)
+print(df)
+'''
 new_row = {
     'Filter': 'F115W', 
     'PIFF_Avg_Reduced_Chisq': round(reduced_chi2_piff, 2),
@@ -279,19 +293,21 @@ new_row = {
 df = df.append(new_row, ignore_index=True)
 print(df)
 print('done F115W')
+'''
 
 chi2_name = "f150w_mosaic_mock_chi2_psfex.png"
 mre_name = "f150w_mosaic_mock_mre_psfex.png"
 abs_name = "f150w_mosaic_mock_abs_psfex.png"
 
-mean_absolute_error_plot_psfex = ctp.mean_absolute_error_plot(catalog(f150w_cat_name), epsfex(f150w_epsfex_name))
+mean_absolute_error_plot_psfex = ctp.mean_absolute_error_plot(catalog(f150w_cat_name), epsfex(''))
 mean_absolute_error_plot_psfex.preprocessing()
 mean_absolute_error_plot_psfex.set_residuals()
 sum_residuals_abs_psfex = mean_absolute_error_plot_psfex.return_residuals_sum()
-std_abs_psfex = mean_absolute_error_plot_psfex.return_residuals_sum()
+std_abs_psfex = mean_absolute_error_plot_psfex.return_sem()
 mean_absolute_error_plot_psfex.set_titles(['Average Star F150W', 'Average PSFex PSF', f'MAE = {round(sum_residuals_abs_psfex,2)} +/- {round(std_abs_psfex,2)}'])
 mean_absolute_error_plot_psfex.save_figure(outname=abs_name)
 
+'''
 abs_name='f150w_mosaic_mock_abs_piff.png'
 mean_absolute_error_plot_piff = ctp.mean_absolute_error_plot(catalog(f150w_cat_name), piff_psf(f150w_piff_name))
 mean_absolute_error_plot_piff.preprocessing()
@@ -301,9 +317,10 @@ std_abs_piff = mean_absolute_error_plot_piff.return_sem()
 mean_absolute_error_plot_piff.set_titles(['Average Star F150W', 'Average PIFF PSF', f'MAE = {sum_residuals_abs_piff} +/- {round(std_abs_piff,2)}'])
 mean_absolute_error_plot_piff.save_figure(outname=abs_name)
 print(f'Average Normalized Absolute Error = {round(sum_residuals_abs_piff,2)} +/- {round(std_abs_piff,2)}')
+''' 
 
 abs_name = "f150w_mosaic_mock_abs_shopt.png"
-mean_absolute_error_plot_shopt = ctp.mean_absolute_error_plot(catalog(f150w_cat_name), shopt(f150w_shopt_name))
+mean_absolute_error_plot_shopt = ctp.mean_absolute_error_plot(catalog(f150w_cat_name), shopt(''))
 mean_absolute_error_plot_shopt.preprocessing()
 mean_absolute_error_plot_shopt.set_residuals()
 sum_residuals_abs_shopt = mean_absolute_error_plot_shopt.return_residuals_sum()
@@ -312,7 +329,7 @@ mean_absolute_error_plot_shopt.set_titles([f'Average Star F150W', 'Average ShOpt
 mean_absolute_error_plot_shopt.save_figure(outname=abs_name)
 
 
-mean_relative_error_plot_psfex = ctp.mean_relative_error_plot(catalog(f150w_cat_name), epsfex(f150w_epsfex_name))
+mean_relative_error_plot_psfex = ctp.mean_relative_error_plot(catalog(f150w_cat_name), epsfex(''))
 mean_relative_error_plot_psfex.preprocessing()
 mean_relative_error_plot_psfex.set_residuals()
 sum_residuals_mre_psfex = mean_relative_error_plot_psfex.return_residuals_sum()
@@ -320,17 +337,19 @@ std_mr_psfex = mean_relative_error_plot_psfex.return_sem()
 mean_relative_error_plot_psfex.set_titles([f'Average Star F150W', f'Average PSFex PSF', f'MRE = {round(sum_residuals_mre_psfex,2)} +/- {round(std_mr_psfex,2)}'])
 mean_relative_error_plot_psfex.save_figure(outname=mre_name)
 
+'''
 mre_name = "f150w_mosaic_mock_mre_piff.png"
-mean_relative_error_plot_piff = ctp.mean_relative_error_plot(catalog(f150w_cat_name), piff_psf(f150w_piff_name))
+mean_relative_error_plot_piff = ctp.mean_relative_error_plot(catalog(f150w_cat_name), piff_psf(''))
 mean_relative_error_plot_piff.preprocessing()
 mean_relative_error_plot_piff.set_residuals()
 sum_residuals_mre_piff = mean_relative_error_plot_piff.return_residuals_sum()
 std_mr_piff = mean_relative_error_plot_piff.return_sem()
 mean_relative_error_plot_piff.set_titles([f'Average Star F150W', f'Average PIFF PSF', f'MRE = {round(sum_residuals_mre_piff,2)} +/- {round(std_mr_piff,2)}'])
 mean_relative_error_plot_piff.save_figure(outname=mre_name)
+'''
 
 mre_name = "f150w_mosaic_mock_mre_shopt.png"
-mean_relative_error_plot_shopt = ctp.mean_relative_error_plot(catalog(f150w_cat_name), shopt(f150w_shopt_name))
+mean_relative_error_plot_shopt = ctp.mean_relative_error_plot(catalog(f150w_cat_name), shopt(''))
 mean_relative_error_plot_shopt.preprocessing()
 mean_relative_error_plot_shopt.set_residuals()
 sum_residuals_mre_shopt = mean_relative_error_plot_shopt.return_residuals_sum()
@@ -340,7 +359,7 @@ mean_relative_error_plot_shopt.save_figure(outname=mre_name)
 
 #+- {round(sem_with_nans(mean_chi2_plot_psfex.return_chi2_vals()),2)}
 chi2_name =  "f150w_mosaic_mock_chi2_psfex.png"
-mean_chi2_plot_psfex = ctp.chi_2_error_plot(catalog(f150w_cat_name), epsfex(f150w_epsfex_name))
+mean_chi2_plot_psfex = ctp.chi_2_error_plot(catalog(f150w_cat_name), epsfex(''))
 mean_chi2_plot_psfex.preprocessing(hsm_fit=True)
 mean_chi2_plot_psfex.set_residuals()
 sum_residuals_chi2_psfex = mean_chi2_plot_psfex.return_residuals_sum()
@@ -352,7 +371,7 @@ mean_chi2_plot_psfex.save_figure(outname=chi2_name)
 chi_square_visit_psfex += [element for element in mean_chi2_plot_psfex.return_chi2_vals()]
 
 chi2_name = "f150w_mosaic_mock_chi2_shopt.png"
-mean_chi2_plot_shopt = ctp.chi_2_error_plot(catalog(f150w_cat_name), shopt(f150w_shopt_name))
+mean_chi2_plot_shopt = ctp.chi_2_error_plot(catalog(f150w_cat_name), shopt(''))
 mean_chi2_plot_shopt.preprocessing(hsm_fit=True)
 mean_chi2_plot_shopt.set_residuals()
 sum_residuals_chi2_shopt = mean_chi2_plot_shopt.return_residuals_sum()
@@ -363,6 +382,7 @@ mean_chi2_plot_shopt.set_titles([f'Average Star F150W', f'Average ShOpt PSF', r'
 mean_chi2_plot_shopt.save_figure(outname=chi2_name)
 chi_square_visit_shopt += [element for element in mean_chi2_plot_shopt.return_chi2_vals()]
 
+'''
 chi2_name = "f150w_mosaic_mock_chi2_piff.png"
 mean_chi2_plot_piff = ctp.chi_2_error_plot(catalog(f150w_cat_name), piff_psf(f150w_piff_name))
 mean_chi2_plot_piff.preprocessing(hsm_fit=True)
@@ -374,7 +394,31 @@ std_chi_piff = np.nanstd(mean_chi2_plot_piff.return_chi2_vals())
 mean_chi2_plot_piff.set_titles([f'Average Star F150W', f'Average PIFF PSF', r'$\overline{\chi^2}$' + f' = {round(reduced_chi2_piff, 2)} +/- {round(std_chi_piff,2)}'])
 mean_chi2_plot_piff.save_figure(outname=chi2_name)
 chi_square_visit_piff += [element for element in mean_chi2_plot_piff.return_chi2_vals()]
+'''
+print("F150W")
+print(f' PSFex Avg Reduced Chi2 = {round(reduced_chi2_psfex, 2)} +/- {round(std_chi_psfex, 2)}, PSFex Median Reduced Chi2 = {round(median_reduced_chi2_psfex, 2)}, PSFex MAE = {round(sum_residuals_abs_psfex, 2)} +/- {round(std_abs_psfex, 2)}, PSFex MRE = {round(sum_residuals_mre_psfex, 2)} +/- {round(std_mr_psfex, 2)}, ShOpt Avg Reduced Chi2 = {round(reduced_chi2_shopt, 2)} +/- {round(std_chi_shopt, 2)}, ShOpt Median Reduced Chi2 = {round(median_reduced_chi2_shopt, 2)}, ShOpt MAE = {round(sum_residuals_abs_shopt, 2)} +/- {round(std_abs_shopt, 2)}, ShOpt MRE = {round(sum_residuals_mre_shopt, 2)} +/- {round(std_mr_shopt, 2)}')
+new_row = {
+    'Filter': 'F150W',
+    'PSFex_Avg_Reduced_Chisq': round(reduced_chi2_psfex, 2),
+    'PSFex_STD_Reduced_Chisq': round(std_chi_psfex, 2),
+    'PSFex_Median_Reduced_Chisq': round(median_reduced_chi2_psfex, 2),
+    'PSFex_MAE': round(sum_residuals_abs_psfex, 2),
+    'PSFex_MAE_STD': round(std_abs_psfex, 2),
+    'PSFex_MRE': round(sum_residuals_mre_psfex, 2),
+    'PSFex_MRE_STD': round(std_mr_psfex, 2),
+    'ShOpt_Avg_Reduced_Chisq': round(reduced_chi2_shopt, 2),
+    'ShOpt_STD_Reduced_Chisq': round(std_chi_shopt, 2),
+    'ShOpt_Median_Reduced_Chisq': round(median_reduced_chi2_shopt, 2),
+    'ShOpt_MAE': round(sum_residuals_abs_shopt, 2),
+    'ShOpt_MAE_STD': round(std_abs_shopt, 2),
+    'ShOpt_MRE': round(sum_residuals_mre_shopt, 2),
+    'ShOpt_MRE_STD': round(std_mr_shopt, 2)
+}
 
+df = df.append(new_row, ignore_index=True)
+print(df)
+
+'''
 #{round(sum_residuals_abs_psfex,2)} +/- {round(std_abs_psfex,2)}']
 new_row = {
     'Filter': 'F150W', 
@@ -404,19 +448,21 @@ new_row = {
 df = df.append(new_row, ignore_index=True)
 print(df)
 print('done F150W')
+'''
 
 chi2_name = "f277w_mosaic_mock_chi2_psfex.png"
 mre_name = "f277w_mosaic_mock_mre_psfex.png"
 abs_name = "f277w_mosaic_mock_abs_psfex.png"
 
-mean_absolute_error_plot_psfex = ctp.mean_absolute_error_plot(catalog(f277w_cat_name), epsfex(f277w_epsfex_name))
+mean_absolute_error_plot_psfex = ctp.mean_absolute_error_plot(catalog(f277w_cat_name), epsfex(''))
 mean_absolute_error_plot_psfex.preprocessing()
 mean_absolute_error_plot_psfex.set_residuals()
 sum_residuals_abs_psfex = mean_absolute_error_plot_psfex.return_residuals_sum()
-std_abs_psfex = mean_absolute_error_plot_psfex.return_residuals_sum()
+std_abs_psfex = mean_absolute_error_plot_psfex.return_sem()
 mean_absolute_error_plot_psfex.set_titles(['Average Star F277W', 'Average PSFex PSF', f'MAE = {round(sum_residuals_abs_psfex,2)} +/- {round(std_abs_psfex,2)}'])
 mean_absolute_error_plot_psfex.save_figure(outname=abs_name)
 
+'''
 abs_name='f277w_mosaic_mock_abs_piff.png'
 mean_absolute_error_plot_piff = ctp.mean_absolute_error_plot(catalog(f277w_cat_name), piff_psf(f277w_piff_name))
 mean_absolute_error_plot_piff.preprocessing()
@@ -426,9 +472,10 @@ std_abs_piff = mean_absolute_error_plot_piff.return_sem()
 mean_absolute_error_plot_piff.set_titles(['Average Star F277W', 'Average PIFF PSF', f'MAE = {sum_residuals_abs_piff} +/- {round(std_abs_piff,2)}'])
 mean_absolute_error_plot_piff.save_figure(outname=abs_name)
 print(f'Average Normalized Absolute Error = {round(sum_residuals_abs_piff,2)} +/- {round(std_abs_piff,2)}')
+'''
 
 abs_name = "f277w_mosaic_mock_abs_shopt.png"
-mean_absolute_error_plot_shopt = ctp.mean_absolute_error_plot(catalog(f277w_cat_name), shopt(f277w_shopt_name))
+mean_absolute_error_plot_shopt = ctp.mean_absolute_error_plot(catalog(f277w_cat_name), shopt(''))
 mean_absolute_error_plot_shopt.preprocessing()
 mean_absolute_error_plot_shopt.set_residuals()
 sum_residuals_abs_shopt = mean_absolute_error_plot_shopt.return_residuals_sum()
@@ -436,8 +483,7 @@ std_abs_shopt = mean_absolute_error_plot_shopt.return_sem()
 mean_absolute_error_plot_shopt.set_titles([f'Average Star F150W', 'Average ShOpt PSF', f'MAE = {round(sum_residuals_abs_shopt,2)} +/- {round(std_abs_shopt,2)}'])
 mean_absolute_error_plot_shopt.save_figure(outname=abs_name)
 
-
-mean_relative_error_plot_psfex = ctp.mean_relative_error_plot(catalog(f277w_cat_name), epsfex(f277w_epsfex_name))
+mean_relative_error_plot_psfex = ctp.mean_relative_error_plot(catalog(f277w_cat_name), epsfex(''))
 mean_relative_error_plot_psfex.preprocessing()
 mean_relative_error_plot_psfex.set_residuals()
 sum_residuals_mre_psfex = mean_relative_error_plot_psfex.return_residuals_sum()
@@ -445,6 +491,7 @@ std_mr_psfex = mean_relative_error_plot_psfex.return_sem()
 mean_relative_error_plot_psfex.set_titles([f'Average Star F277W', f'Average PSFex PSF', f'MRE = {round(sum_residuals_mre_psfex,2)} +/- {round(std_mr_psfex,2)}'])
 mean_relative_error_plot_psfex.save_figure(outname=mre_name)
 
+'''
 mre_name = "f277w_mosaic_mock_mre_piff.png"
 mean_relative_error_plot_piff = ctp.mean_relative_error_plot(catalog(f277w_cat_name), piff_psf(f277w_piff_name))
 mean_relative_error_plot_piff.preprocessing()
@@ -453,9 +500,10 @@ sum_residuals_mre_piff = mean_relative_error_plot_piff.return_residuals_sum()
 std_mr_piff = mean_relative_error_plot_piff.return_sem()
 mean_relative_error_plot_piff.set_titles([f'Average Star F277W', f'Average PIFF PSF', f'MRE = {round(sum_residuals_mre_piff,2)} +/- {round(std_mr_piff,2)}'])
 mean_relative_error_plot_piff.save_figure(outname=mre_name)
+'''
 
 mre_name = "f277w_mosaic_mock_mre_shopt.png"
-mean_relative_error_plot_shopt = ctp.mean_relative_error_plot(catalog(f277w_cat_name), shopt(f277w_shopt_name))
+mean_relative_error_plot_shopt = ctp.mean_relative_error_plot(catalog(f277w_cat_name), shopt(''))
 mean_relative_error_plot_shopt.preprocessing()
 mean_relative_error_plot_shopt.set_residuals()
 sum_residuals_mre_shopt = mean_relative_error_plot_shopt.return_residuals_sum()
@@ -465,7 +513,7 @@ mean_relative_error_plot_shopt.save_figure(outname=mre_name)
 
 #+- {round(sem_with_nans(mean_chi2_plot_psfex.return_chi2_vals()),2)}
 chi2_name =  "f277w_mosaic_mock_chi2_psfex.png"
-mean_chi2_plot_psfex = ctp.chi_2_error_plot(catalog(f277w_cat_name), epsfex(f277w_epsfex_name))
+mean_chi2_plot_psfex = ctp.chi_2_error_plot(catalog(f277w_cat_name), epsfex(''))
 mean_chi2_plot_psfex.preprocessing(hsm_fit=True)
 mean_chi2_plot_psfex.set_residuals()
 sum_residuals_chi2_psfex = mean_chi2_plot_psfex.return_residuals_sum()
@@ -477,7 +525,7 @@ mean_chi2_plot_psfex.save_figure(outname=chi2_name)
 chi_square_visit_psfex += [element for element in mean_chi2_plot_psfex.return_chi2_vals()]
 
 chi2_name = "f277w_mosaic_mock_chi2_shopt.png"
-mean_chi2_plot_shopt = ctp.chi_2_error_plot(catalog(f277w_cat_name), shopt(f277w_shopt_name))
+mean_chi2_plot_shopt = ctp.chi_2_error_plot(catalog(f277w_cat_name), shopt(''))
 mean_chi2_plot_shopt.preprocessing(hsm_fit=True)
 mean_chi2_plot_shopt.set_residuals()
 sum_residuals_chi2_shopt = mean_chi2_plot_shopt.return_residuals_sum()
@@ -488,6 +536,7 @@ mean_chi2_plot_shopt.set_titles([f'Average Star F277W', f'Average ShOpt PSF', r'
 mean_chi2_plot_shopt.save_figure(outname=chi2_name)
 chi_square_visit_shopt += [element for element in mean_chi2_plot_shopt.return_chi2_vals()]
 
+'''
 chi2_name = "f277w_mosaic_mock_chi2_piff.png"
 mean_chi2_plot_piff = ctp.chi_2_error_plot(catalog(f277w_cat_name), piff_psf(f277w_piff_name))
 mean_chi2_plot_piff.preprocessing(hsm_fit=True)
@@ -499,7 +548,32 @@ std_chi_piff = np.nanstd(mean_chi2_plot_piff.return_chi2_vals())
 mean_chi2_plot_piff.set_titles([f'Average Star F277W', f'Average PIFF PSF', r'$\overline{\chi^2}$' + f' = {round(reduced_chi2_piff, 2)} +/- {round(std_chi_piff,2)}'])
 mean_chi2_plot_piff.save_figure(outname=chi2_name)
 chi_square_visit_piff += [element for element in mean_chi2_plot_piff.return_chi2_vals()]
+'''
 
+print("F277W")
+print(f' PSFex Avg Reduced Chi2 = {round(reduced_chi2_psfex, 2)} +/- {round(std_chi_psfex, 2)}, PSFex Median Reduced Chi2 = {round(median_reduced_chi2_psfex, 2)}, PSFex MAE = {round(sum_residuals_abs_psfex, 2)} +/- {round(std_abs_psfex, 2)}, PSFex MRE = {round(sum_residuals_mre_psfex, 2)} +/- {round(std_mr_psfex, 2)}, ShOpt Avg Reduced Chi2 = {round(reduced_chi2_shopt, 2)} +/- {round(std_chi_shopt, 2)}, ShOpt Median Reduced Chi2 = {round(median_reduced_chi2_shopt, 2)}, ShOpt MAE = {round(sum_residuals_abs_shopt, 2)} +/- {round(std_abs_shopt, 2)}, ShOpt MRE = {round(sum_residuals_mre_shopt, 2)} +/- {round(std_mr_shopt, 2)}')
+new_row = {
+    'Filter': 'F277W',
+    'PSFex_Avg_Reduced_Chisq': round(reduced_chi2_psfex, 2),
+    'PSFex_STD_Reduced_Chisq': round(std_chi_psfex, 2),
+    'PSFex_Median_Reduced_Chisq': round(median_reduced_chi2_psfex, 2),
+    'PSFex_MAE': round(sum_residuals_abs_psfex, 2),
+    'PSFex_MAE_STD': round(std_abs_psfex, 2),
+    'PSFex_MRE': round(sum_residuals_mre_psfex, 2),
+    'PSFex_MRE_STD': round(std_mr_psfex, 2),
+    'ShOpt_Avg_Reduced_Chisq': round(reduced_chi2_shopt, 2),
+    'ShOpt_STD_Reduced_Chisq': round(std_chi_shopt, 2),
+    'ShOpt_Median_Reduced_Chisq': round(median_reduced_chi2_shopt, 2),
+    'ShOpt_MAE': round(sum_residuals_abs_shopt, 2),
+    'ShOpt_MAE_STD': round(std_abs_shopt, 2),
+    'ShOpt_MRE': round(sum_residuals_mre_shopt, 2),
+    'ShOpt_MRE_STD': round(std_mr_shopt, 2)
+}
+
+df = df.append(new_row, ignore_index=True)
+print(df)
+
+'''
 #{round(sum_residuals_abs_psfex,2)} +/- {round(std_abs_psfex,2)}']
 new_row = {
     'Filter': 'F277W', 
@@ -529,19 +603,21 @@ new_row = {
 df = df.append(new_row, ignore_index=True)
 print(df)
 print('done F277W')
+'''
 
 chi2_name = "f444w_mosaic_mock_chi2_psfex.png"
 mre_name = "f444w_mosaic_mock_mre_psfex.png"
 abs_name = "f444w_mosaic_mock_abs_psfex.png"
 
-mean_absolute_error_plot_psfex = ctp.mean_absolute_error_plot(catalog(f444w_cat_name), epsfex(f444w_epsfex_name))
+mean_absolute_error_plot_psfex = ctp.mean_absolute_error_plot(catalog(f444w_cat_name), epsfex(''))
 mean_absolute_error_plot_psfex.preprocessing()
 mean_absolute_error_plot_psfex.set_residuals()
 sum_residuals_abs_psfex = mean_absolute_error_plot_psfex.return_residuals_sum()
-std_abs_psfex = mean_absolute_error_plot_psfex.return_residuals_sum()
+std_abs_psfex = mean_absolute_error_plot_psfex.return_sem()
 mean_absolute_error_plot_psfex.set_titles(['Average Star F444W', 'Average PSFex PSF', f'MAE = {round(sum_residuals_abs_psfex,2)} +/- {round(std_abs_psfex,2)}'])
 mean_absolute_error_plot_psfex.save_figure(outname=abs_name)
 
+'''
 abs_name='f444w_mosaic_mock_abs_piff.png'
 mean_absolute_error_plot_piff = ctp.mean_absolute_error_plot(catalog(f444w_cat_name), piff_psf(f444w_piff_name))
 mean_absolute_error_plot_piff.preprocessing()
@@ -551,9 +627,10 @@ std_abs_piff = mean_absolute_error_plot_piff.return_sem()
 mean_absolute_error_plot_piff.set_titles(['Average Star F444W', 'Average PIFF PSF', f'MAE = {sum_residuals_abs_piff} +/- {round(std_abs_piff,2)}'])
 mean_absolute_error_plot_piff.save_figure(outname=abs_name)
 print(f'Average Normalized Absolute Error = {round(sum_residuals_abs_piff,2)} +/- {round(std_abs_piff,2)}')
+'''
 
 abs_name = "f444w_mosaic_mock_abs_shopt.png"
-mean_absolute_error_plot_shopt = ctp.mean_absolute_error_plot(catalog(f444w_cat_name), shopt(f444w_shopt_name))
+mean_absolute_error_plot_shopt = ctp.mean_absolute_error_plot(catalog(f444w_cat_name), shopt(''))
 mean_absolute_error_plot_shopt.preprocessing()
 mean_absolute_error_plot_shopt.set_residuals()
 sum_residuals_abs_shopt = mean_absolute_error_plot_shopt.return_residuals_sum()
@@ -561,8 +638,7 @@ std_abs_shopt = mean_absolute_error_plot_shopt.return_sem()
 mean_absolute_error_plot_shopt.set_titles([f'Average Star F444W', 'Average ShOpt PSF', f'MAE = {round(sum_residuals_abs_shopt,2)} +/- {round(std_abs_shopt,2)}'])
 mean_absolute_error_plot_shopt.save_figure(outname=abs_name)
 
-
-mean_relative_error_plot_psfex = ctp.mean_relative_error_plot(catalog(f444w_cat_name), epsfex(f444w_epsfex_name))
+mean_relative_error_plot_psfex = ctp.mean_relative_error_plot(catalog(f444w_cat_name), epsfex(''))
 mean_relative_error_plot_psfex.preprocessing()
 mean_relative_error_plot_psfex.set_residuals()
 sum_residuals_mre_psfex = mean_relative_error_plot_psfex.return_residuals_sum()
@@ -570,6 +646,7 @@ std_mr_psfex = mean_relative_error_plot_psfex.return_sem()
 mean_relative_error_plot_psfex.set_titles([f'Average Star F444W', f'Average PSFex PSF', f'MRE = {round(sum_residuals_mre_psfex,2)} +/- {round(std_mr_psfex,2)}'])
 mean_relative_error_plot_psfex.save_figure(outname=mre_name)
 
+'''
 mre_name = "f444w_mosaic_mock_mre_piff.png"
 mean_relative_error_plot_piff = ctp.mean_relative_error_plot(catalog(f444w_cat_name), piff_psf(f444w_piff_name))
 mean_relative_error_plot_piff.preprocessing()
@@ -578,9 +655,10 @@ sum_residuals_mre_piff = mean_relative_error_plot_piff.return_residuals_sum()
 std_mr_piff = mean_relative_error_plot_piff.return_sem()
 mean_relative_error_plot_piff.set_titles([f'Average Star F444W', f'Average PIFF PSF', f'MRE = {round(sum_residuals_mre_piff,2)} +/- {round(std_mr_piff,2)}'])
 mean_relative_error_plot_piff.save_figure(outname=mre_name)
+'''
 
 mre_name = "f444w_mosaic_mock_mre_shopt.png"
-mean_relative_error_plot_shopt = ctp.mean_relative_error_plot(catalog(f444w_cat_name), shopt(f444w_shopt_name))
+mean_relative_error_plot_shopt = ctp.mean_relative_error_plot(catalog(f444w_cat_name), shopt(''))
 mean_relative_error_plot_shopt.preprocessing()
 mean_relative_error_plot_shopt.set_residuals()
 sum_residuals_mre_shopt = mean_relative_error_plot_shopt.return_residuals_sum()
@@ -590,7 +668,7 @@ mean_relative_error_plot_shopt.save_figure(outname=mre_name)
 
 #+- {round(sem_with_nans(mean_chi2_plot_psfex.return_chi2_vals()),2)}
 chi2_name =  "f444w_mosaic_mock_chi2_psfex.png"
-mean_chi2_plot_psfex = ctp.chi_2_error_plot(catalog(f444w_cat_name), epsfex(f444w_epsfex_name))
+mean_chi2_plot_psfex = ctp.chi_2_error_plot(catalog(f444w_cat_name), epsfex(''))
 mean_chi2_plot_psfex.preprocessing(hsm_fit=True)
 mean_chi2_plot_psfex.set_residuals()
 sum_residuals_chi2_psfex = mean_chi2_plot_psfex.return_residuals_sum()
@@ -602,7 +680,7 @@ mean_chi2_plot_psfex.save_figure(outname=chi2_name)
 chi_square_visit_psfex += [element for element in mean_chi2_plot_psfex.return_chi2_vals()]
 
 chi2_name = "f444w_mosaic_mock_chi2_shopt.png"
-mean_chi2_plot_shopt = ctp.chi_2_error_plot(catalog(f444w_cat_name), shopt(f444w_shopt_name))
+mean_chi2_plot_shopt = ctp.chi_2_error_plot(catalog(f444w_cat_name), shopt(''))
 mean_chi2_plot_shopt.preprocessing(hsm_fit=True)
 mean_chi2_plot_shopt.set_residuals()
 sum_residuals_chi2_shopt = mean_chi2_plot_shopt.return_residuals_sum()
@@ -613,6 +691,7 @@ mean_chi2_plot_shopt.set_titles([f'Average Star F444W', f'Average ShOpt PSF', r'
 mean_chi2_plot_shopt.save_figure(outname=chi2_name)
 chi_square_visit_shopt += [element for element in mean_chi2_plot_shopt.return_chi2_vals()]
 
+'''
 chi2_name = "f444w_mosaic_mock_chi2_piff.png"
 mean_chi2_plot_piff = ctp.chi_2_error_plot(catalog(f444w_cat_name), piff_psf(f444w_piff_name))
 mean_chi2_plot_piff.preprocessing(hsm_fit=True)
@@ -624,7 +703,32 @@ std_chi_piff = np.nanstd(mean_chi2_plot_piff.return_chi2_vals())
 mean_chi2_plot_piff.set_titles([f'Average Star F444W', f'Average PIFF PSF', r'$\overline{\chi^2}$' + f' = {round(reduced_chi2_piff, 2)} +/- {round(std_chi_piff,2)}'])
 mean_chi2_plot_piff.save_figure(outname=chi2_name)
 chi_square_visit_piff += [element for element in mean_chi2_plot_piff.return_chi2_vals()]
+'''
 
+print("F444W")
+print(f' PSFex Avg Reduced Chi2 = {round(reduced_chi2_psfex, 2)} +/- {round(std_chi_psfex, 2)}, PSFex Median Reduced Chi2 = {round(median_reduced_chi2_psfex, 2)}, PSFex MAE = {round(sum_residuals_abs_psfex, 2)} +/- {round(std_abs_psfex, 2)}, PSFex MRE = {round(sum_residuals_mre_psfex, 2)} +/- {round(std_mr_psfex, 2)}, ShOpt Avg Reduced Chi2 = {round(reduced_chi2_shopt, 2)} +/- {round(std_chi_shopt, 2)}, ShOpt Median Reduced Chi2 = {round(median_reduced_chi2_shopt, 2)}, ShOpt MAE = {round(sum_residuals_abs_shopt, 2)} +/- {round(std_abs_shopt, 2)}, ShOpt MRE = {round(sum_residuals_mre_shopt, 2)} +/- {round(std_mr_shopt, 2)}')
+new_row = {
+    'Filter': 'F444W',
+    'PSFex_Avg_Reduced_Chisq': round(reduced_chi2_psfex, 2),
+    'PSFex_STD_Reduced_Chisq': round(std_chi_psfex, 2),
+    'PSFex_Median_Reduced_Chisq': round(median_reduced_chi2_psfex, 2),
+    'PSFex_MAE': round(sum_residuals_abs_psfex, 2),
+    'PSFex_MAE_STD': round(std_abs_psfex, 2),
+    'PSFex_MRE': round(sum_residuals_mre_psfex, 2),
+    'PSFex_MRE_STD': round(std_mr_psfex, 2),
+    'ShOpt_Avg_Reduced_Chisq': round(reduced_chi2_shopt, 2),
+    'ShOpt_STD_Reduced_Chisq': round(std_chi_shopt, 2),
+    'ShOpt_Median_Reduced_Chisq': round(median_reduced_chi2_shopt, 2),
+    'ShOpt_MAE': round(sum_residuals_abs_shopt, 2),
+    'ShOpt_MAE_STD': round(std_abs_shopt, 2),
+    'ShOpt_MRE': round(sum_residuals_mre_shopt, 2),
+    'ShOpt_MRE_STD': round(std_mr_shopt, 2)
+}
+
+df = df.append(new_row, ignore_index=True)
+print(df)
+
+'''
 #{round(sum_residuals_abs_psfex,2)} +/- {round(std_abs_psfex,2)}']
 new_row = {
     'Filter': 'F444W', 
@@ -654,7 +758,7 @@ new_row = {
 df = df.append(new_row, ignore_index=True)
 print(df)
 print('done F444W')
-
+'''
 
 
 
@@ -671,7 +775,7 @@ newaxs.set_ylabel('Number of Occurrences', fontsize=30)
 greater_than_100_psfex = len([value for value in chi_square_visit_psfex if value > 100])
 greater_than_100_shopt = len([value for value in chi_square_visit_shopt if value > 100])
 greater_than_100_piff = len([value for value in chi_square_visit_piff if value > 100])
-newaxs.set_title(f'COSMOS SIM Mosaic ' + r'$\chi^2$' + ' Distribution', fontsize=35)
+newaxs.set_title(f'Simulated Mosaic ' + r'$\chi^2$' + ' Distribution', fontsize=35)
 newaxs.legend()
 newfig.savefig('mosaic_reduced_chi_square_distribution.png')
 print(f'Not shown are {greater_than_100_psfex} PSFex Reduced chi square values greater than 100\nand {greater_than_100_shopt} Shopt Reduced chi square values greater than 100\n and {greater_than_100_piff} PIFF Reduced chi square values greater than 100')
@@ -693,7 +797,7 @@ ax.errorbar([p + 0.4 for p in positions], df['ShOpt_Avg_Reduced_Chisq'], yerr=df
             fmt='o', label='ShOpt', capsize=5, capthick=1, color='green')
 
 # Customization      
-ax.set_title('Comparison of PIFF, PSFex, and ShOpt ' + r'$\overline{\chi^2}$', fontsize=25)
+ax.set_title('Comparison of PIFF, PSFex, and ShOpt ' + r'$\overline{\chi^2}$', fontsize=35)
 ax.set_xlabel('Filter', fontsize=30)
 ax.set_ylabel('Average ' + r'$\chi^2$', fontsize=30)
 ax.set_xticks([p + 0.2 for p in positions])  
