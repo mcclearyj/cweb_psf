@@ -1,0 +1,55 @@
+###
+### Box cutter & PSF fitting parameters
+
+# Output directory
+outdir: "/n23data1/mccleary/mock_images/sim_mosaics_working"
+
+# Location of SEx/PIFF/PSFEx config files
+astro_config_dir: '/n23data1/mccleary/cweb_psf/src/astro_config/'
+
+# Reference an external star catalog or parameters
+star_param_file: '/n23data1/mccleary/cweb_psf/configs/sim_mosaics_star_params.yaml'
+
+input_catalog:
+  hdu: 2
+  # VIGNET is centered at X/Y_IMAGE
+  x_key: 'X_IMAGE'
+  y_key: 'Y_IMAGE'
+  # Docs recommend X/YWIN_IMAGE for analysis
+  psf_x_key: 'XWIN_IMAGE'
+  psf_y_key: 'YWIN_IMAGE'
+  ra_key: 'ALPHAWIN_J2000'
+  dec_key: 'DELTAWIN_J2000'
+  ra_units: 'deg'
+  dec_units: 'deg'
+
+# Box size for all images
+box_size: 101
+
+# Cutouts to add to output catalog
+cutout_list:
+  hdu: [2]
+  extname: ["ERR"]
+
+# For SExtractor
+weight_image:
+  hdu: 2
+  type: "MAP_WEIGHT"
+
+# Science exposure is usually 0th or 1th extension
+sci_image:
+  hdu: 1
+
+# What kind of PSFs to create and add to star catalog?
+psf_models:
+  psfex: True
+  webbpsf: False
+  piff: False
+  mirage: False
+
+# I don't love this: directory for MIRAGE images. Uncomment if different
+# from image location
+# mirage_dir: '/Users/j.mccleary/Research/jwst_cosmos/mock_data/COSMOS2020_sims/DEC2022_v0.0.4'
+
+# Split stars into training and validation sub-samples for PSF fitting?
+split_stars_validation_training: True
