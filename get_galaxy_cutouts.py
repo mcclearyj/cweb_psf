@@ -392,7 +392,6 @@ def run_psfex(image_file, starcat_file, run_config, star_config):
     os.system(cleanup_cmd)
 
     # And for convenience... save a PSFEx stars-only file
-
     pexcat = Table.read(outcat_name, hdu=2)
     starcat = Table.read(starcat_file, hdu=2)
 
@@ -473,7 +472,7 @@ def main(args):
     for j, image_file in enumerate(images):
 
         print(f'Working on file {image_file}...\n\n')
-        """
+
         cat_file = run_sextractor(image_file=image_file,
                    star_config=star_config,
                    run_config=run_config
@@ -482,27 +481,27 @@ def main(args):
         add_cutouts(image_file=image_file, cat_file=cat_file,
                     boxcut=boxcut, run_config=run_config)
 
-        cat_file = os.path.join(run_config['outdir'],
-                   os.path.basename(image_file).replace('.fits', '.cat.fits'))
-        """
+        #cat_file = os.path.join(run_config['outdir'],
+        #           os.path.basename(image_file).replace('.fits', '.cat.fits'))
+
         try:
-            """
+
             starcat_file = make_starcat(image_file=image_file,
                            cat_file=cat_file, star_config=star_config,
                            run_config=run_config
                            )
-            """
-            starcat_file = os.path.join(run_config['outdir'],
-                os.path.basename(image_file).replace('.fits', '_starcat.fits'))
 
-            #run_psfex(image_file=image_file, starcat_file=starcat_file,
-            #          run_config=run_config, star_config=star_config)
+            #starcat_file = os.path.join(run_config['outdir'],
+            #    os.path.basename(image_file).replace('.fits', '_starcat.fits'))
+
+            run_psfex(image_file=image_file, starcat_file=starcat_file,
+                      run_config=run_config, star_config=star_config)
 
             run_piffy(image_file=image_file,
                       starcat_file=starcat_file,
                       run_config=run_config,
-                      echo=True)
-            
+                      echo=False)
+
             # Add MIRAGE, PIFF, WebbPSF, PSFEx, ... models to star catalog
             renderer = PSFRenderer(image_file=image_file,
                                    cat_file=starcat_file,
