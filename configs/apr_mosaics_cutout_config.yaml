@@ -23,9 +23,9 @@ cutout_list:
   hdu: [2]
   extname: ["ERR"]
 
-# For SExtractor
+# For SExtractor and PIFF
 weight_image:
-  hdu: 2
+  hdu: 4
   type: "MAP_WEIGHT"
 
 # Science exposure is usually 0th or 1th extension
@@ -34,9 +34,9 @@ sci_image:
 
 # What kind of PSFs to create and add to star catalog?
 psf_models:
-  psfex: True
+  psfex: False
   webbpsf: False
-  piff: False
+  piff: True
   mirage: False
 
 # I don't love this: directory for MIRAGE images. Uncomment if different

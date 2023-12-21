@@ -8,6 +8,7 @@ import psfex
 import fitsio
 from src.box_cutter import BoxCutter
 import re
+import piff
 
 class PSFRenderer:
     def __init__(self, image_file, cat_file, run_config):
@@ -34,18 +35,18 @@ class PSFRenderer:
         self.model_map = {
             'psfex': self._render_psfex,
             'webbpsf': self._render_webbpsf,
-            'mirage': self._grab_mirage
-            # 'piff': self._render_piff,  # uncomment if you have PIFF rendering method
+            'mirage': self._grab_mirage,
+            'piff': self._render_piff
         }
 
     def _trim_box(self, psf_im):
         if psf_im.shape[0] > self.vignet_size:
-            n = int((this_pexim.shape[0]-self.vignet_size)/2)
+            n = int((psf_im.shape[0]-self.vignet_size)/2)
             k = n; j = -n
         else:
             k = 0; j = None
 
-        this_pexim = this_pexim[k:j,k:j]
+        psf_im = psf_im[k:j,k:j]
 
     def _add_to_cat(self, psfims, ext):
         """Convenience function to add PSF renderings to imcat.
@@ -53,7 +54,6 @@ class PSFRenderer:
             boxes: list of PSF renderings
             ext: name of PSF model (e.g., PSFEX, WEBBPSF, ...)
         """
-
         # Box size
         bs = psfims[0].shape[0]
 
@@ -70,15 +70,17 @@ class PSFRenderer:
         print(f'\nAdded {ext} vignets to {self.gc_fits._filename}\n')
 
     def _render_psfex(self):
-        """Render PSFEx image."""
+        """ Render PSFEx image. """
+        print("Rendering PSFEx")
+
         # Preliminaries: find PSF, define output directory
-        print("I got to render PSF")
         basename = os.path.basename(self.image_file)
         psf_name = basename.replace('.fits', '_starcat.psf')
-        psfex_outdir = os.path.join(self.run_config['outdir'],
-                                    'psfex-output',
-                                    basename.split('.')[0])
-        psf_path = os.path.join(psfex_outdir, psf_name)
+        psfex_dir = os.path.join(
+                    self.run_config['outdir'],
+                    'psfex-output', basename.split('.')[0]
+                    )
+        psf_path = os.path.join(psfex_dir, psf_name)
 
         # Load in the PSF
         psf = psfex.PSFEx(psf_path)
@@ -113,7 +115,8 @@ class PSFRenderer:
 
         mirage_path = os.path.join(self.run_config.get('mirage_dir'),
                       filter_name,
-                      basename.replace('cal.fits', '*CLEAR_ptsrc_seed_image.fits')
+                      basename.replace('cal.fits', \
+                      '*CLEAR_ptsrc_seed_image.fits')
                       )
 
         return mirage_path
@@ -129,7 +132,7 @@ class PSFRenderer:
         else:
             mirage_path = self.image_file.replace('cal.fits',
                           '*CLEAR_ptsrc_seed_image.fits')
-        
+
         mirage_file = glob.glob(mirage_path)[0]
 
         # Create "image_file" for boxcutter
@@ -137,8 +140,9 @@ class PSFRenderer:
             mirf = fits.open(mirage_file)
             mirage_im = mirf['DATA'].data
         except FileNotFoundError as fnf:
-            print(f'Could not find a MIRAGE point source image at {mirage_name}',
-            fnf)
+            print(
+            f'Could not find a MIRAGE point source image at {mirage_name}', fnf
+            )
 
         # Start by create a BoxCutter instance
         boxcut = BoxCutter(config_file=self.run_config,
@@ -152,14 +156,38 @@ class PSFRenderer:
         self._add_to_cat(psf_images, ext="MIRAGE")
 
     def _render_piff(self):
-         # Code for rendering PIFF goes here
-         pass
+        """ Render PIFF image. """
+
+        # Preliminaries: find PSF, define output directory
+        print("Rendering PIFF")
+        basename = os.path.basename(self.image_file)
+        psf_name = basename.replace('.fits', '.piff').replace('444', '150')
+        piff_dir = os.path.join(self.run_config['outdir'],
+                                'piff-output',
+                                basename.split('.')[0])
+        psf_path = os.path.join(piff_dir, psf_name)
+
+        # Load in the PSF
+        piff_psf = piff.read(psf_path)
+
+        # Create empty list that will hold the PSF renderings
+        piff_images = []
+
+        # Loop prevents memory overflow errors for very large catalogs
+        for xi, yi in zip(self.x, self.y):
+            piff_im = piff_psf.draw(x=xi, y=yi, stamp_size=self.vignet_size)
+            piff_images.append(piff_im.array)
+
+        # Add psf images to catalog
+        self._add_to_cat(piff_images, ext="PIFF")
 
     def render(self):
         for model, render_method in self.model_map.items():
             if self.run_config['psf_models'].get(model, False):
-                render_method()
-
+                try:
+                    render_method()
+                except:
+                    pdb.set_trace()
         self.gc_fits.close()
 
 # Usage
