@@ -161,7 +161,7 @@ class PSFRenderer:
         # Preliminaries: find PSF, define output directory
         print("Rendering PIFF")
         basename = os.path.basename(self.image_file)
-        psf_name = basename.replace('.fits', '.piff').replace('444', '150')
+        psf_name = basename.replace('.fits', '.piff')
         piff_dir = os.path.join(self.run_config['outdir'],
                                 'piff-output',
                                 basename.split('.')[0])
