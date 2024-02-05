@@ -481,9 +481,6 @@ def main(args):
         add_cutouts(image_file=image_file, cat_file=cat_file,
                     boxcut=boxcut, run_config=run_config)
 
-        #cat_file = os.path.join(run_config['outdir'],
-        #           os.path.basename(image_file).replace('.fits', '.cat.fits'))
-
         try:
 
             starcat_file = make_starcat(image_file=image_file,
@@ -491,16 +488,8 @@ def main(args):
                            run_config=run_config
                            )
 
-            #starcat_file = os.path.join(run_config['outdir'],
-            #    os.path.basename(image_file).replace('.fits', '_starcat.fits'))
-
             run_psfex(image_file=image_file, starcat_file=starcat_file,
                       run_config=run_config, star_config=star_config)
-
-            run_piffy(image_file=image_file,
-                      starcat_file=starcat_file,
-                      run_config=run_config,
-                      echo=False)
 
             # Add MIRAGE, PIFF, WebbPSF, PSFEx, ... models to star catalog
             renderer = PSFRenderer(image_file=image_file,

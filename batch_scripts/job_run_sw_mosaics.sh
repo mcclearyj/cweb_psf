@@ -3,7 +3,7 @@
 #PBS -N sw_mosaic_psfs
 #PBS -o sw_mosaic_psfs.out 
 #PBS -j oe 
-#PBS -l nodes=1,walltime=6:00:00
+#PBS -l nodes=1,walltime=23:59:59
 #PBS -M j.mccleary@northeastern.edu
 
 source /n23data1/mccleary/miniconda3/bin/activate 

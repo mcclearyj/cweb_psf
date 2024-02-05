@@ -2,7 +2,7 @@
 ### Box cutter & PSF fitting parameters
 
 # Output directory
-outdir: "/n23data1/mccleary/mock_images/apr_mosaics_working"
+outdir: "/n23data1/mccleary/apr_mosaics_working"
 
 input_catalog:
   hdu: 2

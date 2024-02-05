@@ -33,7 +33,7 @@ cutout_list:
 
 # For SExtractor
 weight_image:
-  hdu: 2
+  hdu: 4
   type: "MAP_WEIGHT"
 
 # Science exposure is usually 0th or 1th extension
@@ -53,3 +53,4 @@ psf_models:
 
 # Split stars into training and validation sub-samples for PSF fitting?
 split_stars_validation_training: True
+

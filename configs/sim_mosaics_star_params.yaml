@@ -39,24 +39,24 @@ filter_params:
   #
   F277W:
     fwhm: 0.125
-    min_size: 1.83
-    max_size: 2.7
-    max_mag: 26.
-    min_mag: 19.
+    min_size: 1.
+    max_size: 1.9
+    max_mag: 26.7
+    min_mag: 22.
     min_snr: 5.
 
   #
   F444W:
     fwhm: 0.165
-    min_size: 2.33
-    max_size: 3.1
-    max_mag: 26.
-    min_mag: 19.
+    min_size: 1.25
+    max_size: 1.8
+    max_mag: 26.7
+    min_mag: 22.
     min_snr: 5.
 
 # Information for truth (reference) star catalog
 truthcat:
-  use: False
+  use: True
   # Name of star catalog to use
   filename: '/n23data1/mfranco/jwst/COSMOS-Web/DEC2022_v.0.0.1/catalogs/ptsrc_DEC_2022_input.cat'
   # RA & Dec column names of truthcat
