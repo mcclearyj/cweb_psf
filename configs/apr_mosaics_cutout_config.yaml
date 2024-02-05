@@ -2,7 +2,7 @@
 ### Box cutter & PSF fitting parameters
 
 # Output directory
-outdir: "/n23data1/mccleary/apr_mosaics_working"
+outdir: "apr_mosaics_working"
 
 input_catalog:
   hdu: 2
@@ -34,9 +34,9 @@ sci_image:
 
 # What kind of PSFs to create and add to star catalog?
 psf_models:
-  psfex: False
+  psfex: True
   webbpsf: False
-  piff: True
+  piff: False
   mirage: False
 
 # I don't love this: directory for MIRAGE images. Uncomment if different
@@ -46,8 +46,11 @@ psf_models:
 # Split stars into training and validation sub-samples for PSF fitting?
 split_stars_validation_training: True
 
+# Augment galaxy catalog with PSFs or just star catalog?
+augment_galcat: True
+
 # Location of SEx/PIFF/PSFEx config files
-astro_config_dir: '/n23data1/mccleary/cweb_psf/src/astro_config/'
+astro_config_dir: './src/astro_config/'
 
 # Reference an external star catalog or parameters
-star_param_file: '/n23data1/mccleary/cweb_psf/configs/apr_mosaics_star_params.yaml'
+star_param_file: './configs/apr_mosaics_star_params.yaml'

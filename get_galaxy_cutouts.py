@@ -34,6 +34,12 @@ def parse_args():
 
     return parser.parse_args()
 
+def _load_fits(cat_file, run_config):
+    """ Utility function to load in FITS catalog """
+    imcat_fits = fitsio.FITS(cat_file, 'rw')
+    cat_hdu = run_config['input_catalog']['hdu']
+    imcat = imcat_fits[cat_hdu].read()
+    return imcat_fits, imcat
 
 def run_sextractor(image_file, star_config, run_config):
     """
@@ -185,32 +191,6 @@ def _exclude_satpix(starcat, ext='DQ_VIGNET', sentinel=[1, 2]):
 
     return starcat[all_good]
 
-def _convert_pix2wcs(imfile, imcat_fits, run_config):
-        """ SExtractor's astrometry doesn't seem to handle JWST cal file
-        astrometry, so use astropy.wcs to convert X, Y to RA, Dec. """
-
-        # Get header & build a WCS from it
-        hdr = fits.getheader(imfile, ext=run_config['sci_image']['hdu'])
-        w = WCS(hdr)
-
-        # Load in catalog
-        cat_hdu = run_config['input_catalog']['hdu']
-        imcat = imcat_fits[cat_hdu].read()
-
-        # identify X & Y keys and convert to astrometric coordinates
-        x_col = run_config['input_catalog']['psf_x_key']
-        y_col = run_config['input_catalog']['psf_y_key']
-
-        coords = w.all_pix2world(
-                 np.array([imcat[x_col], imcat[y_col]]).T, 1
-                 )
-
-        # Add corrected RA & Dec to catalog
-        print(f'Adding corrected RA/Dec columns to catalog')
-        imcat_fits[cat_hdu].insert_column('ra_corr', coords[:, 0])
-        imcat_fits[cat_hdu].insert_column('dec_corr', coords[:, 1])
-
-        return imcat_fits
 
 def make_starcat(image_file, cat_file, star_config, run_config):
     """
@@ -242,13 +222,13 @@ def make_starcat(image_file, cat_file, star_config, run_config):
     if not os.path.exists(cat_file):
         raise Exception(f'\n\ncould not find im_cat file {cat_file}\n\n')
     else:
-        imcat_fits = fitsio.FITS(cat_file, 'rw')
-        cat_hdu = run_config['input_catalog']['hdu']
+        print(f'\nMaking star catalog from {cat_file}\n')
 
-    imcat_fits = _convert_pix2wcs(image_file, imcat_fits, run_config)
+    imcat_fits = fitsio.FITS(cat_file, 'rw')
+    cat_hdu = run_config['input_catalog']['hdu']
     imcat = imcat_fits[cat_hdu].read()
 
-        # Get a star catalog!
+    # Get a star catalog!
     selected_stars = _select_stars_for_psf(
                      imcat=imcat,
                      star_config=star_config,
@@ -264,7 +244,6 @@ def make_starcat(image_file, cat_file, star_config, run_config):
                                      ext=badstar_ext,
                                      sentinel=sentinel
                                      )
-
     if len(selected_stars) == 0:
         raise ValueError("make_starcat: No good stars found!")
 
@@ -322,7 +301,42 @@ def make_starcat(image_file, cat_file, star_config, run_config):
         print(f'Returning full star catalog')
         return starcat_name
 
-def add_cutouts(image_file, cat_file, boxcut, run_config, ext='ERR'):
+def convert_pix2wcs(imfile, imcat_fits, run_config):
+    """
+    SExtractor's astrometry doesn't seem to handle JWST cal file
+    astrometry, so use astropy.wcs to convert X, Y to RA, Dec.
+    Inputs
+        imfile: image file to use for WCS
+        imcat_fits: fitsio.FITS instance of catalog
+        run_config: main run configuration dict (as opposed to star config)
+    """
+
+    # Get header & build a WCS from it
+    hdr = fits.getheader(imfile, ext=run_config['sci_image']['hdu'])
+    w = WCS(hdr)
+
+    # Load in catalog
+    cat_hdu = run_config['input_catalog']['hdu']
+    imcat = imcat_fits[cat_hdu].read()
+
+    # identify X & Y keys and convert to astrometric coordinates
+    x_col = run_config['input_catalog']['psf_x_key']
+    y_col = run_config['input_catalog']['psf_y_key']
+
+    coords = w.all_pix2world(
+             np.array([imcat[x_col], imcat[y_col]]).T, 1
+             )
+
+    # Add corrected RA & Dec to catalog
+    print(f'Adding corrected RA/Dec columns to catalog')
+    imcat_fits[cat_hdu].insert_column('ra_corr', coords[:, 0])
+    imcat_fits[cat_hdu].insert_column('dec_corr', coords[:, 1])
+
+    # Return imcat_fits, now with corrected RA, Dec column
+    return imcat_fits
+
+def add_cutouts(image_file, cat_file, boxcut, run_config,
+                ext='ERR', add_pix2wcs=True):
     '''
     Wrapper to call BoxCutter.grab_boxes and add an extra ERR stamp (or other!)
     for chi2 calculations. Adding the extra column to the FITS HDU List is
@@ -333,6 +347,7 @@ def add_cutouts(image_file, cat_file, boxcut, run_config, ext='ERR'):
         cat_file: catalog that's going to get an extra vignet/stamp
         boxcut: should be a BoxCutter instance
         ext: what extension are we reading in?
+        add_pix2wcs: also add corrected RA/Dec? Default=True
     '''
 
     # Read in the fits file so that we can add the column ourselves
@@ -340,7 +355,12 @@ def add_cutouts(image_file, cat_file, boxcut, run_config, ext='ERR'):
     cat_hdu = run_config['input_catalog']['hdu']
     imcat = sc_fits[cat_hdu].read()
 
-    # This is not my favorite but here is a loop
+    # add a corrected RA/Dec column; doing it here to minimize disk I/O
+    if add_pix2wcs == True:
+        print("\nAdding corrected RA, Dec to image catalog...\n")
+        sc_fits = convert_pix2wcs(image_file, sc_fits, run_config)
+
+    # This is not my favorite but run it in a loop
     cutout_list = run_config['cutout_list']
 
     for hdu, ext in zip(cutout_list['hdu'], cutout_list['extname']):
@@ -473,21 +493,23 @@ def main(args):
 
         print(f'Working on file {image_file}...\n\n')
 
+        # Make SExtractor catalog
         cat_file = run_sextractor(image_file=image_file,
                    star_config=star_config,
-                   run_config=run_config
-                   )
+                   run_config=run_config)
 
+        # Add cutouts to catalogs
         add_cutouts(image_file=image_file, cat_file=cat_file,
-                    boxcut=boxcut, run_config=run_config)
+                    boxcut=boxcut, run_config=run_config, add_pix2wcs=True)
 
         try:
 
+            # Make star catalog
             starcat_file = make_starcat(image_file=image_file,
                            cat_file=cat_file, star_config=star_config,
-                           run_config=run_config
-                           )
+                           run_config=run_config)
 
+            # Run PSFEx to get PSF model
             run_psfex(image_file=image_file, starcat_file=starcat_file,
                       run_config=run_config, star_config=star_config)
 
@@ -497,9 +519,15 @@ def main(args):
                                    run_config=run_config)
             renderer.render()
 
+            # And also to galaxy catalog, if that's what's up
+            if run_config['augment_galcat'] == True:
+                renderer = PSFRenderer(image_file=image_file,
+                                       cat_file=cat_to_augment,
+                                       run_config=run_config)
+                renderer.render()
+
             # Add MIRAGE, PIFF, WebbPSF, PSFEx, ... models to validation cat
             if run_config['split_stars_validation_training'] == True:
-
                 validcat_file = starcat_file.replace('starcat', 'valid_starcat')
                 val_renderer = PSFRenderer(image_file=image_file,
                                            cat_file=validcat_file,
@@ -508,12 +536,9 @@ def main(args):
 
 
         except:
-            # For the sake of paper analyses, if the PSFEx fitting failed,
-            # exclude it from star/galaxy catalog
             print("\nWarning:")
             print(f"PSFEx and/or rendering failed for {image_file},",
                   "skipping analysis of this star...\n")
-            pass
 
     return 0
 
