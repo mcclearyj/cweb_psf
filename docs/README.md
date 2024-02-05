@@ -1,3 +1,7 @@
+#####
+# Out of date -- need to update!
+####
+
 # cweb_psf
 
 PSF characterization code repository for COSMOS-Web lensing working group.
