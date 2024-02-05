@@ -32,6 +32,14 @@ weight_image:
 sci_image:
   hdu: 1
 
+# Make WebbPSF?
+webb_psf:
+  # Make WebbPSF? True or False.
+  make_webb_psf: False
+  # Oversample long-wavelength channel PSFs?
+  oversample_lw: False
+
+
 # What kind of PSFs to create and add to star catalog?
 psf_models:
   psfex: True
