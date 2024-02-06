@@ -143,7 +143,6 @@ class PSFDiagnostics:
         If I adopt some kind of a Plotter class, as Eddie does, I may instead
         make all of these attributes.
         """
-
         # There may be a nicer way to do this to ensure that the total flux
         # in the PSF stamp matches the total star flux. Perhaps multiply by the
         # sum of the stamp? Don't want to add background pre-emptively.
@@ -164,65 +163,64 @@ class PSFDiagnostics:
         psf_flux_images = list(map(self._add_flux,
                           self.sky_level, self.sky_std)
                           )
-        psf_flux_images = list(map(_add_flux, psf_vignets, sky_level, sky_std)
+        psf_flux_images = list(map(_add_flux, psf_vignets, sky_level, sky_std))
         self.psfs = psf_flux_images
 
+    def run_all(self, stars, vb=False, outdir='./psf_diagnostics'):
+        '''
+        stars is expected to be an instance of the StarMaker class
+        Possible improvements: allow user to supply just X,Y?
+        Allow a freestanding bg value?
 
-def run_all(self, stars, vb=False, outdir='./psf_diagnostics'):
-    '''
-    stars is expected to be an instance of the StarMaker class
-    Possible improvements: allow user to supply just X,Y?
-    Allow a freestanding bg value?
+        Note: it's shady to pass stars in run_all but w/e
+        '''
 
-    Note: it's shady to pass stars in run_all but w/e
-    '''
+        self.stars = stars
+        self.sky_level = stars.sky_level
+        self.sky_std = stars.sky_std
+        self.x = stars.x
+        self.y = stars.y
 
-    self.stars = stars
-    self.sky_level = stars.sky_level
-    self.sky_std = stars.sky_std
-    self.x = stars.x
-    self.y = stars.y
+        if self.vignet_size == None:
+            self.vignet_size = stars.vignet_size
+            print(f'PSFmaker vignet size is {self.vignet_size}')
 
-    if self.vignet_size == None:
-        self.vignet_size = stars.vignet_size
-        print(f'PSFmaker vignet size is {self.vignet_size}')
+        # Render PSF, take residual against stars
+        for i in range(len(stars.x)):
+            xpos = stars.x[i]; ypos = stars.y[i]
+            star_stamp = stars.stamps[i]
+            psf_model = self.render_psf(x=xpos, y=ypos, index=i)
+            if type(psf_model) is galsim.image.Image:
+                psf_stamp = psf_model.array
+            else:
+                psf_stamp = psf_model
+            try:
+                self.models.append(psf_model)
+                self.stamps.append(psf_stamp)
+                self.resids.append(star_stamp - psf_stamp)
+            except:
+                pdb.set_trace()
 
-    # Render PSF, take residual against stars
-    for i in range(len(stars.x)):
-        xpos = stars.x[i]; ypos = stars.y[i]
-        star_stamp = stars.stamps[i]
-        psf_model = self.render_psf(x=xpos, y=ypos, index=i)
-        if type(psf_model) is galsim.image.Image:
-            psf_stamp = psf_model.array
-        else:
-            psf_stamp = psf_model
-        try:
-            self.models.append(psf_model)
-            self.stamps.append(psf_stamp)
-            self.resids.append(star_stamp - psf_stamp)
-        except:
-            pdb.set_trace()
+        # Do HSM fitting
+        do_hsm_fit(maker=self, verbose=vb)
 
-    # Do HSM fitting
-    do_hsm_fit(maker=self, verbose=vb)
+        # Make output quiverplot
+        quiv_name = os.path.join(outdir, '_'.join([self.psf_type,'quiverplot.png']))
+        quiverplot = QuiverPlot(starmaker=stars, psfmaker=self)
+        quiverplot.run(scale=1, outname=quiv_name)
 
-    # Make output quiverplot
-    quiv_name = os.path.join(outdir, '_'.join([self.psf_type,'quiverplot.png']))
-    quiverplot = QuiverPlot(starmaker=stars, psfmaker=self)
-    quiverplot.run(scale=1, outname=quiv_name)
+        # Make output star-psf residuals plot
+        resid_name = os.path.join(outdir,'_'.join([self.psf_type,'flux_resid.png']))
+        chi2_name = os.path.join(outdir,'_'.join([self.psf_type,'chi2.png']))
+        resid_plot = ResidPlots(starmaker=stars, psfmaker=self)
+        resid_plot.run(resid_name=resid_name, chi2_name=chi2_name)
 
-    # Make output star-psf residuals plot
-    resid_name = os.path.join(outdir,'_'.join([self.psf_type,'flux_resid.png']))
-    chi2_name = os.path.join(outdir,'_'.join([self.psf_type,'chi2.png']))
-    resid_plot = ResidPlots(starmaker=stars, psfmaker=self)
-    resid_plot.run(resid_name=resid_name, chi2_name=chi2_name)
+        # Compute & make output rho-statistics figures
+        rho_params = self.rho_params
+        if rho_params == None:
+            rho_params={'min_sep':200,'max_sep':5000,'nbins':10}
 
-    # Compute & make output rho-statistics figures
-    rho_params = self.rho_params
-    if rho_params == None:
-        rho_params={'min_sep':200,'max_sep':5000,'nbins':10}
+        self.run_rho_stats(stars=stars,rho_params=rho_params,vb=vb,outdir=outdir)
 
-    self.run_rho_stats(stars=stars,rho_params=rho_params,vb=vb,outdir=outdir)
-
-    print("finished running PSFMaker()")
-    return
+        print("finished running PSFMaker()")
+        return

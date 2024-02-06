@@ -7,7 +7,7 @@ import numpy as np
 import os
 import sys
 from astropy.table import Table
-import pdb,ipdb
+import pdb
 from argparse import ArgumentParser
 import yaml
 from astropy.io import fits
