@@ -29,7 +29,7 @@ def objective_function(p, x, y, degree):
 def read_shopt(shoptFile):
     f = fits.open(shoptFile)
     polyMatrix = f[0].data
-    try: 
+    try:
         degree = f[1].data['polynomial degree'][0]
     except:
         degree = f[1].data['POLYNOMIAL_DEGREE'][0]
@@ -44,13 +44,13 @@ def p(u,v, polMatrix, degree):
     return psf/np.sum(psf)
 
 '''
-Define a class for catalog. This seems intuitive as catalogs are databases structures 
+Define a class for catalog. This seems intuitive as catalogs are databases structures
 that lend themselves nicely to object oriented programming with getters and setters to change the database.
 '''
 class catalog:
     def __init__(self, catalog):
         self.catalog = catalog
-        self.sky_level = 0.0 
+        self.sky_level = 0.0
         self.sky_std = 0.0
         self.data = Table(fits.open(self.catalog)[2].data)
         self.pixel_scale = 0.03
@@ -78,46 +78,44 @@ class catalog:
                 new_column_data.append(psf.render(data[ext_name1][i], data[ext_name2][i], shape=size))
             else:
                 new_column_data.append(psf.render(data[ext_name1][i], data[ext_name2][i]))
-        
+
         new_column = Column(new_column_data, name=psf.nameColumn())
         data.add_column(new_column)
         #current_catalog.close()
         self.data = data
 
         return
-    
+
     def set_vignet_pix_scale(self, pixel_scale):
         self.pixel_scale = pixel_scale
         return
-    
-    import numpy as np
 
     def pad_with_nans(self, arr, target_shape):
         if not isinstance(arr, np.ndarray):
             raise ValueError("Input 'arr' must be a NumPy array.")
-        
+
         if len(arr.shape) != 2:
             raise ValueError("Input 'arr' must be a 2D array.")
-        
+
         if not isinstance(target_shape, tuple) or len(target_shape) != 2:
             raise ValueError("Input 'target_shape' must be a tuple representing the desired shape (rows, cols).")
-        
+
         target_rows, target_cols = target_shape
         rows, cols = arr.shape
-        
+
         if rows > target_rows or cols > target_cols:
             raise ValueError("Target shape must be larger than the input array.")
-        
+
         # Calculate the padding required on each side
         pad_rows = (target_rows - rows) // 2
         pad_cols = (target_cols - cols) // 2
-        
+
         # Create the new array filled with NaNs
         padded_arr = np.full(target_shape, np.nan)
-        
+
         # Put the actual contents of the input array in the middle
         padded_arr[pad_rows:pad_rows + rows, pad_cols:pad_cols + cols] = arr
-        
+
         return padded_arr
 
 
@@ -136,7 +134,7 @@ class catalog:
                 #data[psf.nameColumn()][i] = data[psf.nameColumn()][i]/np.nansum(data[psf.nameColumn()][i])
                 data[psf.nameColumn()][i] += noise
         #catalog.close()
-        self.data = data 
+        self.data = data
 
         return
 
@@ -148,7 +146,7 @@ class catalog:
         # Read in the fits file so that we can add the column ourselves
         catalog = fits.open(self.catalog)
         table = catalog[2].data
-        imcat = Table(table) 
+        imcat = Table(table)
 
         # We need box_size to be same as star size for chi2 calc
         if (box_size != imcat['VIGNET'][0].shape[0]):
@@ -174,7 +172,7 @@ class catalog:
             print(f"Error occurred while adding/replacing the column: {e}")
         finally:
             catalog.close()
-        
+
         self.data = imcat
         return
 
@@ -185,7 +183,7 @@ class catalog:
         vignets_colnames = []
         vignets_colnames.append('VIGNET')
         vignets_colnames.append('ERR_VIGNET')
-        
+
         for psf in psf_list:
             vignets_colnames.append(psf.nameColumn())
 
@@ -195,7 +193,7 @@ class catalog:
 
             if n <= 0 or n > len(array_2d):
                 raise ValueError("Invalid value of n")
-            
+
             start = (len(array_2d) - n) // 2
             end = start + n
             middle_pixels = [row[start:end] for row in array_2d[start:end]]
@@ -213,7 +211,7 @@ class catalog:
 
         if vignet_size is not None:
             min_dim = vignet_size
-        
+
         #print("Minimum dimension of vignets is", min_dim)
 
         for colname in vignets_colnames:
@@ -239,8 +237,8 @@ class catalog:
                             #print("Cropped column", colname)
         self.data = data
         return
-    
-    def save_new(self, outname='new_file.fits'):        
+
+    def save_new(self, outname='new_file.fits'):
         try:
             with fits.open(self.catalog) as original_hdul:
                 new_hdul = fits.HDUList(original_hdul)
@@ -249,14 +247,14 @@ class catalog:
                 new_hdul.writeto(outname, overwrite=True)
         except (IOError, TypeError) as e:
             print("Error occurred:", e)
-        return 
+        return
 
     def concatenate_catalogs(self, catalog_new):
         #catalog1 = fits.open(self.catalog)
         #catalog2 = fits.open(catalog_new.catalog)
         data1 = self.data
         data2 = catalog_new.data
-        
+
         def check_data_type_mismatch(data1, data2):
             common_columns = ['VIGNET', 'VIGNET_PIFF', 'VIGNET_PSFEX', 'VIGNET_WEBBPSF', 'VIGNET_SHOPT', 'ERR_VIGNET', 'XWIN_IMAGE', 'YWIN_IMAGE', 'ALPHAWIN_J2000', 'DELTAWIN_J2000', 'FLUX_AUTO', 'SNR_WIN']
             #common_columns = ['VIGNET']
@@ -315,7 +313,7 @@ class catalog:
             print(col, data1[col].shape, data2[col].shape)
 
         data = vstack([data1[common_columns], data2[common_columns]])
-        
+
         if set(data1[common_columns].colnames) != set(data2[common_columns].colnames):
             print(data1.colnames, data2.colnames)
             raise ValueError("Columns in the two catalogs do not match.")
@@ -327,7 +325,7 @@ class catalog:
 '''
 Define a super class for PSF with the filename. This is useful because we can have
 shared functions for things like adding noise but each subclass will have it's own render
-method and coordinate system; (x,y) or (u,v) or (ra,dec) etc. 
+method and coordinate system; (x,y) or (u,v) or (ra,dec) etc.
 '''
 class psf:
     def __init__(self, psfFileName):
@@ -368,7 +366,7 @@ class epsfex(psf):
         return 'XWIN_IMAGE', 'YWIN_IMAGE'
 
     def nameColumn(self):
-        return 'VIGNET_PSFEX'
+        return 'PSFEX_VIGNET'
 
 class webb_psf(psf):
     def __init__(self, psfFileName):
@@ -393,7 +391,7 @@ class webb_psf(psf):
 
     def nameColumn(self):
         return 'VIGNET_WEBBPSF'
-    
+
     def coordinate_columns(self):
         return 'XWIN_IMAGE', 'YWIN_IMAGE'
 
@@ -432,15 +430,15 @@ class piff_psf(psf):
 
     def coordinate_columns(self):
         return 'ALPHAWIN_J2000', 'DELTAWIN_J2000'
-    
+
     def nameColumn(self):
         return 'VIGNET_PIFF'
 
 '''
 Test Code by Iteratively Adding Columns for rendering PSF stamps of different fitters.
 
-Note: You should always augment before calling the cropping or noise flux methods, otherwise you will be adding noise flux to stamps that don't yet exist. 
-I would also recommend specifying the optional outcame arguments so that you don't overwrite your original catalog file, incase you make a mistake 
+Note: You should always augment before calling the cropping or noise flux methods, otherwise you will be adding noise flux to stamps that don't yet exist.
+I would also recommend specifying the optional outcame arguments so that you don't overwrite your original catalog file, incase you make a mistake
 (or find a mistake in my code).
 '''
 
@@ -455,14 +453,14 @@ shopt_object = shopt('/path/summary.shopt')
 webb_object = webb_psf('/path/model.fits')
 
 # Set outname to current name to overwrite your existing file instead of creating a new catalog
-catalog_object.augment(psfex_object, outname='current_file.fits')  
+catalog_object.augment(psfex_object, outname='current_file.fits')
 catalog_object.augment(piff_object, outname='current_file.fits')
-catalog_object.augment(shopt_object, outname='current_file.fits') 
-catalog_object.augment(webb_object, outname='current_file.fits') 
+catalog_object.augment(shopt_object, outname='current_file.fits')
+catalog_object.augment(webb_object, outname='current_file.fits')
 '''
 
 '''
-Here is some of my testing: 
+Here is some of my testing:
 
 catalog_object = catalog('new_file.fits')
 psfex_object = epsfex('working/psfex-output/jw01727116001_04101_00001_nrca3_cal/jw01727116001_04101_00001_nrca3_cal_starcat.psf')
@@ -470,7 +468,7 @@ piff_object = piff_psf('/home/eddieberman/research/mcclearygroup/mock_data/mosai
 shopt_object = shopt('/home/eddieberman/research/mcclearygroup/shopt/outdir/2023-07-20T11:42:39.026/summary.shopt')
 webb_object = webb_psf('/home/eddieberman/research/mcclearygroup/cweb_psf/single_exposures/jw01727116001_02101_00004_nrcb4_cal_WebbPSF.fits')
 
-#catalog_object.augment(piff_object) 
+#catalog_object.augment(piff_object)
 #catalog_object.augment(psfex_object)
 #catalog_object.augment(shopt_object)
 catalog_object.augment(webb_object)

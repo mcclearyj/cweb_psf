@@ -22,26 +22,26 @@ filter_params:
     fwhm: 0.058
     min_size: 0.88
     max_size: 1.7
-    max_mag: 26.
+    max_mag: 24.2
     min_mag: 19.
   #
   F150W:
     fwhm: 0.0628
     min_size: 1.
     max_size: 1.6
-    max_mag: 26.
-    min_mag: 19.
+    max_mag: 24.2
+    min_mag: 18.8
   #
   F277W:
     fwhm: 0.125
     min_size: 1.83
     max_size: 2.7
-    max_mag: 26.
-    min_mag: 19.
+    max_mag: 24.2
+    min_mag: 18.8
   #
   F444W:
     fwhm: 0.165
     min_size: 2.33
     max_size: 3.1
-    max_mag: 26.
-    min_mag: 19.
+    max_mag: 24.2
+    min_mag: 18.8
