@@ -5,7 +5,7 @@
 ###
 
 import numpy as np
-import os
+import os, re
 from astropy.io import fits
 import pdb
 from astropy.table import Table, Column
@@ -59,9 +59,22 @@ def run_sextractor(image_file, star_config, run_config):
     outdir = run_config['outdir']
     configdir = run_config['astro_config_dir']
 
-    filter_name = fits.getval(image_file, 'FILTER', ext=0)
+    # Try accessing the filter name from the header...
+    try:
+        filter_name = fits.getval(image_file, 'FILTER', ext=0)
+    # Otherwise, guess filter from the file name
+    except:
+        filter_name = re.search(r"f(\d){3}w", image_file).group().upper()
+
+    # Establish filter params
     filter_params = star_config['filter_params']
     star_fwhm = filter_params[filter_name]['fwhm']
+
+    # Slightly hacky way of ascertaining whether this is an "i2d" or not
+    if 'sci' in image_file:
+        weight_file = image_file.replace('sci', 'wht')
+    else:
+        weight_file = image_file
 
     img_basename = os.path.basename(image_file)
 
@@ -77,7 +90,7 @@ def run_sextractor(image_file, star_config, run_config):
 
     image_arg  = f'"{image_file}[{sci}]"'
     seeing_arg = f'-SEEING_FWHM {star_fwhm}'
-    weight_arg = f'-WEIGHT_IMAGE "{image_file}[{wht}]" -WEIGHT_TYPE {wht_type}'
+    weight_arg = f'-WEIGHT_IMAGE "{weight_file}[{wht}]" -WEIGHT_TYPE {wht_type}'
     name_arg   = f'-CATALOG_NAME {cat_name}'
     check_arg  = f'-CHECKIMAGE_NAME  {bkg_sub},{aper_name}'
     param_arg  = '-PARAMETERS_NAME ' + os.path.join(configdir, 'sextractor.param')
@@ -500,7 +513,7 @@ def main(args):
 
         # Add cutouts to catalogs
         add_cutouts(image_file=image_file, cat_file=cat_file,
-                    boxcut=boxcut, run_config=run_config, add_pix2wcs=True)
+                    boxcut=boxcut, run_config=run_config, add_pix2wcs=False)
 
         try:
 
