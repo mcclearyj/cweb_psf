@@ -55,12 +55,14 @@ class StarPSFHolder:
             self.rho_params={
                 'min_sep':200,'max_sep':10000,'nbins':11
             }
-            print(f'Warning: no rho params supplied')
-            print(f'Setting rho_params to default {self.rho_params}')
+            if self.vb == True:
+                print(f'Warning: no rho params supplied')
+                print(f'Setting rho_params to default {self.rho_params}')
         if pixel_scale == None:
             self.pixel_scale = 0.03
-            print(f'Warning: no pixel scale supplied')
-            print(f'Setting pixel scale to default {self.pixel_scale}')
+            if self.vb == True:
+                print(f'Warning: no pixel scale supplied')
+                print(f'Setting pixel scale to default {self.pixel_scale}')
 
     def copy_from_holder(self, holder):
         """

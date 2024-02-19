@@ -47,6 +47,30 @@ class ResidPlots:
         self.chi2_dict = {}
 
 
+    def return_flux_resid_vals(self):
+        """ Convenience function to access flux residuals """
+        # Remove first key (an image)
+        resid_dict = self.resid_dict
+        remaining_keys = list(resid_dict.keys())[1:-1]
+
+        # Construct a new dictionary with the remaining keys
+        modified_resid_dict = {
+            key: str(resid_dict[key]) for key in remaining_keys
+        }
+        return modified_resid_dict
+
+    def return_ssim_vals(self):
+        """ Convenience function to access SSIM values """
+        # Remove first key (an image)
+        ssim_dict = self.ssim_dict
+        remaining_keys = list(ssim_dict.keys())[1:]
+
+        # Construct a new dictionary with the remaining keys
+        modified_ssim_dict = {
+            key: ssim_dict[key] for key in remaining_keys
+        }
+        return modified_ssim_dict
+
     def _make_im_dict(self, maker, stamps, wg):
         """
         Create the dict holding average image and summary statistics
@@ -112,78 +136,6 @@ class ResidPlots:
         self.psf_dict   = self._make_im_dict(psfs, psfs.stamps, wg)
         self.resid_dict = self._make_im_dict(psfs, resids, wg)
 
-    def make_chi2(self, polydim=2, polydeg=1, outname='chi2_residuals.png'):
-        """
-        Compute the chi-squared for each image. Loop over residuals to get
-        chi-squared for each stamp, then create a mean (or maybe median)
-
-        polydim: dimension of PSF fit polynomial (default=2 for X, Y fit)
-        polydeg: Degree of PSF polynomial fit (default=1)
-        """
-        psf = self.psfs
-        star = self.stars
-
-        wg = (psf.hsm_g1 > -9999) & (star.hsm_g1 > -9999)
-
-        npix = star.vignet_size * star.vignet_size
-        nparams = np.prod([polydeg+i+1 for i in range(polydim)])/polydim
-        dof = npix - nparams
-
-        chi2_maps = []
-        chi2_vals = []
-
-        for i, psf_stamp in enumerate(np.array(psf.stamps)[wg]):
-            # Make image-model chi2 map and append it to list
-            noise_map = star.err_stamps[i]
-            star_stamp = star.stamps[i]
-            chi2_map = np.divide(
-                np.square(star_stamp-psf_stamp),
-                np.square(noise_map)
-            )
-            chi2_maps.append(chi2_map)
-
-            # Also compute total reduced chi2 for image-model
-            chi2_finite = chi2_map[np.isfinite(chi2_map)]
-            ddof = chi2_finite.size-nparams
-            chi2_vals.append(chi2_finite.sum()/ddof)
-
-        # Mask out NaNs or Infs
-        masked_chi2 = np.ma.masked_invalid(chi2_maps)
-
-        # Average (OK, mean) image
-        avg_chi2_im = np.ma.median(masked_chi2, axis=0).data
-
-        # Total chi2
-        chi_square = np.ma.sum(masked_chi2)
-
-        # Calculate reduced chi2
-        reduced_chi_square = chi_square / dof / len(chi2_maps)
-
-        # Also descriptive stats
-        mean_reduced_chi_sq = np.median(chi2_vals)
-        std_reduced_chi_sq = np.std(chi2_vals)
-
-        # Calculate p-value
-        p_value = 1 - chi2.cdf(chi_square, dof)
-
-        # get a dict with all those values!
-        chi2_dict = dict(
-            avg_im = avg_chi2_im,
-            reduced_chi_square = reduced_chi_square,
-            mean_reduced_chi_sq = mean_reduced_chi_sq,
-            std_reduced_chi_sq = std_reduced_chi_sq
-        )
-        self.chi2_dict = AttrDict(chi2_dict)
-
-        # Save the chi image to a fits file, too
-        im = fits.PrimaryHDU(np.sqrt(avg_chi2_im))
-
-        for key in list(chi2_dict.keys())[1:]:
-            im.header.set(key, chi2_dict[key])
-
-        im.writeto(outname.replace('.png', '.fits'), overwrite=True)
-
-
     def _make_mpl_dict(self, index, vmin=None, vmax=None, avg_im=None):
         """
         EXTREMELY SPECIFIC PLOTTING KEYWORDS
@@ -222,18 +174,14 @@ class ResidPlots:
             'median HSM $\sigma^{*} = $' + f'{pd.sigma:.4f} pix\n' +\
             f'gs.calculateFWHM() = {pd.fwhm:.4f}' + r'$^{\prime\prime}$'
 
-
         # Exclude crazy outliers
         wg = (rd.avg_im.ravel() > -100) & (rd.avg_im.ravel() < 100)
-        resid_title = 'mean norm. resid: %1.3f std=%1.3f\n' % (np.nanmean(rd.avg_im.ravel()[wg]), np.nanstd(rd.avg_im.ravel()[wg]))
-        
-        #resid_title = 'mean norm. resid: %1.3f std=%1.3f\n' % (rd.mean_flux, rd.std_flux)
+        resid_title = \
+            f'mean norm. resid: {np.nanmean(rd.avg_im.ravel()[wg]):1.3f}' + \
+            '$\pm$' + f'{np.nanstd(rd.avg_im.ravel()[wg]): 1.3f}'
 
-        try:
-            chi2_title = 'reduced $\chi^2_{dof} = %.2f$\n$\overline{\chi^2_{dof}} = %.2f \pm %.2f$' % (xd.reduced_chi_square, xd.mean_reduced_chi_sq, xd.std_reduced_chi_sq,)
-            xd.title = chi2_title
-        except:
-            pdb.set_trace()
+        #resid_title = \
+        # 'mean norm. resid: %1.3f std=%1.3f\n' % (rd.mean_flux, rd.std_flux)
 
         sd.title = star_title; pd.title = psf_title; rd.title = resid_title
 
@@ -246,7 +194,8 @@ class ResidPlots:
         set_rc_params(fontsize=16)
 
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
-                                    figsize=[15,7], tight_layout=True)
+                                    figsize=[15, 7], tight_layout=True)
+
         for i, dc in enumerate(dicts):
             im = axs[i].imshow(dc.avg_im, **mpl_dicts[i])
             axs[i].set_title(dc.title)
@@ -255,6 +204,7 @@ class ResidPlots:
             fig.colorbar(im, cax=cax)
             axs[i].axvline((dc.avg_im.shape[0]-1)*0.5,color='black')
             axs[i].axhline((dc.avg_im.shape[1]-1)*0.5,color='black')
+
         fig.tight_layout()
         return fig
 
@@ -293,28 +243,6 @@ class ResidPlots:
                 pass
         im.writeto(outname.replace('.png', '.fits'), overwrite=True)
 
-
-    def make_chi2_plot(self, outname='chi2_residuals.png'):
-        """
-        Make Chi-squared residual image
-        """
-
-        dicts = [self.star_dict, self.psf_dict, self.chi2_dict]
-
-        mpl_dicts=[]
-        for i, dct in enumerate(dicts):
-            if i==2:
-                mpl_dict = dict(norm=colors.LogNorm(), cmap=plt.cm.RdYlBu_r)
-            else:
-                mpl_dict = self._make_mpl_dict(i)
-            mpl_dicts.append(mpl_dict)
-
-        # Make actual plot
-        fig = self._make_fig(dicts, mpl_dicts)
-
-        # Save it
-        fig.savefig(outname)
-
     def make_ssim_ims(self, outname='ssim.png'):
         """
         Calculate the structural similarity index measure (SSIM) between the
@@ -341,18 +269,14 @@ class ResidPlots:
         # Mask out NaNs or Infs
         masks = (1-np.ma.masked_invalid(psf_stamps).mask) * \
                 (1-np.ma.masked_invalid(star_stamps).mask)
-        #pdb.set_trace()
-        #masked_psfs = psfs.stamps[mask]
-        #masked_stars = stars.stamps[mask]
 
         all_good = np.full(len(stars.x), True)
         for i, mask in enumerate(masks):
-            # This line picks out "good" star vignets whose (unraveled) intersection
-            # with the sentinel values is empty, so the length of the list is 0
+            # This line picks out "good" stamps whose (unraveled) intersection
+            # with the sentinel mask values is empty, so the length of the list is 0
             is_masked = np.size(np.intersect1d(mask, 0)) == 0
             all_good[i] *= is_masked
-
-
+        # Also exclude failed HSM fits
         wg = (self.psfs.hsm_g1 > -9999) & (self.stars.hsm_g1 > -9999)
         wg *= all_good
 
@@ -368,18 +292,34 @@ class ResidPlots:
             ssims.append(ssim_res[1] - np.nanmedian(ssim_res[1]))
             nrmse.append(normalized_root_mse(star, psf_stamp))
 
-        title = f'Median SSIM: %.4f\nMedian Norm. RMSE: %.4f'\
+        title = f'Median SSIM: %.3f\nMedian Norm. RMSE: %.3f'\
                     % (np.median(ssim_val), np.median(nrmse))
 
         ssim_dict = {
-            'avg_im': np.nanmean(ssims, axis=0),
-            'ssim' : np.nanmedian(ssim_val),
-            'nrmse': np.nanmedian(nrmse),
+            'avg_im': np.nanmedian(ssims, axis=0),
+            'ssim' : np.nanmean(ssim_val),
+            'median_ssim': np.nanmedian(ssim_val),
+            'std_ssim': np.std(ssim_val),
+            'nrmse': np.nanmean(nrmse),
+            'std_nrmse': np.std(nrmse),
             'title': title
         }
 
+        self.ssim_dict = AttrDict(ssim_dict)
+
+        print('')
+        print(f'For PSF type {psfs.psf_type.upper()}:')
+        print(
+            f'\tmean SSIM = {self.ssim_dict.ssim:.3f}' + \
+            f' +/- {self.ssim_dict.std_ssim:.3f}'
+        )
+        print(
+            f'\tmean NRMSE = {self.ssim_dict.nrmse:.3f} ' + \
+            f'+/- {self.ssim_dict.std_nrmse:.3f}'
+        )
+
         # OK ssim too, I guess
-        dicts = [self.star_dict, self.psf_dict, AttrDict(ssim_dict)]
+        dicts = [self.star_dict, self.psf_dict, self.ssim_dict]
 
         mpl_dicts=[]
 
@@ -397,7 +337,7 @@ class ResidPlots:
         fig = self._make_fig(dicts, mpl_dicts)
         fig.savefig(outname.replace('flux', 'ssim'))
 
-    def run(self, polydeg=1, resid_name=None, chi2_name=None):
+    def run(self, polydeg=1, resid_name=None):
         """
         Make flux and residuals plots
         """
@@ -405,19 +345,11 @@ class ResidPlots:
         # Populate dicts
         self._populate_dicts()
 
-        # Make chi-square residuals; this stays here!
-        self.make_chi2(polydeg=polydeg, outname=chi2_name)
-
         # Get titles (they're defined here!)
         self._get_plot_titles()
 
         # Make flux residual plots
         self.make_flux_resid_plot(resid_name)
 
-        # And make the chi squared plot
-        self.make_chi2_plot(chi2_name)
-
         # Bonus, do the SSIM figure
         self.make_ssim_ims(resid_name)
-
-        return

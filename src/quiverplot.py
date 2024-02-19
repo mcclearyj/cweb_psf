@@ -31,7 +31,17 @@ class QuiverPlot:
         self.psf_dict  = {}
         self.resid_dict = {}
 
+    def return_hsm_resid_vals(self):
+        """ Convenience function to access HSM residuals """
+        return_dict = {
+            'median_g': self.resid_dict.median_g,
+            'median_e': self.resid_dict.median_e,
+            'median_sigma': self.resid_dict.median_sigma,
+            'mean_sigma': self.resid_dict.mean_sigma,
+            'std_sigma': self.resid_dict.std_sigma
+        }
 
+        return return_dict
 
     def _make_ellip_dict(self, maker, wg):
         """
@@ -101,6 +111,8 @@ class QuiverPlot:
         median_resid_g = np.median(resid_g)
         median_resid_e = np.median(resid_e)
         median_resid_sigma = np.median(resid_sigma)
+        mean_resid_sigma = np.mean(resid_sigma)
+        std_resid_sigma = np.std(resid_sigma)
 
         resid_dict = {
             'e1': resid_e1,
@@ -109,8 +121,10 @@ class QuiverPlot:
             'sigma': resid_sigma,
             'theta': theta_resid,
             'median_g': median_resid_g,
+            'median_e': median_resid_e,
             'median_sigma': median_resid_sigma,
-            'median_e': median_resid_e
+            'mean_sigma': mean_resid_sigma,
+            'std_sigma': std_resid_sigma
         }
 
         return AttrDict(resid_dict)
@@ -175,7 +189,6 @@ class QuiverPlot:
         )
 
         return q_dict, qkey_dict
-
 
     def _get_plot_titles(self):
 
@@ -253,14 +266,14 @@ class QuiverPlot:
         titles = ['Stars $e_1$',
             'PSF model $e_1$', 'Star-model residuals $e_1$']
         for i, dc in enumerate(dicts):
-            if i==0:
+            if i in [0, 2]:
                 vmin = 0.8*np.mean(dc.e1)
                 #vmin = np.min(dc.e1)
                 vmax = 1.2*np.median(dc.e1)
             else:
                 vmin = np.min(dc.e1)
                 vmax = np.max(dc.e1)
-            im = axs[i].hexbin(self.x, self.y, C=dc.e1, gridsize=(7, 7),
+            im = axs[i].hexbin(self.x, self.y, C=dc.e1, gridsize=(6, 6),
                     cmap=plt.cm.RdYlBu_r)
             axs[i].set_title(titles[i])
             lx, rx = axs[i].get_xlim()
@@ -287,7 +300,7 @@ class QuiverPlot:
                 vmin = np.min(dc.e2)
                 vmax = np.max(dc.e2)
             '''
-            im = axs[i].hexbin(self.x, self.y, C=dc.e2, gridsize=(7, 7),
+            im = axs[i].hexbin(self.x, self.y, C=dc.e2, gridsize=(6, 6),
                     cmap=plt.cm.RdYlBu_r)
             lx, rx = axs[i].get_xlim()
             axs[i].set_xlim(lx-2000, rx+2000)
@@ -304,17 +317,15 @@ class QuiverPlot:
                                     figsize=[17,4.5], tight_layout=True)
         titles = ['Stars $\sigma_{HSM}$',
             'PSF model $\sigma_{HSM}$', 'Star-model residuals $\sigma_{HSM}$']
+        vdict = [
+            [0.8*np.median(dicts[0].sigma), 1.2*np.median(dicts[0].sigma)],
+            [0.8*np.median(dicts[1].sigma), 1.1*np.median(dicts[1].sigma)],
+            [0.7*np.median(dicts[2].sigma), 1.2*np.median(dicts[2].sigma)],
+        ]
+        vdict = np.array(vdict)
         for i, dc in enumerate(dicts):
-            if i==0:
-                #vmin = 0.8*np.mean(dc.sigma)
-                vmin = np.min(dc.sigma)
-                vmax = 1.2*np.median(dc.sigma)
-            else:
-                vmin = np.min(dc.sigma)
-                vmax = np.max(dc.sigma)
-
-            im = axs[i].hexbin(self.x, self.y, C=dc.sigma, gridsize=(7, 7),
-                    cmap=plt.cm.RdYlBu_r, vmin=vmin, vmax=vmax)
+            im = axs[i].hexbin(self.x, self.y, C=dc.sigma, gridsize=(6, 6),
+                    cmap=plt.cm.RdYlBu_r, vmin=vdict[i,0], vmax=vdict[i,1])
             lx, rx = axs[i].get_xlim()
             axs[i].set_xlim(lx-2000, rx+2000)
             ly, ry = axs[i].get_ylim()
@@ -341,7 +352,7 @@ class QuiverPlot:
         # Get titles (they're defined here!)
         titles = self._get_plot_titles()
 
-        # Get quiver dicts
+        # Get quiver dicts, which set plot params
         vc1 = self.star_dict.median_sigma
         quiver_dict, qkey_dict = self._make_quiver_dict(vc1, scale)
 

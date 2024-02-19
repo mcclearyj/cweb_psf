@@ -1,23 +1,19 @@
-import psfex
-import galsim
-import treecorr
-import piff
-import matplotlib.pyplot as plt
+import json
 import numpy as np
 import os
 import sys
 from astropy.table import Table, vstack
 import pdb
 from argparse import ArgumentParser
-import yaml
-#from astropy.io import fits
 import fitsio
+
+# Local imports
 from src.plotter import compare_rho_stats
 from src.star_psf_holder import StarPSFHolder
 from src.plotter import make_resid_plot, plot_rho_stats
 from src.quiverplot import QuiverPlot
 from src.residplots import ResidPlots
-
+from src.chisqplots import ChiSqPlots
 
 class PSFDiagnosticsRunner:
     """
@@ -77,37 +73,7 @@ class PSFDiagnosticsRunner:
         star_holder.vignet_size = self.config['box_size']
         print(f'PSFmaker vignet size is {self.vignet_size}')
 
-    def _run_all_diagnostics(self, stars, psfs):
-        """ Wrapper for diagnostics plots making """
-
-        # Make output quiverplot
-        quiv_name = os.path.join(
-            self.config['outdir'],
-            '_'.join([psfs.psf_type,'quiverplot.png'])
-        )
-
-        if psfs.psf_type == 'single':
-            polydeg = 0
-        else:
-            polydeg = 1
-        # Go.
-        quiverplot = QuiverPlot(starmaker=stars, psfmaker=psfs)
-        quiverplot.run(scale=1, outname=quiv_name)
-
-        # Define resid plot names, incl. chi2
-        resid_name = os.path.join(
-            self.config['outdir'], '_'.join([psfs.psf_type,'flux_resid.png'])
-        )
-        chi2_name = os.path.join(
-            self.config['outdir'], '_'.join([psfs.psf_type,'chi2.png'])
-        )
-
-        # Go.
-        resid_plot = ResidPlots(starmaker=stars, psfmaker=psfs)
-        resid_plot.run(resid_name=resid_name, chi2_name=chi2_name, polydeg=polydeg)
-
-
-    def _run_psf(self, psf_model, stars):
+    def run_psf(self, psf_model, stars):
 
         psfs = StarPSFHolder(psf_type=psf_model)
         psfs.copy_from_holder(stars)
@@ -125,6 +91,73 @@ class PSFDiagnosticsRunner:
         psfs.do_hsm_fit()
 
         return psfs
+
+    def run_all_diagnostics(self, stars, psfs):
+        """ Wrapper for diagnostics plots making """
+
+        # Main dictionary to hold all results
+        all_results = {}
+
+        # Define plot names, incl. quiver, resid and chi2
+        quiv_name = os.path.join(
+            self.config['outdir'],
+            '_'.join([psfs.psf_type, 'quiverplot.png'])
+        )
+        resid_name = os.path.join(
+            self.config['outdir'], '_'.join([psfs.psf_type, 'flux_resid.png'])
+        )
+        chisq_name = os.path.join(
+            self.config['outdir'], '_'.join([psfs.psf_type, 'chi2.png'])
+        )
+
+        # Make quiverplots
+        quiverplot = QuiverPlot(starmaker=stars, psfmaker=psfs)
+        quiverplot.run(scale=1, outname=quiv_name)
+
+        # Save quiverplot results
+        quiver_resid_vals = quiverplot.return_hsm_resid_vals()
+
+        # Go for residplots, incl. SSIM
+        resid_plot = ResidPlots(starmaker=stars, psfmaker=psfs)
+        resid_plot.run(resid_name=resid_name)
+
+        # Save resid_plot results
+        flux_resid_vals = resid_plot.return_flux_resid_vals()
+        ssim_resid_vals = resid_plot.return_ssim_vals()
+
+        # Handle polydeg based on psf_type
+        if psfs.psf_type == 'single':
+            polydeg = 0
+        else:
+            polydeg = 1
+
+        # Go for chi2plots
+        chisq_plot = ChiSqPlots(starmaker=stars, psfmaker=psfs)
+        chisq_plot.run(chisq_name=chisq_name, polydeg=polydeg)
+
+        # Save chisq_plot results
+        chisq_resid_vals = chisq_plot.return_chi2_resid_vals()
+
+        # Organize results by model type
+        #
+        all_results[psfs.psf_type] = {
+            'HSM_resids': quiver_resid_vals,
+            'ssim_resids': ssim_resid_vals,
+            'flux_resids': flux_resid_vals,
+            'chisq_resids': chisq_resid_vals
+        }
+
+        # Define the filename for the JSON file
+        results_filename = os.path.join(self.config['outdir'], f"{psfs.psf_type}_diagnostics_results.json")
+
+        # Write results to a JSON file
+        with open(results_filename, 'w') as outfile:
+            json.dump(all_results, outfile, indent=4)
+
+        print(
+            f"Saved diagnostics results for {psfs.psf_type}" +
+            f" model to {results_filename}"
+        )
 
     def run_all(self, vb=False):
         """
@@ -152,7 +185,7 @@ class PSFDiagnosticsRunner:
                 print(f'\n Running fits for PSF model type: {model.upper()}\n')
 
                 # Initialize PSF object
-                psfs = self._run_psf(model, stars)
+                psfs = self.run_psf(model, stars)
 
                 # Run diagnostics
-                self._run_all_diagnostics(stars, psfs)
+                self.run_all_diagnostics(stars, psfs)
