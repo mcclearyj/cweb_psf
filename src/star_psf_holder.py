@@ -103,7 +103,7 @@ class StarPSFHolder:
         substamps = np.array(substamps)
 
         # Save as attribute of class (?)
-        sky_med = np.nanmean(substamps)
+        sky_med = np.nanmedian(substamps)
         sky_std = np.nanstd(substamps)
 
         return sky_med, sky_std
@@ -161,22 +161,26 @@ class StarPSFHolder:
         star_holder.stamps = np.array(trimmed_stars)
         self.stamps = np.array(trimmed_psfs)
 
-    def _add_flux(self, psf_stamp, star_flux, sky_level, sky_std):
+    def _add_flux(self, psf_stamp, star_flux,
+                    sky_level, sky_std):
         """
         Add appropriate background noise and star flux to PSF renderings.
         There may be a nicer way to do this that ensures that the total flux
         in the PSF stamp matches the total star flux.
         """
+        psf_stamp /= np.sum(psf_stamp)
         psf_stamp *= star_flux
 
         # Add noise; empirically, sky level is better than sex bkg
         # for large vignettes. Well, maybe.
-        noise = np.random.normal(
-            loc=sky_level,
-            scale=sky_std,
-            size=psf_stamp.shape
-        )
-        psf_stamp += noise
+        if self.psf_type not in ['null']:
+            if self.vb == True: print("\nAdding noise to PSF\n")
+            noise = np.random.normal(
+                loc=sky_level,
+                scale=sky_std,
+                size=psf_stamp.shape
+            )
+            psf_stamp += noise
 
         return psf_stamp
 

@@ -86,6 +86,10 @@ class PSFDiagnosticsRunner:
             '_'.join([psfs.psf_type,'quiverplot.png'])
         )
 
+        if psfs.psf_type == 'single':
+            polydeg = 0
+        else:
+            polydeg = 1
         # Go.
         quiverplot = QuiverPlot(starmaker=stars, psfmaker=psfs)
         quiverplot.run(scale=1, outname=quiv_name)
@@ -100,7 +104,7 @@ class PSFDiagnosticsRunner:
 
         # Go.
         resid_plot = ResidPlots(starmaker=stars, psfmaker=psfs)
-        resid_plot.run(resid_name=resid_name, chi2_name=chi2_name)
+        resid_plot.run(resid_name=resid_name, chi2_name=chi2_name, polydeg=polydeg)
 
 
     def _run_psf(self, psf_model, stars):

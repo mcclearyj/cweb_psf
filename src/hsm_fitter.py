@@ -38,7 +38,7 @@ def do_hsm_fit(maker, verbose=False):
             try:
                 gs_object = galsim.Image(model+abs(np.min(model)),
                     wcs=galsim.PixelScale(maker.pixel_scale), xmin=0, ymin=0)
-                HSM_fit=gs_object.FindAdaptiveMom()
+                HSM_fit=gs_object.FindAdaptiveMom(round_moments=True)
                 maker.hsm_sig.append(HSM_fit.moments_sigma)
                 maker.hsm_g1.append(HSM_fit.observed_shape.g1)
                 maker.hsm_g2.append(HSM_fit.observed_shape.g2)

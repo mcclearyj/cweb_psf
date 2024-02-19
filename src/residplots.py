@@ -57,8 +57,8 @@ class ResidPlots:
                 stamps: either list of arrays or list of Galsim Image instances
                 wg:  where star and psf fits both succeeded
         Returns:
-                ellip_dict: dict with e1, e2, and theta for plotting,
-                            plus some summary stats, cast to a class
+                im_dict: dict with average image, fwhm, sigma,
+                         plus some summary stats, cast to a class
         """
 
         fwhm = np.nanmedian(maker.fwhm[wg])
@@ -71,8 +71,12 @@ class ResidPlots:
                 for stamp in stamps:
                     stamp_arr.append(stamp.array)
                 avg_im = np.nanmean(stamp_arr, axis=0)
+                mean_flux = np.nanmean(stamp_arr)
+                std_flux = np.nanstd(stamp_arr)
             else:
                 avg_im = np.nanmean(stamps, axis=0)
+                mean_flux = np.nanmean(stamps)
+                std_flux = np.nanstd(stamps)
 
         except:
             pdb.set_trace()
@@ -80,7 +84,9 @@ class ResidPlots:
         im_dict = dict(
             avg_im = avg_im,
             fwhm  = fwhm,
-            sigma = sigma
+            sigma = sigma,
+            mean_flux = mean_flux,
+            std_flux = std_flux
         )
 
         return AttrDict(im_dict)
@@ -152,7 +158,10 @@ class ResidPlots:
 
         # Calculate reduced chi2
         reduced_chi_square = chi_square / dof / len(chi2_maps)
+
+        # Also descriptive stats
         mean_reduced_chi_sq = np.median(chi2_vals)
+        std_reduced_chi_sq = np.std(chi2_vals)
 
         # Calculate p-value
         p_value = 1 - chi2.cdf(chi_square, dof)
@@ -161,7 +170,8 @@ class ResidPlots:
         chi2_dict = dict(
             avg_im = avg_chi2_im,
             reduced_chi_square = reduced_chi_square,
-            mean_reduced_chi_sq = mean_reduced_chi_sq
+            mean_reduced_chi_sq = mean_reduced_chi_sq,
+            std_reduced_chi_sq = std_reduced_chi_sq
         )
         self.chi2_dict = AttrDict(chi2_dict)
 
@@ -181,7 +191,7 @@ class ResidPlots:
         avg_im is a residual plot of some sort.
         """
         if (avg_im is not None):
-            norm = colors.TwoSlopeNorm(0, vmin=0.5, vmax=1)
+            norm = colors.TwoSlopeNorm(0, vmin=-1, vmax=1)
             cmap = plt.cm.bwr_r
 
         else:
@@ -204,18 +214,23 @@ class ResidPlots:
         rd = self.resid_dict
         xd = self.chi2_dict
 
-        star_title = 'mean HSM $\sigma^{*} = %.4f$ pix\ngs.calculateFWHM() = %.4f$^{\prime\prime}$'\
-                    % (sd.sigma, sd.fwhm)
-        psf_title = 'mean HSM $\sigma^{PSF} = %.4f$ pix\ngs.calculateFWHM() = %.4f$^{\prime\prime}$'\
-                    % (pd.sigma, pd.fwhm)
+        star_title = \
+            'median HSM $\sigma^{*} = $' + f'{sd.sigma:.4f} pix\n' +\
+            f'gs.calculateFWHM() = {sd.fwhm:.4f}' + r'$^{\prime\prime}$'
+
+        psf_title = \
+            'median HSM $\sigma^{*} = $' + f'{pd.sigma:.4f} pix\n' +\
+            f'gs.calculateFWHM() = {pd.fwhm:.4f}' + r'$^{\prime\prime}$'
+
 
         # Exclude crazy outliers
-        wg = (rd.avg_im.ravel() > -50) & (rd.avg_im.ravel() < 50)
-        resid_title = 'mean norm. resid: %1.3f std=%1.3f\n'\
-                    % (np.nanmean(rd.avg_im.ravel()[wg]),np.nanstd(rd.avg_im.ravel()[wg]))
+        wg = (rd.avg_im.ravel() > -100) & (rd.avg_im.ravel() < 100)
+        resid_title = 'mean norm. resid: %1.3f std=%1.3f\n' % (np.nanmean(rd.avg_im.ravel()[wg]), np.nanstd(rd.avg_im.ravel()[wg]))
+        
+        #resid_title = 'mean norm. resid: %1.3f std=%1.3f\n' % (rd.mean_flux, rd.std_flux)
+
         try:
-            chi2_title = '$\overline{\chi^2_{dof}} = %.2f$\nmedian $\chi^2_{dof} = %.2f$'\
-                        % (xd.reduced_chi_square, xd.mean_reduced_chi_sq)
+            chi2_title = 'reduced $\chi^2_{dof} = %.2f$\n$\overline{\chi^2_{dof}} = %.2f \pm %.2f$' % (xd.reduced_chi_square, xd.mean_reduced_chi_sq, xd.std_reduced_chi_sq,)
             xd.title = chi2_title
         except:
             pdb.set_trace()
@@ -253,7 +268,9 @@ class ResidPlots:
             if i==2:
                 cmap = plt.cm.bwr_r
                 mpl_dict = dict(
-                    norm=colors.TwoSlopeNorm(0, vmin=-2, vmax=2),
+                    norm=colors.TwoSlopeNorm(
+                        np.median(dct.avg_im)
+                    ),
                     cmap=cmap
                 )
             else:
