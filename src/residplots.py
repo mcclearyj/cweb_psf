@@ -86,32 +86,27 @@ class ResidPlots:
 
 
     def _populate_dicts(self):
-        '''
+        """
         Populate the ellipticity dictionaries for plotting
-        '''
+        """
 
         psfs  = self.psfs
         stars = self.stars
-        resids = np.array(psfs.resids)/(np.array(stars.stamps) + 1.0e-6)
+        resids = np.array(psfs.stamps - stars.stamps)/(np.array(stars.stamps) + 1.0e-6)
 
         wg = (psfs.hsm_g1 > -9999) & (stars.hsm_g1 > -9999)
         self.star_dict  = self._make_im_dict(stars, stars.stamps, wg)
         self.psf_dict   = self._make_im_dict(psfs, psfs.stamps, wg)
         self.resid_dict = self._make_im_dict(psfs, resids, wg)
 
-        return
-
-
     def make_chi2(self, polydim=2, polydeg=1, outname='chi2_residuals.png'):
-        '''
+        """
         Compute the chi-squared for each image. Loop over residuals to get
         chi-squared for each stamp, then create a mean (or maybe median)
 
         polydim: dimension of PSF fit polynomial (default=2 for X, Y fit)
         polydeg: Degree of PSF polynomial fit (default=1)
-
-        '''
-
+        """
         psf = self.psfs
         star = self.stars
 
@@ -154,10 +149,11 @@ class ResidPlots:
         p_value = 1 - chi2.cdf(chi_square, dof)
 
         # get a dict with all those values!
-        chi2_dict = dict(avg_im = avg_chi2_im,
-                            reduced_chi_square = reduced_chi_square,
-                            mean_reduced_chi_sq = mean_reduced_chi_sq
-                            )
+        chi2_dict = dict(
+            avg_im = avg_chi2_im,
+            reduced_chi_square = reduced_chi_square,
+            mean_reduced_chi_sq = mean_reduced_chi_sq
+        )
         self.chi2_dict = AttrDict(chi2_dict)
 
         # Save the chi image to a fits file, too
@@ -165,9 +161,9 @@ class ResidPlots:
 
         for key in list(chi2_dict.keys())[1:]:
             im.header.set(key, chi2_dict[key])
+
         im.writeto(outname.replace('.png', '.fits'), overwrite=True)
 
-        return
 
     def _make_mpl_dict(self, index, vmin=None, vmax=None, avg_im=None):
         '''
@@ -192,7 +188,6 @@ class ResidPlots:
 
         return mpl_dict
 
-
     def _get_plot_titles(self):
 
         sd = self.star_dict
@@ -204,6 +199,7 @@ class ResidPlots:
                     % (sd.sigma, sd.fwhm)
         psf_title = 'mean HSM $\sigma^{PSF} = %.4f$ pix\ngs.calculateFWHM() = %.4f$^{\prime\prime}$'\
                     % (pd.sigma, pd.fwhm)
+
         # Exclude crazy outliers
         wg = (rd.avg_im.ravel() > -50) & (rd.avg_im.ravel() < 50)
         resid_title = 'mean norm. resid: %1.3f std=%1.3f\n'\
@@ -216,9 +212,6 @@ class ResidPlots:
             pdb.set_trace()
 
         sd.title = star_title; pd.title = psf_title; rd.title = resid_title
-
-        return
-
 
     def _make_fig(self, dicts, mpl_dicts):
         '''
@@ -241,18 +234,19 @@ class ResidPlots:
         fig.tight_layout()
         return fig
 
-
     def make_flux_resid_plot(self, outname='flux_residuals.png'):
-        '''
-        Make flux residual image
-        '''
+        """ Make flux residual image """
+
         dicts = [self.star_dict, self.psf_dict, self.resid_dict]
         mpl_dicts=[]
 
         for i, dct in enumerate(dicts):
             if i==2:
                 cmap = plt.cm.bwr_r
-                mpl_dict = dict(norm=colors.TwoSlopeNorm(0, vmin=-5, vmax=5), cmap=cmap)
+                mpl_dict = dict(
+                    norm=colors.TwoSlopeNorm(0, vmin=-5, vmax=5),
+                    cmap=cmap
+                )
             else:
                 mpl_dict = self._make_mpl_dict(i)
 
@@ -285,10 +279,8 @@ class ResidPlots:
         for i, dct in enumerate(dicts):
             if i==2:
                 mpl_dict = dict(norm=colors.LogNorm(), cmap=plt.cm.RdYlBu_r)
-
             else:
                 mpl_dict = self._make_mpl_dict(i)
-
             mpl_dicts.append(mpl_dict)
 
         # Make actual plot
@@ -296,7 +288,6 @@ class ResidPlots:
 
         # Save it
         fig.savefig(outname)
-
 
     def make_ssim_ims(self, outname='ssim.png'):
         '''
@@ -336,11 +327,12 @@ class ResidPlots:
         title = f'Median SSIM: %.4f\nMedian Norm. RMSE: %.4f'\
                     % (np.median(ssim_val), np.median(nrmse))
 
-        ssim_dict = dict(avg_im = np.mean(ssims, axis=0),
-                            ssim  = np.median(ssim_val),
-                            nrmse = np.median(nrmse),
-                            title = title
-                            )
+        ssim_dict = dict(
+            avg_im = np.mean(ssims, axis=0),
+            ssim  = np.median(ssim_val),
+            nrmse = np.median(nrmse),
+            title = title
+        )
 
         # OK ssim too, I guess
         dicts = [self.star_dict, self.psf_dict, AttrDict(ssim_dict)]
@@ -360,9 +352,6 @@ class ResidPlots:
         # Make actual plot
         fig = self._make_fig(dicts, mpl_dicts)
         fig.savefig(outname.replace('flux', 'ssim'))
-
-        return
-
 
     def run(self, polydeg=1, resid_name=None, chi2_name=None):
         '''

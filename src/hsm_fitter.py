@@ -16,7 +16,7 @@ def do_hsm_fit(maker, verbose=False):
 
     '''
 
-    for i, model in enumerate(maker.models):
+    for i, model in enumerate(maker.stamps):
 
         if type(model) is galsim.image.Image:
             gs_object = model

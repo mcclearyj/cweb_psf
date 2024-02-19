@@ -126,6 +126,7 @@ class BoxCutter:
         else:
             self.imcat = cat_file
 
+        # Check for difference in box size & VIGNET size 
         self._check_boxsize()
 
         x = self.imcat[x_key]

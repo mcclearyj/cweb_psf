@@ -59,17 +59,18 @@ class QuiverPlot:
         median_sigma = np.median(sigma)
         median_e = np.median(e)
 
-        ellip_dict = dict(g1 = g1,
-                            g2 = g2,
-                            e1 = e1,
-                            e2 = e2,
-                            e = e,
-                            theta = theta,
-                            sigma = sigma,
-                            median_g = median_g,
-                            median_sigma = median_sigma,
-                            median_e = median_e
-                            )
+        ellip_dict = {
+            'g1': g1,
+            'g2': g2,
+            'e1': e1,
+            'e2': e2,
+            'e': e,
+            'theta': theta,
+            'sigma': sigma,
+            'median_g': median_g,
+            'median_sigma': median_sigma,
+            'median_e': median_e
+        }
 
         return AttrDict(ellip_dict)
 
@@ -101,23 +102,24 @@ class QuiverPlot:
         median_resid_e = np.median(resid_e)
         median_resid_sigma = np.median(resid_sigma)
 
-        resid_dict = dict(e1 = resid_e1,
-                            e2 = resid_e2,
-                            e = resid_e,
-                            sigma = resid_sigma,
-                            theta = theta_resid,
-                            median_g = median_resid_g,
-                            median_sigma = median_resid_sigma,
-                            median_e = median_resid_e
-                            )
+        resid_dict = {
+            'e1': resid_e1,
+            'e2': resid_e2,
+            'e': resid_e,
+            'sigma': resid_sigma,
+            'theta': theta_resid,
+            'median_g': median_resid_g,
+            'median_sigma': median_resid_sigma,
+            'median_e': median_resid_e
+        }
 
         return AttrDict(resid_dict)
 
 
     def _populate_dicts(self):
-        '''
+        """
         Populate the ellipticity dictionaries for plotting
-        '''
+        """
 
         psfs  = self.psfs
         stars = self.stars
@@ -132,7 +134,7 @@ class QuiverPlot:
 
 
     def _make_quiver_dict(self, vc1, vc2=0, scale=1):
-        '''
+        """
         Set up quiverplot plot dictionary a la PIFF
         Inputs
                 sig1: center for star & PSF norms
@@ -140,7 +142,7 @@ class QuiverPlot:
         Returns
                 q_dict:  dict for quiverplot params
                 qkey_dict:  dict for quiverkey params
-        '''
+        """
 
         scale_units = 'width' # For quiver plots
         norm = colors.CenteredNorm(vcenter=vc1, halfrange=0.06)
@@ -150,25 +152,27 @@ class QuiverPlot:
         qkey_label = r'$e_{HSM} = {%.2f}$' % qkey_scale
         fontprops = {'size':14, 'weight':'bold'}
 
-        q_dict = dict(cmap='cividis',
-                        width=90,
-                        units='xy',
-                        pivot='mid',
-                        headaxislength=0,
-                        headwidth=0,
-                        headlength=0,
-                        norm=norm,
-                        scale=scale,
-                        scale_units=scale_units
-                        )
+        q_dict = dict(
+            cmap='cividis',
+            width=90,
+            units='xy',
+            pivot='mid',
+            headaxislength=0,
+            headwidth=0,
+            headlength=0,
+            norm=norm,
+            scale=scale,
+            scale_units=scale_units
+        )
 
-        qkey_dict = dict(X=0.2,
-                            Y=0.02,
-                            U=qkey_scale,
-                            labelpos='N',
-                            label=qkey_label,
-                            fontproperties=fontprops
-                            )
+        qkey_dict = dict(
+            X=0.2,
+            Y=0.02,
+            U=qkey_scale,
+            labelpos='N',
+            label=qkey_label,
+            fontproperties=fontprops
+        )
 
         return q_dict, qkey_dict
 
@@ -196,7 +200,6 @@ class QuiverPlot:
         '''
         Make quiverplots, first making quiver_dicts
         '''
-
         # First things first
         set_rc_params(fontsize=14)
 
@@ -205,12 +208,10 @@ class QuiverPlot:
         plt.rcParams.update({'ytick.direction': 'out'})
         plt.rcParams.update({'legend.fontsize': 14})
 
-
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
                                     figsize=[15,7], tight_layout=True)
 
         for i, dc in enumerate(dicts):
-
             # Set up masks for really circular objects
             min_ellip = 0.01
 
@@ -220,10 +221,11 @@ class QuiverPlot:
                         facecolor='black', edgecolors='black')
 
             mask = dc.e > min_ellip
-            q = axs[i].quiver(self.x[mask], self.y[mask],
-                                dc.e1[mask], dc.e2[mask], dc.sigma[mask],
-                                angles=np.rad2deg(dc.theta[mask]), **quiver_dict
-                                )
+            q = axs[i].quiver(
+                self.x[mask], self.y[mask],
+                dc.e1[mask], dc.e2[mask], dc.sigma[mask],
+                angles=np.rad2deg(dc.theta[mask]), **quiver_dict
+            )
             # adjust x, y limits
             lx, rx = axs[i].get_xlim()
             axs[i].set_xlim(lx-1000, rx+1000)
@@ -238,17 +240,15 @@ class QuiverPlot:
         return fig
 
     def make_hex_plots(self, outname='hexbins.png'):
-        '''
-        Make hex bins for fun and profit
-        '''
+        """ Make hex bins for fun and profit """
 
-        dicts = [self.star_dict, self.psf_dict, self.resid_dict]
         # First things first I'm the reallest
+        dicts = [self.star_dict, self.psf_dict, self.resid_dict]
+
         set_rc_params(fontsize=16)
 
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
-                                    figsize=[17,6], tight_layout=True)
-
+                                figsize=[17,6], tight_layout=True)
         # First do the e1 map
         titles = ['Stars $e_1$',
             'PSF model $e_1$', 'Star-model residuals $e_1$']
@@ -321,9 +321,6 @@ class QuiverPlot:
 
         # Save to file
         fig.savefig(outname)
-
-        # Close figure
-
 
         # Bonus round make hexplots!
         self.make_hex_plots(outname.replace('quiver', 'hexgrid'))

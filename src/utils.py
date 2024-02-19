@@ -160,3 +160,28 @@ def make_outdir(config, arg=None, path='./', cval='outdir'):
         print(f'Output directory {outdir} exists, continuing...')
 
     return
+
+def concatenate_catalogs(catnames, outname=None):
+    """This I want to run on all the teeny single exposure catalogs.
+    I am going to operate like I have the run config available, too"""
+
+    if outname == None:
+        outname='combined_catalog.fits'
+
+    fits_files = glob.glob(catnames)
+
+    # List to hold tables
+    table_list = []
+
+    # Loop over all your FITS files
+    for fits_file in fits_files:
+        table = Table.read(fits_file)
+        table_list.append(table)
+
+    # Vertically stack tables
+    combined_table = vstack(table_list)
+
+    # Save the combined table to a new FITS file
+    combined_table.write(outname, format='fits')
+
+    return combined_table

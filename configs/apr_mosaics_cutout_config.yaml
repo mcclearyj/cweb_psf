@@ -4,6 +4,9 @@
 # Output directory
 outdir: "apr_mosaics_working"
 
+# Augment galaxy catalog with PSFs ("True") or just star catalog ("False")?
+augment_galcat: False
+
 input_catalog:
   hdu: 2
   x_key: 'X_IMAGE'
@@ -18,7 +21,7 @@ input_catalog:
 # Box size for all images
 box_size: 101
 
-# Cutouts to add to output mosaic
+# Cutouts to add to output catalog
 cutout_list:
   hdu: [2]
   extname: ["ERR"]
@@ -32,20 +35,24 @@ weight_image:
 sci_image:
   hdu: 1
 
-# Make WebbPSF?
+# Make a WebbPSF model?
 webb_psf:
   # Make WebbPSF? True or False.
   make_webb_psf: False
   # Oversample long-wavelength channel PSFs?
   oversample_lw: False
 
+# For making Marco-style PSFs. Leave blank if they are in same directory as images
+# single_psf:
+#  imdir=
 
 # What kind of PSFs to create and add to star catalog?
 psf_models:
-  psfex: True
+  psfex: False
   webbpsf: False
   piff: False
   mirage: False
+  single: True
 
 # I don't love this: directory for MIRAGE images. Uncomment if different
 # from image location
@@ -53,9 +60,6 @@ psf_models:
 
 # Split stars into training and validation sub-samples for PSF fitting?
 split_stars_validation_training: True
-
-# Augment galaxy catalog with PSFs or just star catalog?
-augment_galcat: True
 
 # Location of SEx/PIFF/PSFEx config files
 astro_config_dir: './src/astro_config/'

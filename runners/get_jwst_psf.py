@@ -137,7 +137,15 @@ def make_starcat(image_file, config, star_params=None, thresh=0.55, cat_file=Non
     img_basename = os.path.basename(image_file)
     outdir = config['outdir']
     imcat_name = cat_file
-    filter_name = fits.getval(image_file, 'FILTER', ext=0)
+
+    # Try accessing the filter name from the header,
+    try:
+        filter_name = fits.getval(image_file, 'FILTER', ext=0)
+
+    # otherwise, guess based on the file name
+    except:
+        filter_name = re.search(r"f(\d){3}w", image_file).group()
+
 
     starcat_name = os.path.join(
                 outdir, img_basename.replace('.fits','_starcat.fits')

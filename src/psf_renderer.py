@@ -35,6 +35,7 @@ class PSFRenderer:
         self.model_map = {
             'psfex': self._render_psfex,
             'webbpsf': self._render_webbpsf,
+            'single': self._render_single,
             'mirage': self._grab_mirage,
             'piff': self._render_piff
         }
@@ -98,6 +99,45 @@ class PSFRenderer:
     def _render_webbpsf(self):
         # Code for rendering WebbPSF goes here
         pass
+
+    def _render_single(self):
+        # Render Marko-format PSF (no spatial variation)
+
+        psfdir = os.path.dirname(self.image_file)
+        bandpass = re.search(r"f(\d){3}w", self.image_file).group()
+        tile = re.search(r"[A,B](\d){1}", self.image_file).group()
+        #psfname = f'JWST-PSFEx_out_{bandpass}_{tile}_psf_v4.0.psf'
+        psfname = '/Users/j.mccleary/Research/jwst_cosmos/real_data/Jan2024/marko_psfex/JWST-PSFEx_out_f277w_B4_psf_v4.0.psf'
+
+        # Open FITS-format PSF, grab extensions
+        single_psf = fits.open(psfname)
+        extension_names = [ext.name for ext in single_psf]
+
+        if 'DET_DIST' in extension_names:
+            ext = 'DET_DIST'
+        elif 'PSF_DATA' in extension_names:
+            ext = 'PSF_DATA'
+        else:
+            raise "Extension not found in WebbPSF/SinglePSF model"
+
+        try:
+            # Marko's PSFEx format
+            psf_im = single_psf[ext].data['PSF_MASK'][0, 0, :,:]
+        except:
+            # Probably WebbPSF model
+            psf_im = single_psf[ext].data
+
+        # Since it is the same for all catalog entries, create a list as long
+        # as the catalog entries and populate it with images.
+        single_psf_images = []
+
+        # Loop prevents memory overflow errors for very large catalogs
+        for i in range(len(self.x)):
+            single_psf_images.append(psf_im)
+
+        # Add psf images to catalog
+        self._add_to_cat(single_psf_images, ext="SINGLE")
+
 
     def _locate_mirage_file(self):
         """
