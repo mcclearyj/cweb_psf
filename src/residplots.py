@@ -16,13 +16,13 @@ from skimage.metrics import mean_squared_error, normalized_root_mse
 from .utils import AttrDict, set_rc_params
 
 class ResidPlots:
-    '''
+    """
     Resid plots were getting messy, so made it a class!
     Ideally should define a plotter class that gets inherited by these methods
-    '''
+    """
 
     def __init__(self, starmaker, psfmaker):
-        '''
+        """
         Attributes
             stars:   instance of StarMaker
             psf:     instance of PSFMaker
@@ -36,7 +36,7 @@ class ResidPlots:
         test.assertIsInstance(self, psfmaker, src.psfmaker.PSFMaker,
                          msg='psfmaker must be instance of PSFMaker class'
                          )
-        '''
+        """
 
         self.stars = starmaker
         self.psfs  = psfmaker
@@ -48,7 +48,7 @@ class ResidPlots:
 
 
     def _make_im_dict(self, maker, stamps, wg):
-        '''
+        """
         Create the dict holding average image and summary statistics
         for all the residuals plots
 
@@ -59,10 +59,10 @@ class ResidPlots:
         Returns:
                 ellip_dict: dict with e1, e2, and theta for plotting,
                             plus some summary stats, cast to a class
-        '''
+        """
 
-        fwhm = np.nanmean(maker.fwhm[wg])
-        sigma = np.nanmean(maker.hsm_sig[wg])
+        fwhm = np.nanmedian(maker.fwhm[wg])
+        sigma = np.nanmedian(maker.hsm_sig[wg])
 
         try:
 
@@ -77,13 +77,13 @@ class ResidPlots:
         except:
             pdb.set_trace()
 
-        im_dict = dict(avg_im = avg_im,
-                        fwhm  = fwhm,
-                        sigma = sigma
-                        )
+        im_dict = dict(
+            avg_im = avg_im,
+            fwhm  = fwhm,
+            sigma = sigma
+        )
 
         return AttrDict(im_dict)
-
 
     def _populate_dicts(self):
         """
@@ -92,7 +92,14 @@ class ResidPlots:
 
         psfs  = self.psfs
         stars = self.stars
-        resids = np.array(psfs.stamps - stars.stamps)/(np.array(stars.stamps) + 1.0e-6)
+        resids = np.array(psfs.stamps - stars.stamps) / \
+                    (np.array(stars.stamps) + 1.0e-6)
+
+        # filter out garbage
+        for i, resid in enumerate(resids):
+            wb = (np.abs(resid) > 50)
+            resid[wb] = np.nan
+            resids[i] = resid
 
         wg = (psfs.hsm_g1 > -9999) & (stars.hsm_g1 > -9999)
         self.star_dict  = self._make_im_dict(stars, stars.stamps, wg)
@@ -123,8 +130,10 @@ class ResidPlots:
             # Make image-model chi2 map and append it to list
             noise_map = star.err_stamps[i]
             star_stamp = star.stamps[i]
-            chi2_map = np.divide(np.square(star_stamp-psf_stamp),
-                                 np.square(noise_map))
+            chi2_map = np.divide(
+                np.square(star_stamp-psf_stamp),
+                np.square(noise_map)
+            )
             chi2_maps.append(chi2_map)
 
             # Also compute total reduced chi2 for image-model
@@ -136,14 +145,14 @@ class ResidPlots:
         masked_chi2 = np.ma.masked_invalid(chi2_maps)
 
         # Average (OK, mean) image
-        avg_chi2_im = np.ma.mean(masked_chi2, axis=0).data
+        avg_chi2_im = np.ma.median(masked_chi2, axis=0).data
 
         # Total chi2
         chi_square = np.ma.sum(masked_chi2)
 
         # Calculate reduced chi2
         reduced_chi_square = chi_square / dof / len(chi2_maps)
-        mean_reduced_chi_sq = np.mean(chi2_vals)
+        mean_reduced_chi_sq = np.median(chi2_vals)
 
         # Calculate p-value
         p_value = 1 - chi2.cdf(chi_square, dof)
@@ -166,13 +175,13 @@ class ResidPlots:
 
 
     def _make_mpl_dict(self, index, vmin=None, vmax=None, avg_im=None):
-        '''
+        """
         EXTREMELY SPECIFIC PLOTTING KEYWORDS
         (Plots may not make sense or errors may be thrown). Assumes that passed
         avg_im is a residual plot of some sort.
-        '''
+        """
         if (avg_im is not None):
-            norm = colors.TwoSlopeNorm(0, vmin=-0.2, vmax=1.1)
+            norm = colors.TwoSlopeNorm(0, vmin=0.5, vmax=1)
             cmap = plt.cm.bwr_r
 
         else:
@@ -181,7 +190,7 @@ class ResidPlots:
 
             norm = colors.SymLogNorm(vmin=vmin,
                             vmax=vmax,
-                            linthresh=1e-2)
+                            linthresh=0.05)
             cmap=plt.cm.turbo
 
         mpl_dict = dict(cmap=cmap, norm=norm)
@@ -205,7 +214,7 @@ class ResidPlots:
         resid_title = 'mean norm. resid: %1.3f std=%1.3f\n'\
                     % (np.nanmean(rd.avg_im.ravel()[wg]),np.nanstd(rd.avg_im.ravel()[wg]))
         try:
-            chi2_title = '$\overline{\chi^2_{dof}} = %.2f$\nmean $\chi^2_{dof} = %.2f$'\
+            chi2_title = '$\overline{\chi^2_{dof}} = %.2f$\nmedian $\chi^2_{dof} = %.2f$'\
                         % (xd.reduced_chi_square, xd.mean_reduced_chi_sq)
             xd.title = chi2_title
         except:
@@ -214,9 +223,9 @@ class ResidPlots:
         sd.title = star_title; pd.title = psf_title; rd.title = resid_title
 
     def _make_fig(self, dicts, mpl_dicts):
-        '''
+        """
         Generic method to make residuals plots
-        '''
+        """
 
         # First things first I'm the reallest
         set_rc_params(fontsize=16)
@@ -244,7 +253,7 @@ class ResidPlots:
             if i==2:
                 cmap = plt.cm.bwr_r
                 mpl_dict = dict(
-                    norm=colors.TwoSlopeNorm(0, vmin=-5, vmax=5),
+                    norm=colors.TwoSlopeNorm(0, vmin=-2, vmax=2),
                     cmap=cmap
                 )
             else:
@@ -269,9 +278,9 @@ class ResidPlots:
 
 
     def make_chi2_plot(self, outname='chi2_residuals.png'):
-        '''
+        """
         Make Chi-squared residual image
-        '''
+        """
 
         dicts = [self.star_dict, self.psf_dict, self.chi2_dict]
 
@@ -290,7 +299,7 @@ class ResidPlots:
         fig.savefig(outname)
 
     def make_ssim_ims(self, outname='ssim.png'):
-        '''
+        """
         Calculate the structural similarity index measure (SSIM) between the
         PSF and star images. It comes from video compression, comparing
         uncompressed to compressed data.
@@ -305,34 +314,52 @@ class ResidPlots:
 
         Also calculate  normalized root mean-squared error (NRMSE) between the
         PSF and star images. 0 is perfect correspondance, 1 is no correspondance
-        '''
+        """
 
         psfs = self.psfs
         stars = self.stars
+        psf_stamps = np.array(self.psfs.stamps)
+        star_stamps = self.stars.stamps
 
-        wg = (psfs.hsm_g1 > -9999) & (stars.hsm_g1 > -9999)
+        # Mask out NaNs or Infs
+        masks = (1-np.ma.masked_invalid(psf_stamps).mask) * \
+                (1-np.ma.masked_invalid(star_stamps).mask)
+        #pdb.set_trace()
+        #masked_psfs = psfs.stamps[mask]
+        #masked_stars = stars.stamps[mask]
+
+        all_good = np.full(len(stars.x), True)
+        for i, mask in enumerate(masks):
+            # This line picks out "good" star vignets whose (unraveled) intersection
+            # with the sentinel values is empty, so the length of the list is 0
+            is_masked = np.size(np.intersect1d(mask, 0)) == 0
+            all_good[i] *= is_masked
+
+
+        wg = (self.psfs.hsm_g1 > -9999) & (self.stars.hsm_g1 > -9999)
+        wg *= all_good
 
         ssims = []
         ssim_val = []
         nrmse = []
 
-        for i, star in enumerate(np.array(stars.stamps)[wg]):
-            psf_stamp = psfs.stamps[i]
+        for i, star in enumerate(star_stamps[wg]):
+            psf_stamp = psf_stamps[wg][i]
             ssim_res = ssim(psf_stamp, star, full=True, win_size=3,
                             data_range=psf_stamp.max()-psf_stamp.min())
             ssim_val.append(ssim_res[0])
-            ssims.append(ssim_res[1] - np.median(ssim_res[1]))
+            ssims.append(ssim_res[1] - np.nanmedian(ssim_res[1]))
             nrmse.append(normalized_root_mse(star, psf_stamp))
 
         title = f'Median SSIM: %.4f\nMedian Norm. RMSE: %.4f'\
                     % (np.median(ssim_val), np.median(nrmse))
 
-        ssim_dict = dict(
-            avg_im = np.mean(ssims, axis=0),
-            ssim  = np.median(ssim_val),
-            nrmse = np.median(nrmse),
-            title = title
-        )
+        ssim_dict = {
+            'avg_im': np.nanmean(ssims, axis=0),
+            'ssim' : np.nanmedian(ssim_val),
+            'nrmse': np.nanmedian(nrmse),
+            'title': title
+        }
 
         # OK ssim too, I guess
         dicts = [self.star_dict, self.psf_dict, AttrDict(ssim_dict)]
@@ -354,14 +381,14 @@ class ResidPlots:
         fig.savefig(outname.replace('flux', 'ssim'))
 
     def run(self, polydeg=1, resid_name=None, chi2_name=None):
-        '''
+        """
         Make flux and residuals plots
-        '''
+        """
 
         # Populate dicts
         self._populate_dicts()
 
-        # Make chi-square residuals;
+        # Make chi-square residuals; this stays here!
         self.make_chi2(polydeg=polydeg, outname=chi2_name)
 
         # Get titles (they're defined here!)

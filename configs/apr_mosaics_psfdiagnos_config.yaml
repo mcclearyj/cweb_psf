@@ -1,0 +1,68 @@
+###
+### Box cutter & PSF fitting parameters
+
+# Output directory
+outdir: "./psf_diagnostics"
+
+input_catalog:
+  hdu: 2
+  #x_key: 'X_IMAGE'
+  #y_key: 'Y_IMAGE'
+  psf_x_key: 'XWIN_IMAGE'
+  psf_y_key: 'YWIN_IMAGE'
+  ra_key: 'ALPHAWIN_J2000'
+  dec_key: 'DELTAWIN_J2000'
+  ra_units: 'deg'
+  dec_units: 'deg'
+  flux_key: 'FLUX_AUTO'
+  # Leave err_image_key blank if catalog has no ERR image (assumed units = std)
+  err_image_key: 'ERR_VIGNET'
+
+# Box (aka stamp aka vignette) size for all star-psf models
+box_size: 101
+
+pixel_scale: 0.03
+
+# What kind of PSFs to model?
+psf_models:
+  psfex: True
+  webbpsf: False
+  piff: False
+  mirage: False
+  single: True
+
+
+# Cutouts to add to output catalog
+cutout_list:
+  hdu: [2]
+  extname: ["ERR"]
+
+# For SExtractor and PIFF
+weight_image:
+  hdu: 4
+  type: "MAP_WEIGHT"
+
+# Science exposure is usually 0th or 1th extension
+sci_image:
+  hdu: 1
+
+# Make a WebbPSF model?
+webb_psf:
+  # Make WebbPSF? True or False.
+  make_webb_psf: False
+  # Oversample long-wavelength channel PSFs?
+  oversample_lw: False
+
+# For making Marco-style PSFs. Leave blank if they are in same directory as images
+# single_psf:
+#  imdir=
+
+# I don't love this: directory for MIRAGE images. Uncomment if different
+# from image location
+# mirage_dir: '/Users/j.mccleary/Research/jwst_cosmos/mock_data/COSMOS2020_sims/DEC2022_v0.0.4'
+
+# Location of SEx/PIFF/PSFEx config files
+astro_config_dir: './src/astro_config/'
+
+# Reference an external star catalog or parameters
+star_param_file: './configs/apr_mosaics_star_params.yaml'

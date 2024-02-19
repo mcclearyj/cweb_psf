@@ -11,17 +11,17 @@ import ipdb, pdb
 from .utils import AttrDict, set_rc_params
 
 class QuiverPlot:
-    '''
+    """
     Quiverplot plots were getting messy, so made it a class!
-    '''
+    """
 
     def __init__(self, starmaker, psfmaker):
-        '''
+        """
         Attributes
             stars:  instance of StarMaker
             psf:  instance of PSFMaker
             scale:  scaling for quiverplots
-        '''
+        """
 
         self.stars = starmaker
         self.psfs  = psfmaker
@@ -34,7 +34,7 @@ class QuiverPlot:
 
 
     def _make_ellip_dict(self, maker, wg):
-        '''
+        """
         Calculate ellipticity parameters using input HSM moments
 
         Inputs
@@ -43,7 +43,7 @@ class QuiverPlot:
         Returns:
                 ellip_dict: dict with e1, e2, and theta for plotting,
                             plus some summary stats, cast to a class
-        '''
+        """
 
         g1 = maker.hsm_g1[wg]
         g2 = maker.hsm_g2[wg]
@@ -76,7 +76,7 @@ class QuiverPlot:
 
 
     def _make_resid_dict(self, maker1, maker2):
-        '''
+        """
         Calculate ellipticity parameters for star-psf model residuals
         Residual quantities follow the PIFF convention.
 
@@ -86,7 +86,7 @@ class QuiverPlot:
         Returns:
                 resid_dict: dict with e1, e2, and theta for plotting,
                             plus some summary stats
-        '''
+        """
 
         resid_g1 = maker1.g1 - maker2.g1
         resid_g2 = maker1.g2 - maker2.g2
@@ -197,9 +197,9 @@ class QuiverPlot:
 
 
     def _make_plot(self, dicts, quiver_dict, qkey_dict, titles, scale):
-        '''
+        """
         Make quiverplots, first making quiver_dicts
-        '''
+        """
         # First things first
         set_rc_params(fontsize=14)
 
@@ -209,7 +209,7 @@ class QuiverPlot:
         plt.rcParams.update({'legend.fontsize': 14})
 
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
-                                    figsize=[15,7], tight_layout=True)
+                                    figsize=[15,8], tight_layout=True)
 
         for i, dc in enumerate(dicts):
             # Set up masks for really circular objects
@@ -228,9 +228,9 @@ class QuiverPlot:
             )
             # adjust x, y limits
             lx, rx = axs[i].get_xlim()
-            axs[i].set_xlim(lx-1000, rx+1000)
+            axs[i].set_xlim(lx-2000, rx+2000)
             ly, ry = axs[i].get_ylim()
-            axs[i].set_ylim(ly-600, ry+400)
+            axs[i].set_ylim(ly-500, ry+500)
             key = axs[i].quiverkey(q, **qkey_dict)
             ax_divider = make_axes_locatable(axs[i])
             cax = ax_divider.append_axes("bottom", size="5%", pad="7%")
@@ -248,14 +248,25 @@ class QuiverPlot:
         set_rc_params(fontsize=16)
 
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
-                                figsize=[17,6], tight_layout=True)
+                                figsize=[17, 4.5], tight_layout=True)
         # First do the e1 map
         titles = ['Stars $e_1$',
             'PSF model $e_1$', 'Star-model residuals $e_1$']
         for i, dc in enumerate(dicts):
-            im = axs[i].hexbin(self.x, self.y, C=dc.e1,
-                gridsize=(8, 6), cmap=plt.cm.RdYlBu_r)
+            if i==0:
+                vmin = 0.8*np.mean(dc.e1)
+                #vmin = np.min(dc.e1)
+                vmax = 1.2*np.median(dc.e1)
+            else:
+                vmin = np.min(dc.e1)
+                vmax = np.max(dc.e1)
+            im = axs[i].hexbin(self.x, self.y, C=dc.e1, gridsize=(7, 7),
+                    cmap=plt.cm.RdYlBu_r)
             axs[i].set_title(titles[i])
+            lx, rx = axs[i].get_xlim()
+            axs[i].set_xlim(lx-2000, rx+2000)
+            ly, ry = axs[i].get_ylim()
+            axs[i].set_ylim(ly-1000, ry+1000)
             divider = make_axes_locatable(axs[i])
             cax = divider.append_axes("right", size="5%", pad=0.05)
             fig.colorbar(im, cax=cax)
@@ -263,12 +274,25 @@ class QuiverPlot:
 
         # Then do e2 map
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
-                                figsize=[17,6], tight_layout=True)
+                                figsize=[17, 4.5], tight_layout=True)
         titles = ['Stars $e_2$',
             'PSF model $e_2$', 'Star-model residuals $e_2$']
         for i, dc in enumerate(dicts):
-            im = axs[i].hexbin(self.x, self.y, C=dc.e2,
-                gridsize=(8, 6), cmap=plt.cm.RdYlBu_r)
+            '''
+            if i==0:
+                #vmin = 0.8*np.mean(dc.e2)
+                #vmin = np.min(dc.e2)
+                vmax = 1.2*np.mean(dc.e2)
+            else:
+                vmin = np.min(dc.e2)
+                vmax = np.max(dc.e2)
+            '''
+            im = axs[i].hexbin(self.x, self.y, C=dc.e2, gridsize=(7, 7),
+                    cmap=plt.cm.RdYlBu_r)
+            lx, rx = axs[i].get_xlim()
+            axs[i].set_xlim(lx-2000, rx+2000)
+            ly, ry = axs[i].get_ylim()
+            axs[i].set_ylim(ly-1000, ry+1000)
             axs[i].set_title(titles[i])
             divider = make_axes_locatable(axs[i])
             cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -277,19 +301,24 @@ class QuiverPlot:
 
         # Then sigma map
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
-                                    figsize=[17,6], tight_layout=True)
+                                    figsize=[17,4.5], tight_layout=True)
         titles = ['Stars $\sigma_{HSM}$',
             'PSF model $\sigma_{HSM}$', 'Star-model residuals $\sigma_{HSM}$']
         for i, dc in enumerate(dicts):
-
             if i==0:
-                vmin = 0.8*np.mean(dc.sigma)
-                vmax = 1.1*np.mean(dc.sigma)
+                #vmin = 0.8*np.mean(dc.sigma)
+                vmin = np.min(dc.sigma)
+                vmax = 1.2*np.median(dc.sigma)
             else:
-                vmin = np.min(dc.sigma); vmax = np.max(dc.sigma)
+                vmin = np.min(dc.sigma)
+                vmax = np.max(dc.sigma)
 
-            im = axs[i].hexbin(self.x, self.y, C=dc.sigma, gridsize=(8, 6),
-                cmap=plt.cm.RdYlBu_r, vmin=vmin, vmax=vmax)
+            im = axs[i].hexbin(self.x, self.y, C=dc.sigma, gridsize=(7, 7),
+                    cmap=plt.cm.RdYlBu_r, vmin=vmin, vmax=vmax)
+            lx, rx = axs[i].get_xlim()
+            axs[i].set_xlim(lx-2000, rx+2000)
+            ly, ry = axs[i].get_ylim()
+            axs[i].set_ylim(ly-1000, ry+1000)
             axs[i].set_title(titles[i])
             divider = make_axes_locatable(axs[i])
             cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -298,10 +327,10 @@ class QuiverPlot:
 
 
     def run(self, scale=1, outname='quiverplot.png'):
-        '''
+        """
         Take a table or whatever, make quiverplot with it
         Filter out failed fits first!
-        '''
+        """
 
         # Populate the dicts
         self._populate_dicts()

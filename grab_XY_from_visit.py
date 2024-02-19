@@ -69,6 +69,16 @@ def convert_wcs2pix(imfile, coords, config):
     with ImageModel(imfile) as model:
         radec_to_xy = model.meta.wcs.get_transform('world', 'detector')
         x, y = radec_to_xy(ra, dec)
+
+    # Not entirely sure how one might do this; polygons? Assuming images
+    # are all the same dimensions.
+
+    # CRPIX are 1 in this WCS convention
+    x_cen = 9163.4587; y_cen = 3783.8069
+    x_min = x_cen - (17717.755/2); x_max = x_cen + (17717.755/2)
+    y_min = y_cen - (6958.1233/2); y_max = y_cen + (6958.1233/2) 
+    
+    wg = (x > x_min) & (x<x_max) & (y > y_min) & (y < y_max)
     
     
     # Add corrected RA & Dec to catalog
