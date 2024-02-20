@@ -6,8 +6,6 @@ outdir: "./psf_diagnostics"
 
 input_catalog:
   hdu: 2
-  #x_key: 'X_IMAGE'
-  #y_key: 'Y_IMAGE'
   psf_x_key: 'XWIN_IMAGE'
   psf_y_key: 'YWIN_IMAGE'
   ra_key: 'ALPHAWIN_J2000'
@@ -21,6 +19,7 @@ input_catalog:
 # Box (aka stamp aka vignette) size for all star-psf models
 box_size: 101
 
+# Image pixel scale to be using
 pixel_scale: 0.03
 
 # What kind of PSFs to model?
@@ -46,18 +45,8 @@ weight_image:
 sci_image:
   hdu: 1
 
-# I don't love this: directory for making Marko-style PSFs.
-single_psf:
-  single_psf_dir: /n17data/shuntov/PSFEx_work/PSF_JWST_COSMOS-Web/
-  # filt and tile will get replaced with filter and tile!
-  single_psf_name: JWST-PSFEx_out_filt_tile_psf_v4.0.psf
-
-# I don't love this: directory for MIRAGE images. Uncomment if different
-# from image location
-# mirage_dir: '/Users/j.mccleary/Research/jwst_cosmos/mock_data/COSMOS2020_sims/DEC2022_v0.0.4'
-
 # Location of SEx/PIFF/PSFEx config files
 astro_config_dir: './src/astro_config/'
 
 # Reference an external star catalog or parameters
-star_param_file: './configs/apr_mosaics_star_params.yaml'
+star_param_file: './configs/real_mosaics_star_params.yaml'

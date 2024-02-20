@@ -101,18 +101,39 @@ class PSFRenderer:
         pass
 
     def _render_single(self):
-        # Render Marko-format PSF (no spatial variation)
+        """
+        Render Marko-format PSF (no spatial variation). For this to function
+        properly, the basename in the single_psf portion of the config should
+        have a format like 'JWST-PSFEx_out_filt_tile_psf_v4.0.psf', literally
+        with the words 'filt' and 'tile' where they should be swappped for the
+        actual filter and tile.
+        """
+        # Some error checking
+        #psfdir = os.path.dirname(self.image_file)
+        if 'single_psf' not in self.run_config.items():
+            raise("PSFRenderer: missing single_psf config items")
+        if ('psf_dir' not in self.run_config['single_psf'].items()):
+            raise("PSFRenderer: missing single_psf: psf_dir key")
+        if ('basename' not in self.run_config['single_psf'].items()):
+            raise("PSFRenderer: missing single_psf: basename key")
 
-        psfdir = os.path.dirname(self.image_file)
+        # To business
+        psf_dir = self.run_config['single_psf']['psf_dir']
+        psf_basename = self.run_config['single_psf']['basename']
         bandpass = re.search(r"f(\d){3}w", self.image_file).group()
         tile = re.search(r"[A,B](\d){1}", self.image_file).group()
-        #psfname = f'JWST-PSFEx_out_{bandpass}_{tile}_psf_v4.0.psf'
-        psfname = '/Users/j.mccleary/Research/jwst_cosmos/real_data/Jan2024/marko_psfex/JWST-PSFEx_out_f277w_B4_psf_v4.0.psf'
+        psf_name = psf_basename.replace('tile', tile).replace('filt', bandpass)
+
+        psf_file = os.path.join(psf_dir, psf_name)
 
         # Open FITS-format PSF, grab extensions
-        single_psf = fits.open(psfname)
-        extension_names = [ext.name for ext in single_psf]
+        try:
+            single_psf = fits.open(psf_file)
+        except FileNotFoundError as fnf:
+            print("No single PSF file found at {psf_file}")
+            print(fnf)
 
+        extension_names = [ext.name for ext in single_psf]
         if 'DET_DIST' in extension_names:
             ext = 'DET_DIST'
         elif 'PSF_DATA' in extension_names:

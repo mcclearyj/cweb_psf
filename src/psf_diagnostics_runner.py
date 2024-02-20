@@ -139,7 +139,6 @@ class PSFDiagnosticsRunner:
         chisq_resid_vals = chisq_plot.return_chi2_resid_vals()
 
         # Organize results by model type
-        #
         all_results[psfs.psf_type] = {
             'HSM_resids': quiver_resid_vals,
             'ssim_resids': ssim_resid_vals,
@@ -148,7 +147,9 @@ class PSFDiagnosticsRunner:
         }
 
         # Define the filename for the JSON file
-        results_filename = os.path.join(self.config['outdir'], f"{psfs.psf_type}_diagnostics_results.json")
+        results_filename = os.path.join(
+            self.config['outdir'], f"{psfs.psf_type}_diagnostics_results.json"
+        )
 
         # Write results to a JSON file
         with open(results_filename, 'w') as outfile:
