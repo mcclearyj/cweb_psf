@@ -27,8 +27,10 @@ def parse_args():
 
     parser.add_argument('images', nargs='+',
                         help = 'Images to process (wildcards OK)')
-    parser.add_argument('--config', default=None,
+    parser.add_argument('-config', default=None,
                         help = 'Configuration file for this script')
+    parser.add_argument('-outdir', default=None,
+                        help = 'Where to save output')
     parser.add_argument('--vb', action='store_true', default=True,
                         help = 'Print detailed messages [does nothing for now]')
 
@@ -490,7 +492,7 @@ def main(args):
     run_config = read_yaml(args.config)
 
     # Adds an outdir parameter to config if it was missing
-    make_outdir(run_config)
+    run_config = make_outdir(run_config, arg=args.outdir)
 
     # Get astromatic configs
     astro_config_dir = run_config['astro_config_dir']
@@ -513,7 +515,7 @@ def main(args):
 
         # Add cutouts to catalogs
         add_cutouts(image_file=image_file, cat_file=cat_file,
-                    boxcut=boxcut, run_config=run_config, add_pix2wcs=False)
+                    boxcut=boxcut, run_config=run_config, add_pix2wcs=True)
 
         try:
 
@@ -535,7 +537,7 @@ def main(args):
             # And also to galaxy catalog, if that's what's up
             if run_config['augment_galcat'] == True:
                 renderer = PSFRenderer(image_file=image_file,
-                                       cat_file=cat_to_augment,
+                                       cat_file=cat_file,
                                        run_config=run_config)
                 renderer.render()
 

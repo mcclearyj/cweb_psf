@@ -10,3 +10,4 @@ local_catalog_utils/
 catalog_utils/*png
 catalog_utils/*pdf
 *working*
+src/__pycache__/

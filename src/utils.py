@@ -140,11 +140,11 @@ def make_outdir(config, arg=None, path='./', cval='outdir'):
         config: A parameter named 'outdir' is added if it was missing
     '''
 
-    if (arg is None):
+    if arg == None:
         outdir = config[cval]
     else:
         outdir = arg
-
+        config[cval] = outdir
     # Set a sensible default if outdir is still none
     if outdir is None:
         #basedir = os.path.commonpath(images)
@@ -159,7 +159,7 @@ def make_outdir(config, arg=None, path='./', cval='outdir'):
     else:
         print(f'Output directory {outdir} exists, continuing...')
 
-    return
+    return config
 
 def concatenate_catalogs(catnames, outname=None):
     """This I want to run on all the teeny single exposure catalogs.

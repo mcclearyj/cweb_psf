@@ -110,12 +110,12 @@ class PSFRenderer:
         """
         # Some error checking
         #psfdir = os.path.dirname(self.image_file)
-        if 'single_psf' not in self.run_config.items():
-            raise("PSFRenderer: missing single_psf config items")
-        if ('psf_dir' not in self.run_config['single_psf'].items()):
-            raise("PSFRenderer: missing single_psf: psf_dir key")
-        if ('basename' not in self.run_config['single_psf'].items()):
-            raise("PSFRenderer: missing single_psf: basename key")
+        if 'single_psf' not in self.run_config.keys():
+            raise KeyError("PSFRenderer: missing single_psf config items")
+        if ('psf_dir' not in self.run_config['single_psf'].keys()):
+            raise KeyError("PSFRenderer: missing single_psf: psf_dir key")
+        if ('basename' not in self.run_config['single_psf'].keys()):
+            raise KeyError("PSFRenderer: missing single_psf: basename key")
 
         # To business
         psf_dir = self.run_config['single_psf']['psf_dir']
