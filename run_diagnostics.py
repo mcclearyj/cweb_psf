@@ -26,6 +26,8 @@ def parse_args():
 			help = 'Augmented star catalogs to process (wildcards OK)')
     parser.add_argument('-config', default=None,
                         help = 'Configuration file for this script')
+    parser.add_argument('-outdir', default=None,
+                        help = 'Output directory')
     parser.add_argument('--vb', action='store_true', default=True,
                         help = 'Print detailed messages [does nothing for now]')
 
@@ -37,7 +39,7 @@ def main(args):
     config = read_yaml(args.config)
 
     # Adds an outdir parameter to config if it was missing
-    make_outdir(config)
+    make_outdir(config, arg=args.outdir)
 
     # Run for every star cat
     starcats = args.starcats

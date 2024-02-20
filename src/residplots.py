@@ -194,7 +194,7 @@ class ResidPlots:
         set_rc_params(fontsize=16)
 
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
-                                    figsize=[15, 7], tight_layout=True)
+                                    figsize=[15, 5], tight_layout=True)
 
         for i, dc in enumerate(dicts):
             im = axs[i].imshow(dc.avg_im, **mpl_dicts[i])
