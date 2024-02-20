@@ -2,8 +2,8 @@
 ### Box cutter & PSF fitting parameters
 
 # Output directory
-outdir: "./psf_diagnostics"
-
+#outdir: "./psf_diagnostics"
+outdir: "/n23data1/mccleary/real_data/Jan2024/psf-diagnostics"
 input_catalog:
   hdu: 2
   psf_x_key: 'XWIN_IMAGE'
@@ -36,17 +36,3 @@ cutout_list:
   hdu: [2]
   extname: ["ERR"]
 
-# For SExtractor and PIFF
-weight_image:
-  hdu: 4
-  type: "MAP_WEIGHT"
-
-# Science exposure is usually 0th or 1th extension
-sci_image:
-  hdu: 1
-
-# Location of SEx/PIFF/PSFEx config files
-astro_config_dir: './src/astro_config/'
-
-# Reference an external star catalog or parameters
-star_param_file: './configs/real_mosaics_star_params.yaml'

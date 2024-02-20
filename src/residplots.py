@@ -178,7 +178,7 @@ class ResidPlots:
         wg = (rd.avg_im.ravel() > -100) & (rd.avg_im.ravel() < 100)
         resid_title = \
             f'mean norm. resid: {np.nanmean(rd.avg_im.ravel()[wg]):1.3f}' + \
-            '$\pm$' + f'{np.nanstd(rd.avg_im.ravel()[wg]): 1.3f}'
+            ' $\pm$' + f'{np.nanstd(rd.avg_im.ravel()[wg]): 1.3f}'
 
         #resid_title = \
         # 'mean norm. resid: %1.3f std=%1.3f\n' % (rd.mean_flux, rd.std_flux)
@@ -218,9 +218,7 @@ class ResidPlots:
             if i==2:
                 cmap = plt.cm.bwr_r
                 mpl_dict = dict(
-                    norm=colors.TwoSlopeNorm(
-                        np.median(dct.avg_im)
-                    ),
+                    norm=colors.TwoSlopeNorm(0),
                     cmap=cmap
                 )
             else:

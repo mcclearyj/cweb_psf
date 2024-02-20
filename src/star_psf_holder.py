@@ -175,7 +175,7 @@ class StarPSFHolder:
 
         # Add noise; empirically, sky level is better than sex bkg
         # for large vignettes. Well, maybe.
-        if self.psf_type not in ['null']:
+        if self.psf_type not in ['piff']:
             if self.vb == True: print("\nAdding noise to PSF\n")
             noise = np.random.normal(
                 loc=sky_level,

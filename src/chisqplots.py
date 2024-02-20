@@ -271,7 +271,7 @@ class ChiSqPlots:
         for i, dct in enumerate(dicts):
             if i==2:
                 mpl_dict = dict(
-                    norm = colors.LogNorm(vmax=100),
+                    norm = colors.LogNorm(),
                     cmap=plt.cm.RdYlBu_r
                 )
             else:
