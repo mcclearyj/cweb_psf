@@ -1,0 +1,32 @@
+{
+    "single": {
+        "HSM_resids": {
+            "median_g": 0.05282461605153459,
+            "median_e": 0.05282461605153458,
+            "median_sigma": -0.022973917722702027,
+            "mean_sigma": 0.012972358858043497,
+            "std_sigma": 0.18923617095059814
+        },
+        "ssim_resids": {
+            "ssim": 0.27158502723503036,
+            "median_ssim": 0.12346528175421831,
+            "std_ssim": 0.28789019290712253,
+            "nrmse": 0.9104018299039954,
+            "std_nrmse": 0.18175718386175174,
+            "title": "Median SSIM: 0.123\nMedian Norm. RMSE: 0.913"
+        },
+        "flux_resids": {
+            "fwhm": "0.11332162259033335",
+            "sigma": "1.6428430080413818",
+            "mean_flux": "-0.8789501",
+            "std_flux": "5.6047745"
+        },
+        "chisq_resids": {
+            "reduced_chi_square": 201.05602495543673,
+            "mean_reduced_chi_sq": 3.4772611073815023,
+            "std_reduced_chi_sq": 1029.3134287602315,
+            "p_value": 0.0,
+            "title": "reduced $\\chi^2_{dof} = $201.06\n$\\overline{\\chi^2_{dof}} = $3.48 $\\pm$ 1029.31"
+        }
+    }
+}
