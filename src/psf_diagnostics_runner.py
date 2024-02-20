@@ -160,6 +160,26 @@ class PSFDiagnosticsRunner:
             f" model to {results_filename}"
         )
 
+    def make_ouput_subdir(self):
+        """
+        Bit of a kludge, but make a directory with the name/tile of
+        image inside of 'outdir' for easier organization
+        """
+        basename = os.path.basename(self.catalog_file).split('.fits')[0]
+        outdir = os.config['outdir']
+        subdir = os.path.join(outdir, basename)
+
+        # Now replace outdir with subdir!
+        os.config['outdir'] = subdir
+
+        if not os.path.isdir(subdir):
+            cmd = f'mkdir -p {subdir}'
+            os.system(cmd)
+            print(f'Made output directory {subdir}')
+        else:
+            print(f'Output directory {subdir} exists, continuing...')
+
+        return
     def run_all(self, vb=False):
         """
         Loop over all PSF types and get diagnostics, creating an instance of

@@ -46,6 +46,7 @@ def main(args):
 
     for starcat in starcats:
         psf_diagnostic = PSFDiagnosticsRunner(starcat, config=config)
+        psf_diagnostic.make_ouput_subdir()
         psf_diagnostic.run_all()
 
     return 0
