@@ -8,9 +8,9 @@
 ####
 
 ## Global imports
-
 from argparse import ArgumentParser
 import pdb
+import re
 
 ## Local imports
 from src.plotter import size_mag_plots
@@ -41,16 +41,19 @@ def main(args):
     # Adds an outdir parameter to config if it was missing
     make_outdir(config, arg=args.outdir)
 
-    # Run for every star cat
+    # For convenience, concatenate individual star catalogs
     starcats = args.starcats
+    
+    # A little kludgy, but:
+    bandpass = re.search(r"f(\d){3}w", starcats[0]).group().upper()
+    combined_starcat = concatenate_catalogs(
+        starcats, outname=f'combined_validation_starcats_{bandpass}.fits', hdu=2
+    )
 
-    for starcat in starcats:
-        psf_diagnostic = PSFDiagnosticsRunner(starcat, config=config)
-        psf_diagnostic.make_ouput_subdir()
-        try:
-            psf_diagnostic.run_all()
-        except:
-            pdb.set_trace()
+    # OK, now run on combined catalog 
+    psf_diagnostic = PSFDiagnosticsRunner(combined_starcat, config=config)
+    psf_diagnostic.run_all()
+        
     return 0
 if __name__ == '__main__':
 

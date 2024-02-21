@@ -5,6 +5,8 @@ import astropy.wcs as wcs
 import yaml
 import re
 import os
+import glob 
+from astropy.table import Table, vstack
 
 class AttrDict(dict):
     '''
@@ -161,27 +163,32 @@ def make_outdir(config, arg=None, path='./', cval='outdir'):
 
     return config
 
-def concatenate_catalogs(catnames, outname=None):
+def concatenate_catalogs(catnames, outname=None, hdu=1):
     """This I want to run on all the teeny single exposure catalogs.
     I am going to operate like I have the run config available, too"""
 
     if outname == None:
         outname='combined_catalog.fits'
 
-    fits_files = glob.glob(catnames)
+    if type(catnames) == str:
+        fits_files = glob.glob(catnames)
+    elif type(catnames) == list:
+        fits_files = catnames
+    else:
+        raise ValueError("concatenate_catalogs: catnames must be string or list")
 
     # List to hold tables
     table_list = []
 
     # Loop over all your FITS files
     for fits_file in fits_files:
-        table = Table.read(fits_file)
+        table = Table.read(fits_file, hdu=hdu)
         table_list.append(table)
 
     # Vertically stack tables
     combined_table = vstack(table_list)
 
     # Save the combined table to a new FITS file
-    combined_table.write(outname, format='fits')
+    combined_table.write(outname, format='fits', overwrite=True)
 
     return combined_table

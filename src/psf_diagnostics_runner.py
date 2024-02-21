@@ -34,13 +34,16 @@ class PSFDiagnosticsRunner:
         self.outdir = config['outdir']
 
         # Load FITS catalog with stars and everything
-        try:
-            self.catfitsObj = fitsio.FITS(catalog_file, 'rw')
-            hdu = config['input_catalog']['hdu']
-            self.catalog = self.catfitsObj[hdu].read()
-        except FileNotFoundError as fnf:
-            print('PSFDiagnostics: no catalog found at supplied filepath:')
-            print(fnf)
+        if type(catalog_file) == str:
+            try:
+                self.catfitsObj = fitsio.FITS(catalog_file, 'rw')
+                hdu = config['input_catalog']['hdu']
+                self.catalog = self.catfitsObj[hdu].read()
+            except FileNotFoundError as fnf:
+                print('PSFDiagnostics: no catalog found at supplied filepath:')
+                print(fnf)
+        else:
+            self.catalog = catalog_file
 
         # Allowed PSF models
         self.model_map = [
