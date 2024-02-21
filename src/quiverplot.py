@@ -222,7 +222,7 @@ class QuiverPlot:
         plt.rcParams.update({'legend.fontsize': 14})
 
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
-                                    figsize=[15,8], tight_layout=True)
+                                    figsize=[15, 8], tight_layout=True)
 
         for i, dc in enumerate(dicts):
             # Set up masks for really circular objects
@@ -261,7 +261,7 @@ class QuiverPlot:
         set_rc_params(fontsize=16)
 
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
-                                figsize=[17, 4.5], tight_layout=True)
+                                figsize=[15, 8], tight_layout=True)
         # First do the e1 map
         titles = ['Stars $e_1$',
             'PSF model $e_1$', 'Star-model residuals $e_1$']
@@ -287,7 +287,7 @@ class QuiverPlot:
 
         # Then do e2 map
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
-                                figsize=[17, 4.5], tight_layout=True)
+                                figsize=[15, 8], tight_layout=True)
         titles = ['Stars $e_2$',
             'PSF model $e_2$', 'Star-model residuals $e_2$']
         for i, dc in enumerate(dicts):
@@ -314,7 +314,7 @@ class QuiverPlot:
 
         # Then sigma map
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
-                                    figsize=[17,4.5], tight_layout=True)
+                                    figsize=[15, 8], tight_layout=True)
         titles = ['Stars $\sigma_{HSM}$',
             'PSF model $\sigma_{HSM}$', 'Star-model residuals $\sigma_{HSM}$']
         vdict = [

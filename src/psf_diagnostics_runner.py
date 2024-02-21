@@ -31,15 +31,19 @@ class PSFDiagnosticsRunner:
         self.sky_level = []
         self.sky_std = []
         self.star_fluxes = []
+        self.outdir = config['outdir']
 
         # Load FITS catalog with stars and everything
-        try:
-            self.catfitsObj = fitsio.FITS(catalog_file, 'rw')
-            hdu = config['input_catalog']['hdu']
-            self.catalog = self.catfitsObj[hdu].read()
-        except FileNotFoundError as fnf:
-            print('PSFDiagnostics: no catalog found at supplied filepath:')
-            print(fnf)
+        if type(catalog_file) == str:
+            try:
+                self.catfitsObj = fitsio.FITS(catalog_file, 'rw')
+                hdu = config['input_catalog']['hdu']
+                self.catalog = self.catfitsObj[hdu].read()
+            except FileNotFoundError as fnf:
+                print('PSFDiagnostics: no catalog found at supplied filepath:')
+                print(fnf)
+        else:
+            self.catalog = catalog_file
 
         # Allowed PSF models
         self.model_map = [
@@ -100,14 +104,14 @@ class PSFDiagnosticsRunner:
 
         # Define plot names, incl. quiver, resid and chi2
         quiv_name = os.path.join(
-            self.config['outdir'],
+            self.outdir,
             '_'.join([psfs.psf_type, 'quiverplot.png'])
         )
         resid_name = os.path.join(
-            self.config['outdir'], '_'.join([psfs.psf_type, 'flux_resid.png'])
+            self.outdir, '_'.join([psfs.psf_type, 'flux_resid.png'])
         )
         chisq_name = os.path.join(
-            self.config['outdir'], '_'.join([psfs.psf_type, 'chi2.png'])
+            self.outdir, '_'.join([psfs.psf_type, 'chi2.png'])
         )
 
         # Make quiverplots
@@ -148,7 +152,7 @@ class PSFDiagnosticsRunner:
 
         # Define the filename for the JSON file
         results_filename = os.path.join(
-            self.config['outdir'], f"{psfs.psf_type}_diagnostics_results.json"
+            self.outdir, f"{psfs.psf_type}_diagnostics_results.json"
         )
 
         # Write results to a JSON file
@@ -166,11 +170,11 @@ class PSFDiagnosticsRunner:
         image inside of 'outdir' for easier organization
         """
         basename = os.path.basename(self.catalog_file).split('.fits')[0]
-        outdir = os.config['outdir']
+        outdir = self.config['outdir']
         subdir = os.path.join(outdir, basename)
 
         # Now replace outdir with subdir!
-        os.config['outdir'] = subdir
+        self.outdir = subdir
 
         if not os.path.isdir(subdir):
             cmd = f'mkdir -p {subdir}'
@@ -179,7 +183,6 @@ class PSFDiagnosticsRunner:
         else:
             print(f'Output directory {subdir} exists, continuing...')
 
-        return
     def run_all(self, vb=False):
         """
         Loop over all PSF types and get diagnostics, creating an instance of
