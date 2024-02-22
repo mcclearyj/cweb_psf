@@ -80,7 +80,6 @@ def main(args):
         visit_mosaics = visit_mosaics,
         config = config
     )
-
     grab_xy_from_visit.run()
 
     return 0

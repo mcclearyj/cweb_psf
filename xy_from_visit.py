@@ -70,20 +70,20 @@ class GrabXYCoords:
         # Get header & build a WCS from it
         with ImageModel(imfile) as model:
             radec_to_xy = model.meta.wcs.get_transform('world', 'detector')
-            x, y = radec_to_xy(ra, dec)
+            xs, ys = radec_to_xy(ras, decs)
 
         # Return imcat_fits, now with corrected RA, Dec column
-        return x, y
+        return xs, ys
 
     def create_output_catalog(self, visits):
         """
         Create a dummy FITS catalog, which will be populated
         with RA, Dec, size measures from real catalog and X/Y from visit
         """
-        imcat = self.imcat[10000:12000]
-        ras = self.ras[10000:12000]
-        decs = self.decs[10000:12000]
-        number = self.imcat['NUMBER'][10000:12000]
+        imcat = self.imcat
+        ras = self.ras
+        decs = self.decs
+        number = self.imcat['NUMBER']
         visits = np.array(visits, dtype=int)
 
         # These two will hold the pixel X, Y
@@ -132,7 +132,6 @@ class GrabXYCoords:
 
         # For convenience
         output_cat = self.output_cat
-
         # Loop over visits, reading in image WCS one at a time
         for visit_mosaic in self.visit_mosaics:
 
@@ -140,7 +139,7 @@ class GrabXYCoords:
             print(f"Working on mosaic {visit_mosaic}")
 
             # Find entries in catalog in this visit
-            this_visit = int(os.path.basename(mosaic_name).split('_')[1])
+            this_visit = int(os.path.basename(visit_mosaic).split('_')[1])
             wg = output_cat['visit_num'] == this_visit
 
             # Call to transform coords
@@ -174,7 +173,7 @@ class GrabXYCoords:
         self.create_output_catalog(visits)
 
         # Save to file as a pseudocheckpoint
-        self.save_catalog()
+        #self.save_catalog()
 
         # Loop over visit visits, select matching gals, get X, Y
         self.get_pixcoord_from_visit()

@@ -143,7 +143,7 @@ def which_visit(coords_file, ras, decs):
 
     ## Grab full visit names from coords_file
     visit_names = list(map(
-        functools.partial(_which_visit, coords_file), ras[10000:12000], decs[10000:12000]
+        functools.partial(_which_visit, coords_file), ras, decs
     ))
 
     ## Now isolate visit
