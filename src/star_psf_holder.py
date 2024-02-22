@@ -105,7 +105,7 @@ class StarPSFHolder:
         substamps = np.array(substamps)
 
         # Save as attribute of class (?)
-        sky_med = np.nanmedian(substamps)
+        sky_med = np.nanmean(substamps)
         sky_std = np.nanstd(substamps)
 
         return sky_med, sky_std

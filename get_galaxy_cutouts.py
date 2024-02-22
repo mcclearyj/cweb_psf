@@ -81,14 +81,14 @@ def run_sextractor(image_file, star_config, run_config):
     img_basename = os.path.basename(image_file)
 
     cat_name = os.path.join(
-                outdir, img_basename.replace('.fits','.cat.fits')
-                )
+        outdir, img_basename.replace('.fits','.cat.fits')
+    )
     bkg_sub  = os.path.join(
-                    outdir, img_basename.replace('.fits','.sub.fits')
-                    )
+        outdir, img_basename.replace('.fits','.sub.fits')
+    )
     aper_name = os.path.join(
-                outdir, img_basename.replace('.fits','.aper.fits')
-                )
+        outdir, img_basename.replace('.fits','.aper.fits')
+    )
 
     image_arg  = f'"{image_file}[{sci}]"'
     seeing_arg = f'-SEEING_FWHM {star_fwhm}'
