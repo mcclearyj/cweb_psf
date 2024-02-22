@@ -46,7 +46,6 @@ class ResidPlots:
         self.resid_dict = {}
         self.chi2_dict = {}
 
-
     def return_flux_resid_vals(self):
         """ Convenience function to access flux residuals """
         # Remove first key (an image)
@@ -122,14 +121,30 @@ class ResidPlots:
 
         psfs  = self.psfs
         stars = self.stars
+
+        # Filter out garbage?
+        star_stamps = stars.stamps
+        corr_ss = []
+        for ss in star_stamps:
+            ss[ss < -1000] = np.nan
+            corr_ss.append(ss)
+        stars.stamps = np.array(corr_ss)
+
+        psf_stamps = psfs.stamps
+        corr_ps = []
+        for ps in psf_stamps:
+            ps[ps < -10] = np.nan
+            corr_ps.append(ps)
+        psfs.stamps = np.array(corr_ps)
+
         resids = np.array(psfs.stamps - stars.stamps) / \
                     (np.array(stars.stamps) + 1.0e-6)
 
         # filter out garbage
         for i, resid in enumerate(resids):
-            wb = (np.abs(resid) > 50)
+            wb = (np.abs(resid) > 100)
             resid[wb] = np.nan
-            resids[i] = resid
+            resids[i] = resid - np.nanmedian(resid)
 
         wg = (psfs.hsm_g1 > -9999) & (stars.hsm_g1 > -9999)
         self.star_dict  = self._make_im_dict(stars, stars.stamps, wg)
@@ -143,7 +158,7 @@ class ResidPlots:
         avg_im is a residual plot of some sort.
         """
         if (avg_im is not None):
-            norm = colors.TwoSlopeNorm(0, vmin=-1, vmax=1)
+            norm = colors.TwoSlopeNorm(0)
             cmap = plt.cm.bwr_r
 
         else:

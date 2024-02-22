@@ -1,0 +1,39 @@
+##
+## xy_from_visit_config.yaml
+##
+#catalog_path = '/Users/j.mccleary/Research/jwst_cosmos/real_data/catalogs/'
+#catalog_name = 'COSMOSWeb_master_v1.6.0-sersic+BD-em_cgs_LePhare_nodupl.fits'
+#catalog = fits.open(os.path.join(catalog_path, catalog_name))
+
+# This is the master catalog you are converting, local path & name
+input_catalog:
+  # catalog_path: /path/to/your/cat
+  path: '/Users/j.mccleary/Research/jwst_cosmos/real_data/Jan2024/marko_psfex'
+  # catalog name: master_cat.fits
+  name: 'COSMOS-Web-PSFEx-SE-Cat_f277w_B9.fits'
+  # RA column name in catalog
+  ra_colname: 'ALPHA_J2000'
+  # Dec column name in catalog
+  dec_colname: 'DELTA_J2000'
+  # Which HDU has info? HDU=2 for ldac, usually 1 otherwise
+  hdu: 2
+
+# Path to resampled mosaics
+visit_mosaic_path: '/Users/j.mccleary/Research/jwst_cosmos/real_data/Jan2024/20mas_resamp'
+
+# Parameters for Max Franco-format visit name lists
+coord_files:
+  # Path to visit name lists
+  path: './'
+  # Names of visit name lists; hopefully, names include bandpass!
+  names: ['coords_f115w_CW_JAN2024.txt', 'coords_f150w_CW_JAN2024.txt', 'coords_f277w_CW_JAN2024.txt', 'coords_f444w_CW_JAN2024.txt']
+
+# Bandpasses to use: any of f115w, f150w, f277w, f444w
+bandpasses: 'f277w'
+
+# Output catalog name
+output_catalog:
+  # Desired output path
+  path: '/Users/j.mccleary/Research/jwst_cosmos/real_data/Jan2024/20mas_resamp'
+  # Desired output name
+  name: 'test_xy.fits'

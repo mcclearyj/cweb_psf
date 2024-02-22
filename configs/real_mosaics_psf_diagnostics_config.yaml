@@ -5,7 +5,7 @@
 #outdir: "./psf_diagnostics"
 outdir: "/n23data1/mccleary/real_data/Jan2024/psf-diagnostics"
 input_catalog:
-  hdu: 2
+  hdu: 1
   psf_x_key: 'XWIN_IMAGE'
   psf_y_key: 'YWIN_IMAGE'
   ra_key: 'ALPHAWIN_J2000'
@@ -35,4 +35,3 @@ psf_models:
 cutout_list:
   hdu: [2]
   extname: ["ERR"]
-
