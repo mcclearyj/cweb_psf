@@ -63,7 +63,7 @@ def main(args):
     # Locate single-visit mosaics
     visit_mosaic_path = config['visit_mosaic_path']
     visit_mosaics = glob.glob(
-        os.path.join(visit_mosaic_path, 'visit*i2d.fits')
+        os.path.join(visit_mosaic_path, 'visit*crf_20mas_i2d.fits')
     )
 
     # A little sanity check

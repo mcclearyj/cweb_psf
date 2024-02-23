@@ -8,7 +8,7 @@
 # This is the master catalog you are converting, local path & name
 input_catalog:
   # catalog_path: /path/to/your/cat
-  path: '/Users/j.mccleary/Research/jwst_cosmos/real_data/Jan2024/marko_psfex'
+  path: '/n17data/shuntov/PSFEx_work/Catalogs-JWST/v3.0/'
   # catalog name: master_cat.fits
   name: 'COSMOS-Web-PSFEx-SE-Cat_f277w_B9.fits'
   # RA column name in catalog
@@ -19,12 +19,13 @@ input_catalog:
   hdu: 2
 
 # Path to resampled mosaics
-visit_mosaic_path: '/Users/j.mccleary/Research/jwst_cosmos/real_data/Jan2024/20mas_resamp'
+visit_mosaic_path: '/n23data2/mfranco/jwst/COSMOS-Web_jan_2024/products/pipeline_level3_better_stripping_jhat/f150w/'
+#visit_64_f150w_COSMOS-Web_from_crf_20mas_i2d.fits/Users/j.mccleary/Research/jwst_cosmos/real_data/Jan2024/20mas_resamp'
 
 # Parameters for Max Franco-format visit name lists
 coord_files:
   # Path to visit name lists
-  path: './'
+  path: '/n23data1/mccleary/cweb_psf'
   # Names of visit name lists; hopefully, names include bandpass!
   names: ['coords_f115w_CW_JAN2024.txt', 'coords_f150w_CW_JAN2024.txt', 'coords_f277w_CW_JAN2024.txt', 'coords_f444w_CW_JAN2024.txt']
 
@@ -34,6 +35,6 @@ bandpasses: 'f277w'
 # Output catalog name
 output_catalog:
   # Desired output path
-  path: '/Users/j.mccleary/Research/jwst_cosmos/real_data/Jan2024/20mas_resamp'
+  path: '/n23data1/mccleary/cweb_psf'
   # Desired output name
   name: 'test_xy.fits'
