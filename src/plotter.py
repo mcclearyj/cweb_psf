@@ -38,32 +38,40 @@ def size_mag_plots(im_cat, star_cat, plot_name, filter_name):
     else:
         star_catalog = star_cat
 
-    fig, axs = plt.subplots(1,2, tight_layout=True, figsize=(11,7))
+    fig, axs = plt.subplots(1,2, tight_layout=True, figsize=(12, 6.5))
 
     # First, do FWHM
-    axs[0].plot(image_catalog['MAG_AUTO'], image_catalog['FWHM_WORLD']*3600, '.', \
-            label='all objects', markersize=3)
-    axs[0].plot(star_catalog['MAG_AUTO'], star_catalog['FWHM_WORLD']*3600, '.', \
-            label='selected stars', markersize=3)
+    axs[0].plot(
+        image_catalog['MAG_AUTO'], image_catalog['FWHM_WORLD']*3600, '.',
+        label='all objects', markersize=3
+    )
+    axs[0].plot(
+        star_catalog['MAG_AUTO'], star_catalog['FWHM_WORLD']*3600, '.',
+        label='selected stars', markersize=3
+    )
 
     #axs[0].set_xlabel(r'\texttt{MAG_AUTO}', fontsize=16)
-    axs[0].set_ylabel(r'\texttt{FWHM_WORLD} (arcsec)', fontsize=16)
-    axs[0].set_ylim(-0.08, 0.9)
-    axs[0].set_xlim(18, 30)
+    axs[0].set_ylabel(r'\texttt{FWHM_WORLD} (arcsec)')
+    axs[0].set_xlabel(r'\texttt{MAG_AUTO}')
+    axs[0].set_ylim(-0.05, 1.1)
+    axs[0].set_xlim(16, 29)
     axs[0].grid(True)
     axs[0].legend(markerscale=3, fontsize=14, loc='upper left')
 
-
     # Then, flux_radius
-    axs[1].plot(image_catalog['MAG_AUTO'], image_catalog['FLUX_RADIUS']*2, '.', \
-            label='all objects', markersize=3)
-    axs[1].plot(star_catalog['MAG_AUTO'], star_catalog['FLUX_RADIUS']*2, '.', \
-            label='selected stars', markersize=3)
+    axs[1].plot(
+        image_catalog['MAG_AUTO'], image_catalog['FLUX_RADIUS'], '.',
+        label='all objects', markersize=3
+    )
+    axs[1].plot(
+        star_catalog['MAG_AUTO'], star_catalog['FLUX_RADIUS'], '.',
+        label='selected stars', markersize=3
+    )
 
-    axs[1].set_xlabel(r'\texttt{MAG_AUTO}', fontsize=14)
-    axs[1].set_ylabel(r'2*\texttt{FLUX_RADIUS} (pix)', fontsize=14)
-    axs[1].set_ylim(-0.05, 10)
-    axs[1].set_xlim(18, 30)
+    axs[1].set_xlabel(r'\texttt{MAG_AUTO}')
+    axs[1].set_ylabel(r'2*\texttt{FLUX_RADIUS} (pix)')
+    axs[1].set_ylim(0.8, 13)
+    axs[1].set_xlim(16, 29)
     axs[1].grid(True)
     axs[1].legend(markerscale=3, fontsize=14, loc='upper left')
 
