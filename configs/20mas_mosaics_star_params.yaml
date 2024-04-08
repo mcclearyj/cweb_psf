@@ -22,19 +22,19 @@ class_star_thresh: 0.55
 filter_params:
   #
   F115W:
-    fwhm: 0.058
-    min_size: 0.88
-    max_size: 1.7
-    max_mag: 26.
-    min_mag: 19.
+    fwhm: 0.066
+    min_size: 1.25
+    max_size: 4
+    max_mag: 24.5
+    min_mag: 17.
     min_snr: 5.
   #
   F150W:
-    fwhm: 0.0628
-    min_size: 1.
-    max_size: 1.6
-    max_mag: 26.
-    min_mag: 19.
+    fwhm: 0.065
+    min_size: 1.55
+    max_size: 4
+    max_mag: 25
+    min_mag: 17.
     min_snr: 5.
   #
   F277W:

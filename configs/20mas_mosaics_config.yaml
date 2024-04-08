@@ -55,6 +55,8 @@ split_stars_validation_training: True
 
 # Location of SEx/PIFF/PSFEx config files
 astro_config_dir: '/n23data1/mccleary/cweb_psf/src/astro_config/'
+#astro_config_dir: './src/astro_config/'
 
 # Reference an external star catalog or parameters
-star_param_file: '/n23data1/mccleary/cweb_psf/configs/20mas_mosaics_star_params.yaml
+star_param_file: '/n23data1/mccleary/cweb_psf/configs/20mas_mosaics_star_params.yaml'
+#star_param_file: './configs/20mas_mosaics_star_params.yaml'
