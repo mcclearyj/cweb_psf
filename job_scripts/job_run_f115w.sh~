@@ -1,0 +1,33 @@
+#!/bin/bash
+#PBS -S /bin/sh
+#PBS -N starcats_f115w
+#PBS -o ./f115ww_ims.out 
+#PBS -j oe 
+#PBS -l nodes=1,walltime=6:00:00
+
+module () {
+  eval $(/usr/bin/modulecmd bash $*)
+}
+
+source /n23data1/mccleary/miniconda3/bin/activate 
+conda activate cweb_psf
+
+export DATADIR="/n23data1/mfranco/jwst/COSMOS-Web/DEC2022_v.0.0.4/products/pipeline_level2"
+export BANDPASS="f115w"
+export IMAGES=(${DATADIR}/${BANDPASS}/jw*_cal.fits)
+
+export CODEDIR="/n23data1/mccleary/cweb_psf"
+export CONFIG=${CODEDIR}/configs/sim_single_exp_cutouts_config_${BANDPASS}.yaml
+
+echo ""
+echo "Input images:" 
+ls ${IMAGES[@]}
+
+echo ""
+echo "Using config: $CONFIG"
+echo ""
+
+python ${CODEDIR}/get_galaxy_cutouts.py --config ${CONFIG} ${IMAGES[@]}
+
+
+echo "done"

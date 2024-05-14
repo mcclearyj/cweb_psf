@@ -69,7 +69,7 @@ def size_mag_plots(im_cat, star_cat, plot_name, filter_name):
     )
 
     axs[1].set_xlabel(r'\texttt{MAG_AUTO}')
-    axs[1].set_ylabel(r'2*\texttt{FLUX_RADIUS} (pix)')
+    axs[1].set_ylabel(r'\texttt{FLUX_RADIUS} (pix)')
     axs[1].set_ylim(0.8, 13)
     axs[1].set_xlim(16, 29)
     axs[1].grid(True)

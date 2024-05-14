@@ -508,16 +508,16 @@ def main(args):
 
         print(f'Working on file {image_file}...\n\n')
 
-        # Make SExtractor catalog
-        cat_file = run_sextractor(image_file=image_file,
-                   star_config=star_config,
-                   run_config=run_config)
-
-        # Add cutouts to catalogs
-        add_cutouts(image_file=image_file, cat_file=cat_file,
-                    boxcut=boxcut, run_config=run_config, add_pix2wcs=True)
-
         try:
+
+            # Make SExtractor catalog
+            cat_file = run_sextractor(image_file=image_file,
+                                      star_config=star_config,
+                                      run_config=run_config)
+
+            # Add cutouts to catalogs
+            add_cutouts(image_file=image_file, cat_file=cat_file,
+                        boxcut=boxcut, run_config=run_config, add_pix2wcs=True)
 
             # Make star catalog
             starcat_file = make_starcat(image_file=image_file,

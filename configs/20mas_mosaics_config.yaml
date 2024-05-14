@@ -2,7 +2,7 @@
 ### Box cutter & PSF fitting parameters
 
 # Output directory
-outdir: "gal_cutout_working"
+outdir: "gal_cutout_20mas_working/f115w"
 
 # Augment galaxy catalog with PSFs ("True") or just star catalog ("False")?
 augment_galcat: True
