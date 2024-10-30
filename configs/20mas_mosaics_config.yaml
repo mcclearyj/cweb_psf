@@ -1,8 +1,9 @@
 ###
 ### Box cutter & PSF fitting parameters
 
-# Output directory
-outdir: "gal_cutout_20mas_working/f115w"
+# Output directory. Note: this gets overridden if a command
+# line argument "-outdir" is passed.
+outdir: "gal_cutout_20mas_working/"
 
 # Augment galaxy catalog with PSFs ("True") or just star catalog ("False")?
 augment_galcat: True
@@ -19,7 +20,7 @@ input_catalog:
   dec_units: 'deg'
 
 # Box size for all images
-box_size: 201
+box_size: 255
 
 # Cutouts to add to output catalog
 cutout_list:
@@ -55,8 +56,6 @@ split_stars_validation_training: True
 
 # Location of SEx/PIFF/PSFEx config files
 astro_config_dir: '/n23data1/mccleary/cweb_psf/src/astro_config/'
-#astro_config_dir: './src/astro_config/'
 
 # Reference an external star catalog or parameters
 star_param_file: '/n23data1/mccleary/cweb_psf/configs/20mas_mosaics_star_params.yaml'
-#star_param_file: './configs/20mas_mosaics_star_params.yaml'

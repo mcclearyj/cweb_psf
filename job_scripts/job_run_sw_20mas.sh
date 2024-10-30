@@ -1,24 +1,18 @@
 #!/bin/bash
-#PBS -S /bin/sh
-#PBS -N lw_mosaic_psfs
-#PBS -o lw_mosaic_psfs.out 
-#PBS -j oe 
-#PBS -l nodes=1,walltime=23:59:59
-#PBS -M j.mccleary@northeastern.edu
-#!/bin/bash
-#SBATCH --job-name=starcats_f115w
-#SBATCH --output=./f115w_ims.out
-#SBATCH --error=./f115w_ims.out
+#SBATCH --job-name=starcats_f150w
+#SBATCH --output=./f150w_ims.out
+#SBATCH --error=./f150w_ims.out
 #SBATCH --time=12:00:00
 #SBATCH --nodes=1
 #SBATCH --mail-type=ALL
-#SBATCH --mail-type=j.mccleary@northeastern.edu
+#SBATCH --mail-user=j.mccleary@northeastern.edu
 
 source /n23data1/mccleary/miniconda3/bin/activate 
 conda activate cweb_psf
 
 export DATADIR="/n23data1/mccleary/real_images/20mas_resamp"
-export BANDPASSES="f115w f150w"
+#export BANDPASSES="f115w f150w"
+export BANDPASSES="f150w"
 
 export CODEDIR="/n23data1/mccleary/cweb_psf"
 export CONFIG=${CODEDIR}/configs/20mas_mosaics_config.yaml
@@ -32,7 +26,7 @@ for bandpass in $BANDPASSES; do
         echo "Using config: $CONFIG"
         echo ""
 
-        python ${CODEDIR}/get_galaxy_cutouts.py -c ${CONFIG} "${IMAGES[@]}"
+        python ${CODEDIR}/get_galaxy_cutouts.py -c ${CONFIG} -outdir "${DATADIR}/gal_cutout_20mas_working/${bandpass}" "${IMAGES[@]}"
 
     else
         echo "No valid files found for ${bandpass}"
