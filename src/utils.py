@@ -5,7 +5,7 @@ import astropy.wcs as wcs
 import yaml
 import re
 import os
-import glob 
+import glob
 from astropy.table import Table, vstack
 
 class AttrDict(dict):
@@ -148,7 +148,7 @@ def make_outdir(config, arg=None, path='./', cval='outdir'):
         outdir = arg
         config[cval] = outdir
     # Set a sensible default if outdir is still none
-    if outdir is None:
+    if outdir == None:
         #basedir = os.path.commonpath(images)
         basedir = path
         outdir = os.path.join(basedir,'working')

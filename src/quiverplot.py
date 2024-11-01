@@ -320,7 +320,7 @@ class QuiverPlot:
         vdict = [
             [0.8*np.median(dicts[0].sigma), 1.2*np.median(dicts[0].sigma)],
             [0.8*np.median(dicts[1].sigma), 1.1*np.median(dicts[1].sigma)],
-            [0.7*np.median(dicts[2].sigma), 1.2*np.median(dicts[2].sigma)],
+            [None, None],
         ]
         vdict = np.array(vdict)
         for i, dc in enumerate(dicts):

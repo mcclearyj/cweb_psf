@@ -92,7 +92,7 @@ class StarPSFHolder:
         in the supplied image stamp ('im_stamp'). Returns median and std dev
         """
         # Take outer 10% of stamps or 4x4 pixel box, whichever is larger
-        j = max(im_stamp.shape[0]//10, 5)
+        j = min(im_stamp.shape[0]//10, 10)
 
         # Fill an array with these corners, take median and std to get an
         # sky background and variance for the stamp.

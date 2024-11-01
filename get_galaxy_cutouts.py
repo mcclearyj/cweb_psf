@@ -245,20 +245,22 @@ def make_starcat(image_file, cat_file, star_config, run_config):
 
     # Get a star catalog!
     selected_stars = _select_stars_for_psf(
-                     imcat=imcat,
-                     star_config=star_config,
-                     run_config=run_config,
-                     filter_name = filter_name
-                     )
+        imcat=imcat,
+        star_config=star_config,
+        run_config=run_config,
+        filter_name = filter_name
+    )
 
     # Filter out saturated stars
     badstar_ext = 'ERR_VIGNET'; sentinel = 0
     #badstar_ext = 'DQ_VIGNET'; sentinel = [1, 2]
 
-    selected_stars = _exclude_satpix(selected_stars,
-                                     ext=badstar_ext,
-                                     sentinel=sentinel
-                                     )
+    selected_stars = _exclude_satpix(
+        selected_stars,
+        ext=badstar_ext,
+        sentinel=sentinel
+    )
+
     if len(selected_stars) == 0:
         raise ValueError("make_starcat: No good stars found!")
 
@@ -339,8 +341,8 @@ def convert_pix2wcs(imfile, imcat_fits, run_config):
     y_col = run_config['input_catalog']['psf_y_key']
 
     coords = w.all_pix2world(
-             np.array([imcat[x_col], imcat[y_col]]).T, 1
-             )
+        np.array([imcat[x_col], imcat[y_col]]).T, 1
+    )
 
     # Add corrected RA & Dec to catalog
     print(f'Adding corrected RA/Dec columns to catalog')
