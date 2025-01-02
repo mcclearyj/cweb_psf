@@ -192,13 +192,13 @@ class ResidPlots:
 
         # First things first I'm the reallest
         set_rc_params(fontsize=16)
-
         fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True,
-                                    figsize=[15, 5], tight_layout=True)
+                                tight_layout=True)
 
         for i, dc in enumerate(dicts):
             im = axs[i].imshow(dc.avg_im, **mpl_dicts[i])
             axs[i].set_title(dc.title)
+            axs[i].set_aspect('equal', adjustable='box')
             divider = make_axes_locatable(axs[i])
             cax = divider.append_axes("right", size="5%", pad=0.05)
             fig.colorbar(im, cax=cax)

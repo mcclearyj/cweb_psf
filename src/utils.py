@@ -7,6 +7,9 @@ import re
 import os
 import glob
 from astropy.table import Table, vstack
+import pdb
+import functools
+import numpy as np
 
 class AttrDict(dict):
     '''
@@ -93,11 +96,9 @@ def match_coords(cat1, cat2, ratag1=None, dectag1=None, ratag2=None, dectag2=Non
 
     cat1_matcher = htm.Matcher(16, ra=cat1_ra, dec=cat1_dec)
 
-    cat2_ind, cat1_ind, dist = cat1_matcher.match(ra=cat2_ra,
-                                                  dec=cat2_dec,
-                                                  maxmatch=1,
-                                                  radius=radius/3600.
-                                                  )
+    cat2_ind, cat1_ind, dist = cat1_matcher.match(
+        ra=cat2_ra, dec=cat2_dec, maxmatch=1, radius=radius/3600.
+    )
 
     print(f'{len(dist)}/{len(cat1)} gals matched to truth')
 
@@ -163,9 +164,14 @@ def make_outdir(config, arg=None, path='./', cval='outdir'):
 
     return config
 
-def concatenate_catalogs(catnames, outname=None, hdu=1):
-    """This I want to run on all the teeny single exposure catalogs.
-    I am going to operate like I have the run config available, too"""
+def concatenate_catalogs(catnames, outname=None, hdu=1, pad_size=None):
+    """
+    This I want to run on all the teeny single exposure catalogs.
+    I am going to operate like I have the run config available, too.
+    It might make sense to trim the tables to the value in the run_config...
+    but since the catalog is being saved to file, maybe not?
+    Another option might be to specify an output stamp size and pad or not?
+    """
 
     if outname == None:
         outname='combined_catalog.fits'
@@ -177,12 +183,17 @@ def concatenate_catalogs(catnames, outname=None, hdu=1):
     else:
         raise ValueError("concatenate_catalogs: catnames must be string or list")
 
+    print(f"utils.concatenate_catalogs: joining tables {catnames}")
+
     # List to hold tables
     table_list = []
 
     # Loop over all your FITS files
     for fits_file in fits_files:
         table = Table.read(fits_file, hdu=hdu)
+        # Pad stamps if requested...
+        if pad_size:
+            table = pad_stamps(table, pad_size)
         table_list.append(table)
 
     # Vertically stack tables
@@ -192,3 +203,57 @@ def concatenate_catalogs(catnames, outname=None, hdu=1):
     combined_table.write(outname, format='fits', overwrite=True)
 
     return combined_table
+
+def pad_stamps(table, pad_size):
+    """
+    Function to pad stamps to the same size. Eventually, it would be good to
+    be able to specify extensions, refer to run_config, or something like that.
+    Maybe even combine it with a stamp trimming operation? So standardize all
+    stamps to be the same size specified in run_config? It would probably be
+    the simplest, especially if I combine catalogs from different runs.
+
+    Inputs
+      table: astropy Table instance
+      pad_size: desired output size of stamps
+
+    Returns: updated Table instance
+    """
+
+    # Access columns with "VIGNET" in the name that need to be padded.
+    # There has GOT to be a way to clean up...
+    colnames = table.colnames
+    pad_colnames = []
+    for col in colnames:
+        if "VIGNET" in col:
+            if table[col][0].shape[0] < pad_size:
+                pad_colnames.append(col)
+
+    # Pad columns that we need to pad
+    for col in pad_colnames:
+        unpadded = table[col].data
+        padded = list(
+            map(functools.partial(_pad_stamps, pad_size), table[col].data)
+        )
+        table[col] = np.array(padded)
+
+    return table
+
+def _pad_stamps(pad_size, stamp):
+    """Function that gets called to actually pad stamps based on pad_size"""
+    npix = int((pad_size - stamp.shape[0])/2)
+
+    # Make sure stamp is actually smaller than desired padding size
+    if npix < 0:
+        raise ValueError(
+            f"pad_stamps: pad size {pad_size} must be larger than stamp size {stamp.shape[0]}!!"
+        )
+
+    # Do the actual padding
+    padded_stamp = np.pad(stamp, pad_width=npix)
+
+    # Make sure output stamp is the right size!
+    if padded_stamp.shape[0] != pad_size:
+        raise ValueError(
+            f"Output padded stamp size {padded_stamp.shape[0]} not desired stamp size of {pad_size}!"
+        )
+    return padded_stamp

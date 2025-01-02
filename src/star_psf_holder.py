@@ -163,6 +163,15 @@ class StarPSFHolder:
         star_holder.stamps = np.array(trimmed_stars)
         self.stamps = np.array(trimmed_psfs)
 
+        # Repeat all of this if there are error stamps as well
+        if 'err_stamps' in star_holder.__dict__.keys():
+            err_stamps = star_holder.err_stamps
+            trimmed_err_stamps = list(
+                map(self._trim_stamps, err_stamps)
+            )
+            star_holder.err_stamps = np.array(trimmed_err_stamps)
+
+
     def _add_flux(self, psf_stamp, star_flux,
                     sky_level, sky_std):
         """
@@ -170,7 +179,7 @@ class StarPSFHolder:
         There may be a nicer way to do this that ensures that the total flux
         in the PSF stamp matches the total star flux.
         """
-        psf_stamp /= np.sum(psf_stamp)
+        #psf_stamp /= np.sum(psf_stamp)
         psf_stamp *= star_flux
 
         # Add noise; empirically, sky level is better than sex bkg
@@ -189,9 +198,10 @@ class StarPSFHolder:
     def add_flux(self):
         """ Add flux and bkg noise to PSF stamps """
         psf_ims = self.stamps
-        psf_flux_images = list(map(
-            self._add_flux, psf_ims, self.star_fluxes,
-            self.sky_level, self.sky_std
+        psf_flux_images = list(
+            map(
+                self._add_flux, psf_ims, self.star_fluxes,
+                self.sky_level, self.sky_std
             )
         )
         self.stamps = psf_flux_images

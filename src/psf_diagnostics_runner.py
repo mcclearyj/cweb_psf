@@ -8,12 +8,12 @@ from argparse import ArgumentParser
 import fitsio
 
 # Local imports
-from src.plotter import compare_rho_stats
 from src.star_psf_holder import StarPSFHolder
-from src.plotter import make_resid_plot, plot_rho_stats
 from src.quiverplot import QuiverPlot
 from src.residplots import ResidPlots
 from src.chisqplots import ChiSqPlots
+from src.rho_stats import run_rho_stats
+from src.plotter import compare_rho_stats
 
 class PSFDiagnosticsRunner:
     """
@@ -27,7 +27,7 @@ class PSFDiagnosticsRunner:
         self.config = config # Config should have been read in with a runner script
         self.vignet_size = vignet_size
         self.stars = []
-        self.psfs = []
+        self.psfs_dict = {}
         self.sky_level = []
         self.sky_std = []
         self.star_fluxes = []
@@ -75,7 +75,7 @@ class PSFDiagnosticsRunner:
         # Non-catalog params
         star_holder.pixel_scale = self.config['pixel_scale']
         star_holder.vignet_size = self.config['box_size']
-        print(f'PSFmaker vignet size is {self.vignet_size}')
+        print(f'PSFmaker vignet size is {star_holder.vignet_size}')
 
     def run_psf(self, psf_model, stars):
 
@@ -96,8 +96,11 @@ class PSFDiagnosticsRunner:
 
         return psfs
 
-    def run_all_diagnostics(self, stars, psfs):
-        """ Wrapper for diagnostics plots making """
+    def run_all_diagnostics(self, stars, psfs, model):
+        """
+        Wrapper for diagnostics plots making. Stars and PSFs are Maker-class
+        objects, model is something in config like PSFEx or WebbPSF.
+        """
 
         # Main dictionary to hold all results
         all_results = {}
@@ -142,6 +145,9 @@ class PSFDiagnosticsRunner:
         # Save chisq_plot results
         chisq_resid_vals = chisq_plot.return_chi2_resid_vals()
 
+        # Run rho statistics
+        run_rho_stats(psfs, stars, model)
+
         # Organize results by model type
         all_results[psfs.psf_type] = {
             'HSM_resids': quiver_resid_vals,
@@ -183,6 +189,35 @@ class PSFDiagnosticsRunner:
         else:
             print(f'Output directory {subdir} exists, continuing...')
 
+    def write_to_table(self, outfile='hsm_fit_results.fits'):
+        """
+        Concatenate arbitrary number of StarPSFHolder() objects with HSM fits
+        into an output FITS table & save to file. After initializing from
+        stars object, loop over PSF model types in self.model_map; if a PSF type
+        was run, it will be in psfs_list and can be added to the table.
+        """
+        stars = self.stars
+        psfs_dict = self.psfs_dict
+
+        # Initialize what will be table as a dict and set basic star quantities
+        mtab = {}
+        mtab['x'] = stars.x
+        mtab['y'] = stars.y
+        mtab['flux_auto'] = stars.star_fluxes
+
+        # Loop over PSF types in same order as was run, update output dict
+        for this_model, psfs in psfs_dict.items():
+            mtab['_'.join([this_model,'hsm_sig'])] = psfs.hsm_sig
+            mtab['_'.join([this_model,'hsm_g1'])] = psfs.hsm_g1
+            mtab['_'.join([this_model,'hsm_g2'])] = psfs.hsm_g2
+            mtab['_'.join([this_model,'fwhm'])] = psfs.fwhm
+
+        # Turn into astropy Table instance and save to file
+        t = Table(mtab)
+        t.write(
+            os.path.join(self.outdir, outfile), format='fits', overwrite=True
+        )
+
     def run_all(self, vb=False):
         """
         Loop over all PSF types and get diagnostics, creating an instance of
@@ -200,6 +235,9 @@ class PSFDiagnosticsRunner:
         # Get star HSM fits
         stars.do_hsm_fit()
 
+        # Set stars attribute
+        self.stars = stars
+
         # Loop over allowed model types
         for model in self.model_map:
 
@@ -211,5 +249,11 @@ class PSFDiagnosticsRunner:
                 # Initialize PSF object
                 psfs = self.run_psf(model, stars)
 
+                # Append this PSF object to PSFs list for saving to file, ig?
+                self.psfs_dict[model] = psfs
+
                 # Run diagnostics
-                self.run_all_diagnostics(stars, psfs)
+                self.run_all_diagnostics(stars, psfs, model)
+
+        # Save HSM results to a FITS table
+        self.write_to_table(outfile='hsm_fit_results.fits')

@@ -182,50 +182,54 @@ def main(args):
                     os.path.join(basedir, psf_model),
                     os.path.join(basedir, im_name)
                     )
-        psf_des = PSFMaker(psf_file=psfex_des,
-                            psf_type='gpsfex',
-                            pix_scale=pix_scale,
-                            vignet_size=vignet_size,
-                            add_noise=add_noise,
-                            rho_params=rho_params,
-                            vb=vb
-                            )
+        psf_des = PSFMaker(
+            psf_file=psfex_des,
+            psf_type='gpsfex',
+            pix_scale=pix_scale,
+            vignet_size=vignet_size,
+            add_noise=add_noise,
+            rho_params=rho_params,
+            vb=vb
+        )
         psf_des.run_all(stars=sm, vb=vb, outdir=outdir)
         makers.append(psf_des); prefix.append('gpsf')
 
     if piff_model is not None:
         piff_psf = piff.read(os.path.join(basedir, piff_model))
-        psf_piff = PSFMaker(psf_file=piff_psf,
-                                psf_type='piff',
-                                pix_scale=pix_scale,
-                                add_noise=add_noise,
-                                rho_params=rho_params,
-                                vb=vb
-                                )
+        psf_piff = PSFMaker(
+            psf_file=piff_psf,
+            psf_type='piff',
+            pix_scale=pix_scale,
+            add_noise=add_noise,
+            rho_params=rho_params,
+            vb=vb
+        )
         psf_piff.run_all(stars=sm, vb=vb, outdir=outdir)
         makers.append(psf_piff); prefix.append('piff')
 
     if single_model is not None:
         psf_file = fits.open(single_model)
-        single_psf = PSFMaker(psf_file=psf_file,
-                                psf_type='single',
-                                pix_scale=pix_scale,
-                                add_noise=add_noise,
-                                rho_params=rho_params,
-                                vb=vb
-                                )
+        single_psf = PSFMaker(
+            psf_file=psf_file,
+            psf_type='single',
+            pix_scale=pix_scale,
+            add_noise=add_noise,
+            rho_params=rho_params,
+            vb=vb
+        )
         single_psf.run_all(stars=sm, vb=vb, outdir=outdir)
         makers.append(single_psf); prefix.append('single')
 
     if webb_model is not None:
         psf_file = fits.open(webb_model)
-        single_psf = PSFMaker(psf_file=psf_file,
-                                psf_type='webbpsf',
-                                pix_scale=pix_scale,
-                                add_noise=add_noise,
-                                rho_params=rho_params,
-                                vb=vb
-                                )
+        single_psf = PSFMaker(
+            psf_file=psf_file,
+            psf_type='webbpsf',
+            pix_scale=pix_scale,
+            add_noise=add_noise,
+            rho_params=rho_params,
+            vb=vb
+        )
         single_psf.run_all(stars=sm, vb=vb, outdir=outdir)
         makers.append(single_psf); prefix.append('webbpsf')
 

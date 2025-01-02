@@ -157,22 +157,6 @@ def make_resid_plot(psf, stars, outname='star_psf_resid.png', vb=False):
 
     return 0
 
-def make_chi2_resids(psf, stars, outname='star_psf_chi2.png', vb=False):
-    '''
-    Make a chi2 residual plot, kinda like the flux residuals plots also made.
-    '''
-
-    return
-
-
-def make_quiverplot():
-    '''
-    At some point, plotter should be its own class that makes instance of
-    the QuiverPlot class for quiver plotting
-    '''
-
-    pass
-
 
 def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     ##
@@ -181,7 +165,6 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
 
     fontsize = 16
     set_rc_params(fontsize)
-
 
     fig,axes=plt.subplots(nrows=2,ncols=1,figsize=[10,7], sharex=True, tight_layout=True)
 
@@ -232,8 +215,8 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
 
     axes[0].legend([lp1, lp3, lp4], fontsize=14)
     axes[0].legend(fontsize=14, loc='upper right')
-    axes[0].set_xlim(0.4, 28)
-    axes[0].set_ylim(2e-9, 5e-4)
+    #axes[0].set_xlim(0.4, 28)
+    #axes[0].set_ylim(2e-9, 5e-4)
     axes[0].minorticks_on()
 
     ##
@@ -270,8 +253,8 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     axes[1].errorbar(-r, xip, yerr=sig, color='tab:purple', capsize=5)
 
     axes[1].legend([lp2,lp5])
-    axes[1].set_xlim(0.4, 28)
-    axes[1].set_ylim(2e-9, 5e-4)
+    #axes[1].set_xlim(0.4, 28)
+    #axes[1].set_ylim(2e-9, 5e-4)
     axes[1].minorticks_on()
 
     plt.legend(loc='upper right')
