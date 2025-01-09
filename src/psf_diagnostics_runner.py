@@ -13,7 +13,7 @@ from src.quiverplot import QuiverPlot
 from src.residplots import ResidPlots
 from src.chisqplots import ChiSqPlots
 from src.rho_stats import run_rho_stats
-from src.plotter import compare_rho_stats
+from src.rho_stats_plotter import compare_rho_stats
 
 class PSFDiagnosticsRunner:
     """
@@ -76,6 +76,61 @@ class PSFDiagnosticsRunner:
         star_holder.pixel_scale = self.config['pixel_scale']
         star_holder.vignet_size = self.config['box_size']
         print(f'PSFmaker vignet size is {star_holder.vignet_size}')
+
+    def make_ouput_subdir(self):
+        """
+        Bit of a kludge, but make a directory with the name/tile of
+        image inside of 'outdir' for easier organization
+        """
+        basename = os.path.basename(self.catalog_file).split('.fits')[0]
+        outdir = self.config['outdir']
+        subdir = os.path.join(outdir, basename)
+
+        # Now replace outdir with subdir!
+        self.outdir = subdir
+
+        if not os.path.isdir(subdir):
+            cmd = f'mkdir -p {subdir}'
+            os.system(cmd)
+            print(f'Made output directory {subdir}')
+        else:
+            print(f'Output directory {subdir} exists, continuing...')
+
+    def write_to_table(self, outfile='hsm_fit_results.fits'):
+        """
+        Concatenate StarPSFHolder() objects containing HSM fits
+        into an output FITS table & save to file. After initializing from
+        stars object, loop over PSF model types in self.model_map; if a PSF type
+        was run, it will be in psfs_list and can be added to the table.
+        """
+        stars = self.stars
+        psfs_dict = self.psfs_dict
+
+        # Initialize what will be table as a dict and set basic star quantities
+        mtab = {}
+        mtab['x'] = stars.x
+        mtab['y'] = stars.y
+        mtab['flux_auto'] = stars.star_fluxes
+
+        # Start by adding the star HSM fit results
+        mtab['star_hsm_sig'] = stars.hsm_sig
+        mtab['star_hsm_g1'] = stars.hsm_g1
+        mtab['star_hsm_g2'] = stars.hsm_g2
+        mtab['star_fwhm'] = stars.fwhm
+
+
+        # Loop over PSF types in same order as was run, update output dict
+        for this_model, psfs in psfs_dict.items():
+            mtab['_'.join([this_model,'hsm_sig'])] = psfs.hsm_sig
+            mtab['_'.join([this_model,'hsm_g1'])] = psfs.hsm_g1
+            mtab['_'.join([this_model,'hsm_g2'])] = psfs.hsm_g2
+            mtab['_'.join([this_model,'fwhm'])] = psfs.fwhm
+
+        # Turn into astropy Table instance and save to file
+        t = Table(mtab)
+        t.write(
+            os.path.join(self.outdir, outfile), format='fits', overwrite=True
+        )
 
     def run_psf(self, psf_model, stars):
 
@@ -145,8 +200,8 @@ class PSFDiagnosticsRunner:
         # Save chisq_plot results
         chisq_resid_vals = chisq_plot.return_chi2_resid_vals()
 
-        # Run rho statistics
-        run_rho_stats(psfs, stars, model)
+        # Run rho statistics, including plots!
+        run_rho_stats(psfs, stars, model, outdir=self.outdir)
 
         # Organize results by model type
         all_results[psfs.psf_type] = {
@@ -168,54 +223,6 @@ class PSFDiagnosticsRunner:
         print(
             f"Saved diagnostics results for {psfs.psf_type}" +
             f" model to {results_filename}"
-        )
-
-    def make_ouput_subdir(self):
-        """
-        Bit of a kludge, but make a directory with the name/tile of
-        image inside of 'outdir' for easier organization
-        """
-        basename = os.path.basename(self.catalog_file).split('.fits')[0]
-        outdir = self.config['outdir']
-        subdir = os.path.join(outdir, basename)
-
-        # Now replace outdir with subdir!
-        self.outdir = subdir
-
-        if not os.path.isdir(subdir):
-            cmd = f'mkdir -p {subdir}'
-            os.system(cmd)
-            print(f'Made output directory {subdir}')
-        else:
-            print(f'Output directory {subdir} exists, continuing...')
-
-    def write_to_table(self, outfile='hsm_fit_results.fits'):
-        """
-        Concatenate arbitrary number of StarPSFHolder() objects with HSM fits
-        into an output FITS table & save to file. After initializing from
-        stars object, loop over PSF model types in self.model_map; if a PSF type
-        was run, it will be in psfs_list and can be added to the table.
-        """
-        stars = self.stars
-        psfs_dict = self.psfs_dict
-
-        # Initialize what will be table as a dict and set basic star quantities
-        mtab = {}
-        mtab['x'] = stars.x
-        mtab['y'] = stars.y
-        mtab['flux_auto'] = stars.star_fluxes
-
-        # Loop over PSF types in same order as was run, update output dict
-        for this_model, psfs in psfs_dict.items():
-            mtab['_'.join([this_model,'hsm_sig'])] = psfs.hsm_sig
-            mtab['_'.join([this_model,'hsm_g1'])] = psfs.hsm_g1
-            mtab['_'.join([this_model,'hsm_g2'])] = psfs.hsm_g2
-            mtab['_'.join([this_model,'fwhm'])] = psfs.fwhm
-
-        # Turn into astropy Table instance and save to file
-        t = Table(mtab)
-        t.write(
-            os.path.join(self.outdir, outfile), format='fits', overwrite=True
         )
 
     def run_all(self, vb=False):

@@ -43,19 +43,24 @@ def main(args):
 
     # For convenience, concatenate individual star catalogs
     starcats = args.starcats
-    # A little kludgy, but:
-    bandpass = re.search(r"f(\d){3}w", starcats[0]).group().upper()
-    combined_starcat = concatenate_catalogs(
-        starcats, outname=f'combined_validation_starcats_{bandpass}.fits',
-        hdu=2, pad_size=255
-    )
+
+    if len(starcats) > 1:
+        # A little kludgy, but:
+        bandpass = re.search(r"f(\d){3}w", starcats[0]).group().upper()
+        combined_starcat = concatenate_catalogs(
+            starcats, outname=f'combined_validation_starcats_{bandpass}.fits',
+            hdu=2, pad_size=255
+        )
+    else:
+        # It is the catalog, I guess
+        combined_starcat = starcats[0]
 
     # OK, now run on combined catalog
     psf_diagnostic = PSFDiagnosticsRunner(combined_starcat, config=config)
     psf_diagnostic.run_all()
 
     return 0
-    
+
 if __name__ == '__main__':
 
    args = parse_args()

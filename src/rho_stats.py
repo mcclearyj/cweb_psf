@@ -10,7 +10,7 @@ import os
 import pdb
 
 # Local imports
-from src.plotter import plot_rho_stats
+from src.rho_stats_plotter import plot_rho_stats
 
 def run_rho_stats(
     psfs, stars, psf_type, rho_params=None, vb=False, outdir='./'):
@@ -28,10 +28,12 @@ def run_rho_stats(
         psfs, stars, rho_params, psf_type, outdir, vb
     )
 
-    # Then set output name and make plots
+    # Set output name
     outname = os.path.join(
         outdir,'_'.join([psf_type,'rho_stats.pdf'])
     )
+
+    # Make plots
     plot_rho_stats(
         rho1, rho2, rho3, rho4, rho5,
         pixel_scale=stars.pixel_scale, outname=outname

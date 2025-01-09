@@ -11,7 +11,7 @@ import pdb
 from argparse import ArgumentParser
 import yaml
 import fitsio
-from src.plotter import compare_rho_stats
+from src.rho_stats_plotter import compare_rho_stats
 from src.hsm_fitter import do_hsm_fit
 
 ###
@@ -184,7 +184,7 @@ class StarPSFHolder:
 
         # Add noise; empirically, sky level is better than sex bkg
         # for large vignettes. Well, maybe.
-        if self.psf_type not in ['piff']:
+        if self.psf_type != 'piff':
             if self.vb == True: print("\nAdding noise to PSF\n")
             noise = np.random.normal(
                 loc=sky_level,
@@ -212,6 +212,7 @@ class StarPSFHolder:
 
     def run_stars(self):
         """ Routines to run to load up stars """
+
         # Calculate sky background
         self.calc_sky_bkg()
 

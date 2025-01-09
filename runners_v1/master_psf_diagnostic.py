@@ -14,7 +14,7 @@ from astropy.io import fits
 
 from src.starmaker import StarMaker, StampBackground
 from src.psfmaker import PSFMaker
-from src.plotter import compare_rho_stats
+from src.rho_stats_plotter import compare_rho_stats
 
 def parse_args():
 

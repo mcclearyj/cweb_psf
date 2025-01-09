@@ -1,10 +1,9 @@
 import numpy as np
-import galsim,galsim.des
+import galsim, galsim.des
 import pdb
-import matplotlib.pyplot as plt; plt.ion()
 
 def do_hsm_fit(maker, verbose=False):
-    '''
+    """
     Get Hirata-Seljak fit moments for PSF and star images. From the GalSim docs:
 
     This method estimates the best-fit elliptical Gaussian to the object (see Hirata & Seljak 2003
@@ -13,23 +12,22 @@ def do_hsm_fit(maker, verbose=False):
     weighted moments, recomputing the moments using the result of the previous step as the weight
     function, and so on until the moments that are measured are the same as those used for the
     weight function.
-
-    '''
+    """
 
     for i, model in enumerate(maker.stamps):
 
-        if type(model) is galsim.image.Image:
+        if type(model) == galsim.image.Image:
             gs_object = model
-            if verbose==True: print('found Galsim Object, using native HSM fit')
+            if verbose: print('found Galsim Object, using native HSM fit')
 
         else:
             # HSM fits fail if there are too many negative pixels
             gs_object = galsim.Image(model,
                 wcs=galsim.PixelScale(maker.pixel_scale), xmin=0, ymin=0)
-            if verbose==True: print('Creating Galsim image from array')
+            if verbose: print('Creating Galsim image from array')
 
         try:
-            HSM_fit=gs_object.FindAdaptiveMom()
+            HSM_fit = gs_object.FindAdaptiveMom()
             maker.hsm_sig.append(HSM_fit.moments_sigma)
             maker.hsm_g1.append(HSM_fit.observed_shape.g1)
             maker.hsm_g2.append(HSM_fit.observed_shape.g2)
