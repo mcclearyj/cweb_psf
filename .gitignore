@@ -10,4 +10,4 @@ local_catalog_utils/
 catalog_utils/*png
 catalog_utils/*pdf
 *working*
-config/*local*
+configs/*local*

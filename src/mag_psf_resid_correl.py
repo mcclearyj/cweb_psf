@@ -9,7 +9,7 @@ import time
 
 from .utils import set_rc_params, read_yaml
 
-class mag_psf_resid_correl:
+class MagPsfResidCorrel:
     """
     This class is intended to compute PSF size and ellipticity residuals in
     bins of stellar magnitude and then save to file. Code is structured such
@@ -35,26 +35,23 @@ class mag_psf_resid_correl:
 
     """
 
-    def __init__(self, hsm_cat, run_config, zeropoint=28.086519392, nbins=12):
+    def __init__(self, hsm_cat, run_config, model, zeropoint=28.086519392, nbins=12):
 
         t_start = time.perf_counter()
-
-        self.hsm_catalog = None
+        # Catalog!
+        self.hsm_cat = None
+        # Cweb_psf-format run configuration file
         self.run_config = run_config
+        # PSF model to use
+        self.model = model
+        # Zeropoint for magnitude calculation
         self.zeropoint = zeropoint
+        # How many bins for mag histogram
         self.nbins = nbins
-        self.mag_bin_hist = []     # Holds magnitude histogram
-        self.mag_bin_numbers = []  # Holds magnitude bin index for each star
-        # Allowed PSF models
-        self.psf_model_map = [
-            'psfex',
-            'webbpsf',
-            'single',
-            'mirage',
-            'piff',
-            'shopt'
-        ]
-
+        # Holds magnitude histogram
+        self.mag_bin_hist = []
+        # Holds magnitude bin index for each star
+        self.mag_bin_numbers = []
 
         # First, set configuration file atttribute.
         if type(run_config) == str:
@@ -104,7 +101,7 @@ class mag_psf_resid_correl:
         """
 
         # Initialize dict that will hold the residuals for each model
-        full_resid_dict = {}
+        #full_resid_dict = {}
 
         # Set up star stats
         star_fwhm = self.hsm_cat["star_fwhm"]
@@ -114,11 +111,10 @@ class mag_psf_resid_correl:
 
         # Now PSF model stats; this will eventually be a loop over
         # all models defined in config but let's start simple
-        model = "psfex"
-        psf_fwhm = self.hsm_cat[f"{model}_fwhm"]
-        psf_g1 = self.hsm_cat[f"{model}_hsm_g1"]
-        psf_g2 = self.hsm_cat[f"{model}_hsm_g2"]
-        psf_T  = 2.0*(self.hsm_cat[f"{model}_hsm_sig"]**2)
+        psf_fwhm = self.hsm_cat[f"{self.model}_fwhm"]
+        psf_g1 = self.hsm_cat[f"{self.model}_hsm_g1"]
+        psf_g2 = self.hsm_cat[f"{self.model}_hsm_g2"]
+        psf_T  = 2.0*(self.hsm_cat[f"{self.model}_hsm_sig"]**2)
 
         # Compute residuals
         dfwhm = star_fwhm - psf_fwhm
@@ -152,12 +148,12 @@ class mag_psf_resid_correl:
             model_resid["std_dfwhm"].append(np.std(dfwhm[wg])/np.sqrt(bin_count))
 
         # Append this model's residuals to the resid_dict
-        full_resid_dict[model] = model_resid
+        #full_resid_dict[model] = model_resid
 
         """ Not sure whether it makes more sense to store full_resid_dict as a
         lazy attribute or just return it to plotter... going to make it an
         attribute so that run statement is a little tidier """
-        self.full_resid_dict = full_resid_dict
+        self.resid_dict = model_resid
 
 
     def make_plot(self):
@@ -167,7 +163,8 @@ class mag_psf_resid_correl:
         fontsize = 15; set_rc_params(fontsize)
 
         # Grab resid dict
-        model = 'psfex'; model_resid = self.full_resid_dict[model]
+        #model = 'psfex'; model_resid = self.full_resid_dict[model]
+        model_resid = self.resid_dict
 
         # Calculate bin midpoints, list concatenation for the win
         mag_bins = [
@@ -211,7 +208,7 @@ class mag_psf_resid_correl:
         # Save to file
         fig.savefig(
             os.path.join(
-                self.run_config["outdir"], f"{model}_mag_psf_resids.pdf"
+                self.run_config["outdir"], f"{self.model}_mag_psf_resids.pdf"
             )
         )
 

@@ -52,6 +52,7 @@ class PSFDiagnosticsRunner:
             'single',
             'mirage',
             'piff',
+            'shopt'
         ]
 
     def load_star_cat(self, star_holder):
