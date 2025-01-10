@@ -78,10 +78,18 @@ class StarPSFHolder:
         self.pixel_scale = holder.pixel_scale
 
     def load_psf_stamps(self, catalog):
-        """ Load PSF stamps. Catalog should be astropy Table """
+        """
+        Load PSF stamps. Catalog should be astropy Table. Implemented kludge
+        to allow VIGNET_XXX or XXX_VIGNET stamp names.
+        """
         psf_key = f'{self.psf_type.upper()}_VIGNET'
+        psf_key_alt = f'VIGNET_{self.psf_type.upper()}'
+
         if psf_key in catalog.dtype.names:
             psfs = catalog[psf_key]
+            self.stamps = psfs
+        elif psf_key_alt in catalog.dtype.names:
+            psfs = catalog[psf_key_alt]
             self.stamps = psfs
         else:
             raise KeyError(f'No PSF of type {psf_type.upper()}_VIGNET found')
