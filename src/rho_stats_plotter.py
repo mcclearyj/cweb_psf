@@ -33,14 +33,16 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     sig = np.sqrt(rho1.varxip)
 
     lab1 = r'$\rho_1(\theta)$'
-    lp1 = axes[0].plot(r, xip, color='tab:blue',marker='o', ls='-', lw=1.5, label=lab1)
+    lp1 = axes[0].plot(r, xip, color='tab:blue',marker='o',ls='-',label=lab1)
     axes[0].plot(r, -xip, color='tab:blue', marker='o',ls=':')
     axes[0].errorbar(r[xip>0], xip[xip>0], yerr=sig[xip>0], color='tab:blue', ls='', capsize=5)
     axes[0].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], color='tab:blue', ls='', capsize=5)
-    axes[0].errorbar(-r, xip, yerr=sig, color='tab:blue', lw=1.5, capsize=5)
-    axes[0].set_ylabel(r'$\rho(\theta)$', fontsize=fontsize)
-    axes[0].set_yscale('log', nonpositive='clip')
+    axes[0].errorbar(-r, xip, yerr=sig, color='tab:blue', capsize=5)
 
+    #axes[0].set_xlabel(r'$\theta$ (arcmin)', fontsize=fontsize)
+    axes[0].set_ylabel(r'$\rho(\theta)$', fontsize=fontsize)
+    #axes[0].set_xscale('log')
+    axes[0].set_yscale('log', nonpositive='clip')
     ##
     ## rho3 correlation: dg x dg
     ##
@@ -49,11 +51,11 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     sig = np.sqrt(rho3.varxip)
 
     lab3 = r'$\rho_3(\theta)$'
-    lp3 = axes[0].plot(r, xip, color='tab:orange',marker='o', ls='-', lw=1.5, label=lab3)
-    axes[0].plot(r, -xip, color='tab:orange', marker='o', ls=':')
+    lp3 = axes[0].plot(r, xip, color='tab:orange',marker='o',ls='-',label=lab3)
+    axes[0].plot(r, -xip, color='tab:orange', marker='o',ls=':')
     axes[0].errorbar(r[xip>0], xip[xip>0], yerr=sig[xip>0], color='tab:orange', ls='', capsize=5)
     axes[0].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], color='tab:orange', ls='', capsize=5)
-    axes[0].errorbar(-r, xip, yerr=sig, color='tab:orange', lw=1.5, capsize=5)
+    axes[0].errorbar(-r, xip, yerr=sig, color='tab:orange', capsize=5)
 
     ##
     ## rho4 correlation: dg x dg
@@ -63,18 +65,16 @@ def plot_rho_stats(rho1, rho2, rho3, rho4, rho5, pixel_scale, outname=None):
     sig = np.sqrt(rho4.varxip)
 
     lab4 = r'$\rho_4(\theta)$'
-    lp4 = axes[0].plot(r, xip, color='tab:green', marker='o', ls='-', lw=1.5, label=lab4)
+    lp4 = axes[0].plot(r, xip, color='tab:green',marker='o',ls='-',label=lab4)
     #axes[0].plot(r, -xip, color='tab:green', marker='o', markerfacecolor='white', ls=':', markersize=8)
-    axes[0].plot(r, -xip, color='tab:green', marker='o', ls=':')
+    axes[0].plot(r, -xip, color='tab:green',marker='o',ls=':')
     axes[0].errorbar(r[xip>0], xip[xip>0], yerr=sig[xip>0], color='tab:green', ls='', capsize=5)
     #axes[0].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], marker='o', \markerfacecolor='white', markersize=8, color='tab:green', ls='', capsize=5)
     axes[0].errorbar(r[xip<0], -xip[xip<0], yerr=sig[xip<0], marker='o', color='tab:green', ls='', capsize=5)
-    axes[0].errorbar(-r, xip, yerr=sig, color='tab:green', lw=1.5, capsize=5)
+    axes[0].errorbar(-r, xip, yerr=sig, color='tab:green', capsize=5)
 
-    axes[0].legend([lp1, lp3, lp4], fontsize=fontsize, loc='upper right')
-    #axes[0].legend(fontsize=fontsize, loc='upper right')
-    axes[0].minorticks_on()
-
+    axes[0].legend([lp1, lp3, lp4], fontsize=fontsize)
+    axes[0].legend(fontsize=fontsize, loc='upper right')
     ##
     ## rho 2 correlation: g x dg
     ##

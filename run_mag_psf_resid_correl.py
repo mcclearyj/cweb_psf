@@ -37,7 +37,7 @@ def main(args):
 
     for model in model_map:
         if run_config['psf_models'].get(model, False):
-            mprc = MagPsfResidCorrel(hsm_cat_file, run_config, model)
+            mprc = MagPsfResidCorrel(hsm_cat_file, run_config, model, nbins=13)
             mprc.run()
 
     tend = time.perf_counter()

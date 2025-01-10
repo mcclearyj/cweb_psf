@@ -103,18 +103,25 @@ class MagPsfResidCorrel:
         # Initialize dict that will hold the residuals for each model
         #full_resid_dict = {}
 
+        pixscale = self.run_config["pixel_scale"]
+
         # Set up star stats
         star_fwhm = self.hsm_cat["star_fwhm"]
         star_g1 = self.hsm_cat["star_hsm_g1"]
         star_g2 = self.hsm_cat["star_hsm_g2"]
-        star_T  = 2.0*(self.hsm_cat["star_hsm_sig"]**2)
+        # Because some values are ridiculous?
+        star_hsm_sig = np.ma.masked_values(
+            self.hsm_cat["star_hsm_sig"], np.max(self.hsm_cat["star_hsm_sig"])
+        ) * pixscale
+        star_T  = 2.0*(star_hsm_sig**2)
 
         # Now PSF model stats; this will eventually be a loop over
         # all models defined in config but let's start simple
         psf_fwhm = self.hsm_cat[f"{self.model}_fwhm"]
         psf_g1 = self.hsm_cat[f"{self.model}_hsm_g1"]
         psf_g2 = self.hsm_cat[f"{self.model}_hsm_g2"]
-        psf_T  = 2.0*(self.hsm_cat[f"{self.model}_hsm_sig"]**2)
+        psf_hsm_sig = self.hsm_cat[f"{self.model}_hsm_sig"] * pixscale
+        psf_T  = 2.0*(psf_hsm_sig**2)
 
         # Compute residuals
         dfwhm = star_fwhm - psf_fwhm
@@ -138,13 +145,13 @@ class MagPsfResidCorrel:
             bin_count = np.ma.count(dg1[wg]) # Counts only unmasked values
             model_resid["mag_bin_number"].append(mag_bin)
             model_resid["bin_count"].append(bin_count)
-            model_resid["mean_dg1"].append(np.mean(dg1[wg]))
+            model_resid["mean_dg1"].append(np.ma.median(dg1[wg]))
             model_resid["std_dg1"].append(np.std(dg1[wg])/np.sqrt(bin_count))
-            model_resid["mean_dg2"].append(np.mean(dg2[wg]))
+            model_resid["mean_dg2"].append(np.ma.median(dg2[wg]))
             model_resid["std_dg2"].append(np.std(dg2[wg])/np.sqrt(bin_count))
-            model_resid["mean_dT"].append(np.mean(dT[wg]))
+            model_resid["mean_dT"].append(np.ma.median(dT[wg]))
             model_resid["std_dT"].append(np.std(dT[wg])/np.sqrt(bin_count))
-            model_resid["mean_dfwhm"].append(np.mean(dfwhm[wg]))
+            model_resid["mean_dfwhm"].append(np.ma.median(dfwhm[wg]))
             model_resid["std_dfwhm"].append(np.std(dfwhm[wg])/np.sqrt(bin_count))
 
         # Append this model's residuals to the resid_dict
