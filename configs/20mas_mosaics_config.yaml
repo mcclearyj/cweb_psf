@@ -3,7 +3,7 @@
 
 # Output directory. Note: this gets overridden if a command
 # line argument "-outdir" is passed.
-outdir: "gal_cutout_20mas_working/"
+outdir: "/n23data1/mccleary/real_images/20mas_resamp_working/"
 
 # Augment galaxy catalog with PSFs ("True") or just star catalog ("False")?
 augment_galcat: True
@@ -18,9 +18,15 @@ input_catalog:
   dec_key: 'DELTAWIN_J2000'
   ra_units: 'deg'
   dec_units: 'deg'
+  ## Next set of params is for diagnostics calculation
+  flux_key: 'FLUX_AUTO'
+  # Leave err_image_key blank if catalog has no ERR image (assumed units = std)
+  err_image_key: 'ERR_VIGNET'
 
-# Box size for all images
-box_size: 255
+# Pixel scale of image for PSF diagnostics
+pixel_scale: 0.02
+# Box (vignette) size for all object/psf/weight images
+box_size: 101
 
 # Cutouts to add to output catalog
 cutout_list:
@@ -43,8 +49,9 @@ psf_models:
   piff: False
   mirage: False
   single: False
-
-# Make a WebbPSF model?
+  shopt: True
+  
+# Make a WebbPSF model from scratch?
 webb_psf:
   # Make WebbPSF? True or False.
   make_webb_psf: False
